@@ -3,7 +3,6 @@
 # ============================================================================
 # Versión: 2025.12
 # Última revisión: Diciembre 2025 - Corrección de Bugs y Numeración
-# Autor: Homero Thompson del Lago del Terror
 #
 # Filosofía de Ejecución: Máxima seguridad para la rama Testing.
 #   1.  Verificar dependencias y espacio libre.
