@@ -11,8 +11,8 @@ Coleccion de scripts de mantenimiento y actualizacion para distribuciones basada
   - [Requisitos del Sistema](#requisitos-del-sistema)
   - [Instalacion y Uso](#instalacion-y-uso)
   - [Configuracion Avanzada](#configuracion-avanzada)
+  - [Menu Interactivo](#menu-interactivo)
   - [Ejemplos de Uso](#ejemplos-de-uso)
-- [Otros Scripts](#otros-scripts)
 - [Solucion de Problemas](#solucion-de-problemas)
 - [Contribuir](#contribuir)
 
@@ -342,21 +342,6 @@ ASK_TIMESHIFT_RUN=true         # Preguntar antes de crear snapshot
 
 ---
 
-## Otros Scripts
-
-### cleannew.sh
-Version anterior del script principal. Funcionalidad similar pero sin soporte multi-distro.
-
-### gemini.sh
-Script de actualizacion generado con asistencia de Gemini AI.
-
-### grok2.sh
-Script de actualizacion generado con asistencia de Grok AI.
-
-> **Nota:** Estos scripts son versiones anteriores. Se recomienda usar `autoclean.sh` para mantenimiento completo.
-
----
-
 ## Solucion de Problemas
 
 ### El script se detiene con error de lock
@@ -478,7 +463,7 @@ Enhanced by Claude AI
 
 ## Estadisticas del Proyecto
 
-- **Scripts totales:** 4
+- **Scripts totales:** 1
 - **Script principal:** autoclean.sh
 - **Version actual:** 2025.8
 - **Lineas de codigo:** ~1700+
