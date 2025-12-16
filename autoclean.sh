@@ -133,10 +133,12 @@ export LC_ALL=C
 # ============================================================================
 
 # Archivos y directorios
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="${SCRIPT_DIR}/autoclean.conf"
 BACKUP_DIR="/var/backups/debian-maintenance"
 LOCK_FILE="/var/run/debian-maintenance.lock"
 LOG_DIR="/var/log/debian-maintenance"
-SCRIPT_VERSION="2025.7-paranoid-multidistro"
+SCRIPT_VERSION="2025.8-paranoid-multidistro"
 
 # Parámetros de sistema
 DIAS_LOGS=7
@@ -215,6 +217,105 @@ DRY_RUN=false
 UNATTENDED=false
 QUIET=false
 REBOOT_NEEDED=false
+NO_MENU=false
+
+# ============================================================================
+# CONFIGURACIÓN DEL MENÚ INTERACTIVO
+# ============================================================================
+
+# Arrays para el menú interactivo (índice corresponde a cada paso)
+MENU_STEP_NAMES=(
+    "Verificar conectividad"
+    "Verificar dependencias"
+    "Backup configuraciones (tar)"
+    "Snapshot Timeshift 🛡️"
+    "Actualizar repositorios"
+    "Actualizar sistema (APT)"
+    "Actualizar Flatpak"
+    "Actualizar Snap"
+    "Verificar firmware"
+    "Limpieza APT"
+    "Limpieza kernels"
+    "Limpieza disco/logs"
+    "Verificar reinicio"
+)
+
+MENU_STEP_VARS=(
+    "STEP_CHECK_CONNECTIVITY"
+    "STEP_CHECK_DEPENDENCIES"
+    "STEP_BACKUP_TAR"
+    "STEP_SNAPSHOT_TIMESHIFT"
+    "STEP_UPDATE_REPOS"
+    "STEP_UPGRADE_SYSTEM"
+    "STEP_UPDATE_FLATPAK"
+    "STEP_UPDATE_SNAP"
+    "STEP_CHECK_FIRMWARE"
+    "STEP_CLEANUP_APT"
+    "STEP_CLEANUP_KERNELS"
+    "STEP_CLEANUP_DISK"
+    "STEP_CHECK_REBOOT"
+)
+
+MENU_STEP_DESCRIPTIONS=(
+    "Verifica conexión a internet antes de continuar"
+    "Instala herramientas necesarias (timeshift, needrestart, etc.)"
+    "Guarda configuraciones APT en /var/backups"
+    "Crea snapshot del sistema para rollback (RECOMENDADO)"
+    "Ejecuta apt update para actualizar lista de paquetes"
+    "Ejecuta apt full-upgrade para actualizar paquetes"
+    "Actualiza aplicaciones instaladas con Flatpak"
+    "Actualiza aplicaciones instaladas con Snap"
+    "Verifica actualizaciones de BIOS/dispositivos"
+    "Elimina paquetes huérfanos y residuales"
+    "Elimina kernels antiguos (mantiene 3)"
+    "Limpia logs antiguos y caché del sistema"
+    "Detecta si el sistema necesita reiniciarse"
+)
+
+# ============================================================================
+# FUNCIONES DE CONFIGURACIÓN PERSISTENTE
+# ============================================================================
+
+save_config() {
+    # Guardar estado actual de los pasos en archivo de configuración
+    cat > "$CONFIG_FILE" << EOF
+# Configuración de autoclean - Generado automáticamente
+# Fecha: $(date '+%Y-%m-%d %H:%M:%S')
+# No editar manualmente (usar el menú interactivo)
+
+STEP_CHECK_CONNECTIVITY=$STEP_CHECK_CONNECTIVITY
+STEP_CHECK_DEPENDENCIES=$STEP_CHECK_DEPENDENCIES
+STEP_BACKUP_TAR=$STEP_BACKUP_TAR
+STEP_SNAPSHOT_TIMESHIFT=$STEP_SNAPSHOT_TIMESHIFT
+STEP_UPDATE_REPOS=$STEP_UPDATE_REPOS
+STEP_UPGRADE_SYSTEM=$STEP_UPGRADE_SYSTEM
+STEP_UPDATE_FLATPAK=$STEP_UPDATE_FLATPAK
+STEP_UPDATE_SNAP=$STEP_UPDATE_SNAP
+STEP_CHECK_FIRMWARE=$STEP_CHECK_FIRMWARE
+STEP_CLEANUP_APT=$STEP_CLEANUP_APT
+STEP_CLEANUP_KERNELS=$STEP_CLEANUP_KERNELS
+STEP_CLEANUP_DISK=$STEP_CLEANUP_DISK
+STEP_CHECK_REBOOT=$STEP_CHECK_REBOOT
+EOF
+    return $?
+}
+
+load_config() {
+    # Cargar configuración si existe el archivo
+    if [ -f "$CONFIG_FILE" ]; then
+        source "$CONFIG_FILE"
+        return 0
+    fi
+    return 1
+}
+
+config_exists() {
+    [ -f "$CONFIG_FILE" ]
+}
+
+delete_config() {
+    rm -f "$CONFIG_FILE" 2>/dev/null
+}
 
 # ============================================================================
 # COLORES E ICONOS
@@ -502,6 +603,161 @@ show_step_summary() {
         echo
         [[ ! $REPLY =~ ^[Ss]$ ]] && die "Cancelado por el usuario"
     fi
+}
+
+# ============================================================================
+# MENÚ INTERACTIVO DE CONFIGURACIÓN
+# ============================================================================
+
+show_interactive_menu() {
+    local current_index=0
+    local total_items=${#MENU_STEP_NAMES[@]}
+    local menu_running=true
+
+    # Ocultar cursor
+    tput civis 2>/dev/null
+
+    # Restaurar cursor al salir
+    trap 'tput cnorm 2>/dev/null' RETURN
+
+    while [ "$menu_running" = true ]; do
+        # Limpiar pantalla y mostrar header
+        clear
+        echo -e "${MAGENTA}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${MAGENTA}${BOLD}║           CONFIGURACIÓN DE PASOS - MENÚ INTERACTIVO           ║${NC}"
+        echo -e "${MAGENTA}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "  ${CYAN}🐧 Distribución:${NC} ${BOLD}${DISTRO_NAME}${NC}"
+        echo -e "  ${CYAN}📦 Familia:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
+        echo ""
+        echo -e "  ${YELLOW}Usa ↑/↓ para navegar, ESPACIO para activar/desactivar, ENTER para ejecutar${NC}"
+        echo ""
+
+        # Mostrar opciones del menú
+        for i in "${!MENU_STEP_NAMES[@]}"; do
+            local var_name="${MENU_STEP_VARS[$i]}"
+            local var_value="${!var_name}"
+            local checkbox="[ ]"
+            local line_color=""
+            local line_end=""
+
+            # Determinar estado del checkbox
+            if [ "$var_value" = "1" ]; then
+                checkbox="${GREEN}[✓]${NC}"
+            else
+                checkbox="${YELLOW}[ ]${NC}"
+            fi
+
+            # Resaltar línea actual
+            if [ $i -eq $current_index ]; then
+                line_color="${BOLD}${CYAN}"
+                line_end="${NC}"
+                echo -e "  ${BLUE}>${NC} ${checkbox} ${line_color}${MENU_STEP_NAMES[$i]}${line_end}"
+            else
+                echo -e "    ${checkbox} ${MENU_STEP_NAMES[$i]}"
+            fi
+        done
+
+        # Contar pasos activos
+        local active_count=0
+        for var_name in "${MENU_STEP_VARS[@]}"; do
+            [ "${!var_name}" = "1" ] && ((active_count++))
+        done
+
+        # Mostrar descripción del paso actual
+        echo ""
+        echo -e "  ─────────────────────────────────────────────────────────────"
+        echo -e "  ${CYAN}💡 ${MENU_STEP_DESCRIPTIONS[$current_index]}${NC}"
+        echo -e "  ─────────────────────────────────────────────────────────────"
+        echo ""
+        echo -e "  ${GREEN}${ICON_ROCKET} Pasos seleccionados: ${BOLD}${active_count}${NC}${GREEN} de ${total_items}${NC}"
+
+        # Mostrar estado de configuración guardada
+        if config_exists; then
+            echo -e "  ${MAGENTA}💾 Configuración guardada: ${BOLD}Sí${NC} ${MAGENTA}(${CONFIG_FILE})${NC}"
+        else
+            echo -e "  ${YELLOW}💾 Configuración guardada: No${NC}"
+        fi
+        echo ""
+        echo -e "  ${BLUE}[ENTER]${NC} Ejecutar  ${BLUE}[A]${NC} Todos  ${BLUE}[N]${NC} Ninguno  ${BLUE}[G]${NC} Guardar  ${BLUE}[D]${NC} Borrar config  ${BLUE}[Q]${NC} Salir"
+
+        # Leer tecla
+        local key=""
+        IFS= read -rsn1 key
+
+        # Detectar secuencias de escape (flechas)
+        if [[ "$key" == $'\x1b' ]]; then
+            read -rsn2 -t 0.1 key
+            case "$key" in
+                '[A') # Flecha arriba
+                    ((current_index--))
+                    [ $current_index -lt 0 ] && current_index=$((total_items - 1))
+                    ;;
+                '[B') # Flecha abajo
+                    ((current_index++))
+                    [ $current_index -ge $total_items ] && current_index=0
+                    ;;
+            esac
+        # Espacio - toggle opción actual (comparación explícita)
+        elif [[ "$key" == " " ]]; then
+            local var_name="${MENU_STEP_VARS[$current_index]}"
+            if [ "${!var_name}" = "1" ]; then
+                eval "$var_name=0"
+            else
+                eval "$var_name=1"
+            fi
+        # Enter - ejecutar (string vacío después de read)
+        elif [[ "$key" == "" ]]; then
+            menu_running=false
+        # Otras teclas
+        else
+            case "$key" in
+                'a'|'A') # Activar todos
+                    for var_name in "${MENU_STEP_VARS[@]}"; do
+                        eval "$var_name=1"
+                    done
+                    ;;
+                'n'|'N') # Desactivar todos
+                    for var_name in "${MENU_STEP_VARS[@]}"; do
+                        eval "$var_name=0"
+                    done
+                    ;;
+                'g'|'G') # Guardar configuración
+                    if save_config; then
+                        # Mostrar mensaje temporal
+                        tput cup $(($(tput lines)-2)) 0
+                        echo -e "  ${GREEN}${BOLD}✓ Configuración guardada en ${CONFIG_FILE}${NC}          "
+                        sleep 1
+                    fi
+                    ;;
+                'd'|'D') # Borrar configuración guardada
+                    if config_exists; then
+                        delete_config
+                        tput cup $(($(tput lines)-2)) 0
+                        echo -e "  ${YELLOW}✓ Configuración eliminada${NC}                              "
+                        sleep 1
+                    fi
+                    ;;
+                'q'|'Q') # Salir
+                    tput cnorm 2>/dev/null
+                    die "Cancelado por el usuario"
+                    ;;
+            esac
+        fi
+    done
+
+    # Restaurar cursor
+    tput cnorm 2>/dev/null
+
+    # Recontar pasos activos después de la selección
+    count_active_steps
+
+    # Mostrar confirmación
+    clear
+    echo -e "${GREEN}${BOLD}✓ Configuración guardada${NC}"
+    echo -e "  Se ejecutarán ${BOLD}$TOTAL_STEPS${NC} pasos."
+    echo ""
+    sleep 1
 }
 
 check_disk_space() {
@@ -1316,6 +1572,10 @@ while [[ $# -gt 0 ]]; do
             QUIET=true
             shift
             ;;
+        --no-menu)
+            NO_MENU=true
+            shift
+            ;;
         --help)
             cat << 'EOF'
 Mantenimiento Integral para Distribuciones basadas en Debian/Ubuntu
@@ -1333,6 +1593,7 @@ Opciones:
   --dry-run          Simular ejecución sin hacer cambios reales
   -y, --unattended   Modo desatendido sin confirmaciones
   --no-backup        No crear backup de configuraciones
+  --no-menu          Omitir menú interactivo (usar config por defecto)
   --quiet            Modo silencioso (solo logs)
   --help             Mostrar esta ayuda
 
@@ -1374,13 +1635,31 @@ check_lock
 # Detectar distribución (debe ejecutarse antes de print_header)
 detect_distro
 
-# Contar y validar pasos
+# Cargar configuración guardada si existe
+if config_exists; then
+    load_config
+    log "INFO" "Configuración cargada desde $CONFIG_FILE"
+fi
+
+# Contar pasos iniciales
 count_active_steps
+
+# Mostrar configuración según modo de ejecución
+if [ "$UNATTENDED" = false ] && [ "$QUIET" = false ] && [ "$NO_MENU" = false ]; then
+    # Modo interactivo: mostrar menú de configuración
+    show_interactive_menu
+else
+    # Modo no interactivo: mostrar resumen y confirmar
+    print_header
+    show_step_summary
+fi
+
+# Validar dependencias después de la configuración
 validate_step_dependencies
 
-# Mostrar configuración
-print_header
-show_step_summary
+# Mostrar header antes de ejecutar (si usamos menú interactivo ya se limpió)
+[ "$QUIET" = false ] && print_header
+
 check_disk_space
 
 # Ejecutar pasos configurados

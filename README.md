@@ -22,11 +22,11 @@ Coleccion de scripts de mantenimiento y actualizacion para distribuciones basada
 
 ### autoclean.sh - Script Principal (RECOMENDADO)
 
-**Version:** 2025.7 - "Paranoid Edition - Multi-Distro"
+**Version:** 2025.8 - "Paranoid Edition - Multi-Distro + Interactive Menu"
 **Ultima revision:** Diciembre 2025
 **Autor:** Homero Thompson del Lago del Terror (Enhanced by Claude)
 
-Script de mantenimiento integral y paranoico para distribuciones basadas en Debian/Ubuntu con enfasis en seguridad, control granular y **deteccion automatica de distribucion**.
+Script de mantenimiento integral y paranoico para distribuciones basadas en Debian/Ubuntu con enfasis en seguridad, control granular, **deteccion automatica de distribucion** y **menu interactivo de configuracion**.
 
 ---
 
@@ -53,6 +53,13 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 ---
 
 ## Caracteristicas Principales
+
+### Nuevas en v2025.8
+
+- **Menu interactivo de configuracion**: Interfaz TUI con navegacion por flechas para seleccionar que pasos ejecutar
+- **Configuracion persistente**: Guarda tu configuracion preferida y se carga automaticamente en cada ejecucion
+- **Controles intuitivos**: Usa flechas ↑/↓, ESPACIO para toggle, ENTER para ejecutar
+- **Descripcion en tiempo real**: Muestra ayuda contextual de cada paso mientras navegas
 
 ### Nuevas en v2025.7
 
@@ -166,6 +173,62 @@ STEP_UPDATE_SNAP=0
 
 ---
 
+## Menu Interactivo
+
+Al ejecutar el script sin argumentos, se muestra un menu interactivo que permite seleccionar que pasos ejecutar:
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║           CONFIGURACIÓN DE PASOS - MENÚ INTERACTIVO           ║
+╚═══════════════════════════════════════════════════════════════╝
+
+  Usa ↑/↓ para navegar, ESPACIO para activar/desactivar, ENTER para ejecutar
+
+  > [✓] Verificar conectividad
+    [✓] Verificar dependencias
+    [✓] Backup configuraciones (tar)
+    [✓] Snapshot Timeshift 🛡️
+    [✓] Actualizar repositorios
+    [✓] Actualizar sistema (APT)
+    [✓] Actualizar Flatpak
+    [ ] Actualizar Snap
+    [✓] Verificar firmware
+    [✓] Limpieza APT
+    [✓] Limpieza kernels
+    [✓] Limpieza disco/logs
+    [✓] Verificar reinicio
+
+  ─────────────────────────────────────────────────────────────
+  💡 Verifica conexión a internet antes de continuar
+  ─────────────────────────────────────────────────────────────
+
+  💾 Configuración guardada: Sí (autoclean.conf)
+
+  [ENTER] Ejecutar  [A] Todos  [N] Ninguno  [G] Guardar  [D] Borrar config  [Q] Salir
+```
+
+### Controles del Menu
+
+| Tecla | Accion |
+|-------|--------|
+| ↑ / ↓ | Navegar entre opciones |
+| ESPACIO | Activar/desactivar paso seleccionado |
+| ENTER | Ejecutar con la configuracion actual |
+| A | Activar todos los pasos |
+| N | Desactivar todos los pasos |
+| G | Guardar configuracion actual |
+| D | Borrar configuracion guardada |
+| Q | Salir sin ejecutar |
+
+### Configuracion Persistente
+
+La configuracion se guarda en `autoclean.conf` en el mismo directorio del script:
+- Al presionar **G**, se guarda el estado actual de todos los pasos
+- Al iniciar el script, se carga automaticamente la configuracion guardada
+- Al presionar **D**, se elimina el archivo de configuracion (vuelve a valores por defecto)
+
+---
+
 ## Ejemplos de Uso
 
 **Escenario 1: Mantenimiento completo semanal**
@@ -251,6 +314,7 @@ Opciones:
   --dry-run          Simular ejecucion sin hacer cambios reales
   -y, --unattended   Modo desatendido sin confirmaciones
   --no-backup        No crear backup de configuraciones
+  --no-menu          Omitir menu interactivo (usar config guardada o por defecto)
   --quiet            Modo silencioso (solo logs)
   --help             Mostrar ayuda completa
 ```
@@ -416,8 +480,8 @@ Enhanced by Claude AI
 
 - **Scripts totales:** 4
 - **Script principal:** autoclean.sh
-- **Version actual:** 2025.7
-- **Lineas de codigo:** ~1400+
+- **Version actual:** 2025.8
+- **Lineas de codigo:** ~1700+
 - **Pasos modulares:** 13
 - **Distribuciones soportadas:** 7+ (auto-deteccion)
 - **Compatible con:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
@@ -430,7 +494,7 @@ Enhanced by Claude AI
 - [ ] Integracion con Discord/Slack para notificaciones
 - [ ] Dashboard web para visualizar logs
 - [ ] Sistema de plugins para extensibilidad
-- [ ] Interfaz TUI (Terminal User Interface) con dialogos interactivos
+- [x] ~~Interfaz TUI (Terminal User Interface) con dialogos interactivos~~ **Completado en v2025.8**
 
 ---
 
