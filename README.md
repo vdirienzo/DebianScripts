@@ -22,9 +22,9 @@ Coleccion de scripts de mantenimiento y actualizacion para distribuciones basada
 
 ### autoclean.sh - Script Principal (RECOMENDADO)
 
-**Version:** 2025.8 - "Paranoid Edition - Multi-Distro + Interactive Menu"
+**Version:** 2025
 **Ultima revision:** Diciembre 2025
-**Autor:** Homero Thompson del Lago del Terror (Enhanced by Claude)
+**Autor:** Homero Thompson del Lago del Terror
 
 Script de mantenimiento integral y paranoico para distribuciones basadas en Debian/Ubuntu con enfasis en seguridad, control granular, **deteccion automatica de distribucion** y **menu interactivo de configuracion**.
 
@@ -457,7 +457,6 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 ## Autor
 
 **Homero Thompson del Lago del Terror**
-Enhanced by Claude AI
 
 ---
 
@@ -465,7 +464,7 @@ Enhanced by Claude AI
 
 - **Scripts totales:** 1
 - **Script principal:** autoclean.sh
-- **Version actual:** 2025.8
+- **Version actual:** 2025
 - **Lineas de codigo:** ~1700+
 - **Pasos modulares:** 13
 - **Distribuciones soportadas:** 7+ (auto-deteccion)

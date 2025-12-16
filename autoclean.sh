@@ -2,9 +2,9 @@
 # ============================================================================
 # Script de Mantenimiento Integral para Distribuciones basadas en Debian
 # ============================================================================
-# Versión: 2025.7 - "Paranoid Edition - Multi-Distro"
+# Versión: 2025 
 # Última revisión: Diciembre 2025
-# Autor: Homero Thompson del Lago del Terror (Enhanced by Claude)
+# Autor: Homero Thompson del Lago del Terror 
 #
 # ====================== DISTRIBUCIONES SOPORTADAS ======================
 # Este script detecta y soporta automáticamente las siguientes distribuciones:
