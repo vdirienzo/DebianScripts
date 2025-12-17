@@ -418,30 +418,30 @@ show_language_selector() {
 
     while true; do
         clear
-        echo -e "${BLUE}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+        print_box_top
         print_box_center "${BOLD}SELECT LANGUAGE / SELECCIONAR IDIOMA${NC}"
-        echo -e "${BLUE}╠$(printf '═%.0s' $(seq 1 $BOX_INNER))╣${NC}"
+        print_box_sep
         print_box_line ""
 
         # Mostrar idiomas con el seleccionado resaltado
         for i in "${!AVAILABLE_LANGS[@]}"; do
             if [[ $i -eq $selected ]]; then
-                print_box_line "   ${BRIGHT_GREEN}▶ ${LANG_NAMES[$i]}${NC}"
+                print_box_line "   ${BRIGHT_CYAN}> [x] ${LANG_NAMES[$i]}${NC}"
             else
-                print_box_line "     ${DIM}${LANG_NAMES[$i]}${NC}"
+                print_box_line "     ${DIM}[ ] ${LANG_NAMES[$i]}${NC}"
             fi
         done
 
         print_box_line ""
-        echo -e "${BLUE}╠$(printf '═%.0s' $(seq 1 $BOX_INNER))╣${NC}"
-        print_box_line "[↑/↓] Navigate  [ENTER] Select  [ESC] Cancel"
-        echo -e "${BLUE}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
+        print_box_sep
+        print_box_center "${CYAN}[ENTER]${NC} Select  ${CYAN}[ESC]${NC} Back"
+        print_box_bottom
 
         # Leer tecla
         local key=""
         read -rsn1 key
 
-        # Detectar secuencias de escape (flechas)
+        # Detectar secuencias de escape (flechas o ESC solo)
         if [[ "$key" == $'\x1b' ]]; then
             read -rsn2 -t 0.1 key
             case "$key" in
@@ -452,6 +452,9 @@ show_language_selector() {
                 '[B') # Flecha abajo
                     ((selected++))
                     [[ $selected -ge $total ]] && selected=0
+                    ;;
+                '') # ESC solo (sin secuencia de flecha)
+                    return
                     ;;
             esac
         elif [[ "$key" == "" ]]; then
@@ -1015,11 +1018,11 @@ show_interactive_menu() {
         # Limpiar pantalla y mostrar interfaz enterprise
         clear
         print_box_top
-        print_box_center "${BOLD}CONFIGURACIÓN DE MANTENIMIENTO${NC}"
+        print_box_center "${BOLD}${MENU_TITLE}${NC}"
         print_box_sep
         print_box_center "${DISTRO_NAME} | ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
         print_box_sep
-        print_box_line "${BOLD}PASOS${NC} ${DIM}(←/→ columnas, ↑/↓ filas, ESPACIO toggle, ENTER ejecutar)${NC}"
+        print_box_line "${BOLD}${MENU_STEPS_TITLE}${NC} ${DIM}${MENU_STEPS_HELP}${NC}"
 
         # Mostrar pasos en 3 columnas (5 filas)
         # Cada celda: 15 chars fijos (prefix[1] + bracket[1] + check[1] + bracket[1] + name[11])
@@ -1062,7 +1065,7 @@ show_interactive_menu() {
         print_box_sep
         print_box_line "${CYAN}>${NC} ${MENU_STEP_DESCRIPTIONS[$current_index]:0:68}"
         print_box_sep
-        print_box_line "Seleccionados: ${GREEN}${active_count}${NC}/${total_items}    Perfil: $(config_exists && echo "${GREEN}Guardado${NC}" || echo "${DIM}Sin guardar${NC}")"
+        print_box_line "${MENU_SELECTED}: ${GREEN}${active_count}${NC}/${total_items}    ${MENU_PROFILE}: $(config_exists && echo "${GREEN}${MENU_PROFILE_SAVED}${NC}" || echo "${DIM}${MENU_PROFILE_UNSAVED}${NC}")"
         print_box_sep
         print_box_center "${CYAN}[ENTER]${NC} ${MENU_CTRL_ENTER} ${CYAN}[A]${NC} ${MENU_CTRL_ALL} ${CYAN}[N]${NC} ${MENU_CTRL_NONE} ${CYAN}[G]${NC} ${MENU_CTRL_SAVE} ${CYAN}[L]${NC} ${MENU_CTRL_LANG} ${CYAN}[Q]${NC} ${MENU_CTRL_QUIT}"
         print_box_bottom
