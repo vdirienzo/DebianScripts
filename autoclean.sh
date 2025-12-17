@@ -192,19 +192,19 @@ SUPPORTED_DISTROS="debian ubuntu linuxmint pop elementary zorin kali"
 # ============================================================================
 
 # Estados visuales de cada paso
-STAT_CONNECTIVITY="⏳"
-STAT_DEPENDENCIES="⏳"
-STAT_BACKUP_TAR="⏳"
-STAT_SNAPSHOT="⏳"
-STAT_REPO="⏳"
-STAT_UPGRADE="⏳"
-STAT_FLATPAK="⏳"
-STAT_SNAP="⏳"
-STAT_FIRMWARE="⏳"
-STAT_CLEAN_APT="⏳"
-STAT_CLEAN_KERNEL="⏳"
-STAT_CLEAN_DISK="⏳"
-STAT_REBOOT="✅ No requerido"
+STAT_CONNECTIVITY="[..]"
+STAT_DEPENDENCIES="[..]"
+STAT_BACKUP_TAR="[..]"
+STAT_SNAPSHOT="[..]"
+STAT_REPO="[..]"
+STAT_UPGRADE="[..]"
+STAT_FLATPAK="[..]"
+STAT_SNAP="[..]"
+STAT_FIRMWARE="[..]"
+STAT_CLEAN_APT="[..]"
+STAT_CLEAN_KERNEL="[..]"
+STAT_CLEAN_DISK="[..]"
+STAT_REBOOT="[OK] No requerido"
 
 # Contadores y tiempo
 SPACE_BEFORE_ROOT=0
@@ -229,7 +229,7 @@ MENU_STEP_NAMES=(
     "Verificar conectividad"
     "Verificar dependencias"
     "Backup configuraciones (tar)"
-    "Snapshot Timeshift 🛡️"
+    "Snapshot Timeshift"
     "Actualizar repositorios"
     "Actualizar sistema (APT)"
     "Actualizar Flatpak"
@@ -338,13 +338,13 @@ MAGENTA='\033[0;35m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-ICON_OK="✅"
-ICON_FAIL="❌"
-ICON_SKIP="⏩"
-ICON_WARN="⚠️"
-ICON_SHIELD="🛡️"
-ICON_CLOCK="⏱️"
-ICON_ROCKET="🚀"
+ICON_OK="[OK]"
+ICON_FAIL="[XX]"
+ICON_SKIP="[--]"
+ICON_WARN="[!!]"
+ICON_SHIELD="[TF]"
+ICON_CLOCK=""
+ICON_ROCKET=""
 
 # ============================================================================
 # UI ENTERPRISE - Colores adicionales y controles
@@ -541,17 +541,17 @@ log() {
     [ "$QUIET" = true ] && return
     
     case "$level" in
-        ERROR)   echo -e "${RED}❌ ${message}${NC}" ;;
-        WARN)    echo -e "${YELLOW}⚠️  ${message}${NC}" ;;
-        SUCCESS) echo -e "${GREEN}✅ ${message}${NC}" ;;
-        INFO)    echo -e "${CYAN}ℹ️  ${message}${NC}" ;;
+        ERROR)   echo -e "${RED}[XX] ${message}${NC}" ;;
+        WARN)    echo -e "${YELLOW}[!!] ${message}${NC}" ;;
+        SUCCESS) echo -e "${GREEN}[OK] ${message}${NC}" ;;
+        INFO)    echo -e "${CYAN}[ii] ${message}${NC}" ;;
         *)       echo "$message" ;;
     esac
 }
 
 die() {
     log "ERROR" "CRÍTICO: $1"
-    echo -e "\n${RED}${BOLD}⛔ PROCESO ABORTADO: $1${NC}"
+    echo -e "\n${RED}${BOLD}[XX] PROCESO ABORTADO: $1${NC}"
     rm -f "$LOCK_FILE" 2>/dev/null
     exit 1
 }
@@ -593,7 +593,7 @@ print_header() {
     echo -e "  ${CYAN}Distribucion:${NC} ${BOLD}${DISTRO_NAME}${NC}"
     echo -e "  ${CYAN}Familia:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
     echo ""
-    [ "$DRY_RUN" = true ] && echo -e "${YELLOW}🔍 MODO DRY-RUN ACTIVADO${NC}\n"
+    [ "$DRY_RUN" = true ] && echo -e "${YELLOW}[??] MODO DRY-RUN ACTIVADO${NC}\n"
 }
 
 cleanup() {
@@ -680,7 +680,7 @@ check_root() {
     if [ "$EUID" -ne 0 ]; then
         echo ""
         echo -e "${RED}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
-        echo -e "${RED}║  ❌ ERROR: Este script requiere permisos de root$(printf ' %.0s' $(seq 1 25))║${NC}"
+        echo -e "${RED}║  [XX] ERROR: Este script requiere permisos de root$(printf ' %.0s' $(seq 1 23))║${NC}"
         echo -e "${RED}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
         echo ""
         echo -e "  ${YELLOW}Uso correcto:${NC}"
@@ -699,7 +699,7 @@ check_lock() {
     if [ -f "$LOCK_FILE" ]; then
         local pid=$(cat "$LOCK_FILE" 2>/dev/null)
         if kill -0 "$pid" 2>/dev/null; then
-            echo -e "${RED}❌ Ya hay una instancia del script corriendo (PID: $pid)${NC}"
+            echo -e "${RED}[XX] Ya hay una instancia del script corriendo (PID: $pid)${NC}"
             exit 1
         fi
         rm -f "$LOCK_FILE"
@@ -708,7 +708,7 @@ check_lock() {
     
     # Verificación extra de locks de APT
     if fuser /var/lib/dpkg/lock* /var/lib/apt/lists/lock* 2>/dev/null | grep -q .; then
-        echo -e "${RED}❌ APT está ocupado. Cierra Synaptic/Discover e intenta de nuevo.${NC}"
+        echo -e "${RED}[XX] APT esta ocupado. Cierra Synaptic/Discover e intenta de nuevo.${NC}"
         rm -f "$LOCK_FILE"
         exit 1
     fi
@@ -743,7 +743,7 @@ validate_step_dependencies() {
     if [ "$STEP_CLEANUP_KERNELS" = 1 ] && [ "$STEP_SNAPSHOT_TIMESHIFT" = 0 ]; then
         log "WARN" "Limpieza de kernels sin snapshot de Timeshift puede ser riesgoso"
         if [ "$UNATTENDED" = false ]; then
-            echo -e "${YELLOW}⚠️  Vas a limpiar kernels sin crear snapshot de Timeshift.${NC}"
+            echo -e "${YELLOW}[!!] Vas a limpiar kernels sin crear snapshot de Timeshift.${NC}"
             read -p "¿Continuar de todos modos? (s/N): " -n 1 -r
             echo
             [[ ! $REPLY =~ ^[Ss]$ ]] && die "Abortado por el usuario"
@@ -780,7 +780,7 @@ show_step_summary() {
                 local icon
 
                 if [ "$var_value" = "1" ]; then
-                    icon="${GREEN}[✓]${NC}"
+                    icon="${GREEN}[x]${NC}"
                 else
                     icon="${DIM}[--]${NC}"
                 fi
@@ -1049,7 +1049,7 @@ step_check_dependencies() {
     fi
     
     if [ ${#missing[@]} -gt 0 ]; then
-        echo -e "${YELLOW}⚠️  Faltan ${#missing[@]} herramientas necesarias para los pasos activos:${NC}"
+        echo -e "${YELLOW}[!!] Faltan ${#missing[@]} herramientas necesarias para los pasos activos:${NC}"
         for i in "${!missing[@]}"; do
             echo -e "   • ${missing[$i]}: ${missing_names[$i]}"
         done
@@ -1172,7 +1172,7 @@ step_snapshot_timeshift() {
     if ! check_timeshift_configured; then
         echo ""
         echo -e "${YELLOW}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
-        echo -e "${YELLOW}║  ⚠️  TIMESHIFT NO ESTÁ CONFIGURADO$(printf ' %.0s' $(seq 1 39))║${NC}"
+        echo -e "${YELLOW}║  [!!] TIMESHIFT NO ESTA CONFIGURADO$(printf ' %.0s' $(seq 1 38))║${NC}"
         echo -e "${YELLOW}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
         echo ""
         echo -e "  Timeshift está instalado pero necesita configuración inicial."
@@ -1285,7 +1285,7 @@ step_upgrade_system() {
         local remove_count=$(echo "$simulation" | grep "^Remv" | wc -l)
         
         if [ "$remove_count" -gt "$MAX_REMOVALS_ALLOWED" ]; then
-            echo -e "\n${RED}${BOLD}⚠️  ALERTA DE SEGURIDAD: APT propone eliminar $remove_count paquetes${NC}"
+            echo -e "\n${RED}${BOLD}[!!] ALERTA DE SEGURIDAD: APT propone eliminar $remove_count paquetes${NC}"
             echo "$simulation" | grep "^Remv" | head -n 5 | sed 's/^Remv/ - Eliminando:/'
             
             if [ "$UNATTENDED" = true ]; then
@@ -1497,10 +1497,10 @@ step_cleanup_kernels() {
     
     if [ -n "$kernels_to_remove" ]; then
         echo "→ Kernels a mantener:"
-        echo "$kernels_to_keep" | sed 's/^/   ✓ /'
+        echo "$kernels_to_keep" | sed 's/^/   [x] /'
         echo ""
         echo "→ Kernels a eliminar:"
-        echo "$kernels_to_remove" | tr ' ' '\n' | sed 's/^/   ✗ /'
+        echo "$kernels_to_remove" | tr ' ' '\n' | sed 's/^/   [-] /'
         
         # Confirmación en modo interactivo
         if [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
@@ -1743,16 +1743,16 @@ show_final_summary() {
         if [ "$step_enabled" != "1" ]; then
             STEP_STATUS_ARRAY[$i]="skipped"
             ((skipped_count++))
-        elif [[ "$stat_value" == *"$ICON_OK"* ]] || [[ "$stat_value" == *"✅"* ]]; then
+        elif [[ "$stat_value" == *"$ICON_OK"* ]] || [[ "$stat_value" == *"[OK]"* ]]; then
             STEP_STATUS_ARRAY[$i]="success"
             ((success_count++))
-        elif [[ "$stat_value" == *"$ICON_FAIL"* ]] || [[ "$stat_value" == *"❌"* ]]; then
+        elif [[ "$stat_value" == *"$ICON_FAIL"* ]] || [[ "$stat_value" == *"[XX]"* ]]; then
             STEP_STATUS_ARRAY[$i]="error"
             ((error_count++))
-        elif [[ "$stat_value" == *"$ICON_WARN"* ]] || [[ "$stat_value" == *"⚠"* ]] || [[ "$stat_value" == *"WARN"* ]]; then
+        elif [[ "$stat_value" == *"$ICON_WARN"* ]] || [[ "$stat_value" == *"[!!]"* ]] || [[ "$stat_value" == *"WARN"* ]]; then
             STEP_STATUS_ARRAY[$i]="warning"
             ((warning_count++))
-        elif [[ "$stat_value" == *"$ICON_SKIP"* ]] || [[ "$stat_value" == *"⏩"* ]] || [[ "$stat_value" == *"Omitido"* ]]; then
+        elif [[ "$stat_value" == *"$ICON_SKIP"* ]] || [[ "$stat_value" == *"[--]"* ]] || [[ "$stat_value" == *"Omitido"* ]]; then
             STEP_STATUS_ARRAY[$i]="skipped"
             ((skipped_count++))
         else
@@ -1833,7 +1833,7 @@ show_final_summary() {
 
     # Advertencias fuera del box
     if [[ "$STAT_FIRMWARE" == *"DISPONIBLE"* ]]; then
-        echo -e "${YELLOW}💡 FIRMWARE: Hay actualizaciones de BIOS/Dispositivos disponibles.${NC}"
+        echo -e "${YELLOW}[!!] FIRMWARE: Hay actualizaciones de BIOS/Dispositivos disponibles.${NC}"
         echo "   → Para instalar: sudo fwupdmgr update"
         echo ""
     fi
