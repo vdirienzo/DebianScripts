@@ -1,0 +1,344 @@
+# ============================================================================
+# Autoclean - Fichier de Langue Francais (fr)
+# ============================================================================
+# Encoding: UTF-8
+# ============================================================================
+
+# === GENERAL ===
+LANG_NAME="Francais"
+LANG_CODE="fr"
+
+# === MENU TITLES ===
+MENU_TITLE="CONFIGURATION DE MAINTENANCE"
+MENU_SYSTEM_TITLE="MAINTENANCE SYSTEME"
+MENU_SUMMARY_TITLE="RESUME D'EXECUTION"
+MENU_STEPS_TITLE="ETAPES"
+MENU_STEPS_HELP="(fleches pour naviguer, ESPACE basculer, ENTREE executer)"
+MENU_LANGUAGE_TITLE="SELECTIONNER LA LANGUE"
+MENU_LANGUAGE_PROMPT="Utilisez les fleches pour naviguer, ENTREE pour selectionner"
+
+# === MENU STEP NAMES (full) ===
+STEP_NAME_1="Verifier connectivite"
+STEP_NAME_2="Verifier dependances"
+STEP_NAME_3="Sauvegarde configs (tar)"
+STEP_NAME_4="Snapshot Timeshift"
+STEP_NAME_5="Mettre a jour depots"
+STEP_NAME_6="Mettre a jour systeme (APT)"
+STEP_NAME_7="Mettre a jour Flatpak"
+STEP_NAME_8="Mettre a jour Snap"
+STEP_NAME_9="Verifier firmware"
+STEP_NAME_10="Nettoyage APT"
+STEP_NAME_11="Nettoyage noyaux"
+STEP_NAME_12="Nettoyage disque/logs"
+STEP_NAME_13="Verifier redemarrage"
+
+# === MENU STEP NAMES (short for grid) ===
+STEP_SHORT_1="Connect."
+STEP_SHORT_2="Depend."
+STEP_SHORT_3="Backup"
+STEP_SHORT_4="Snapshot"
+STEP_SHORT_5="Depots"
+STEP_SHORT_6="MAJ"
+STEP_SHORT_7="Flatpak"
+STEP_SHORT_8="Snap"
+STEP_SHORT_9="Firmware"
+STEP_SHORT_10="APT Net"
+STEP_SHORT_11="Noyaux"
+STEP_SHORT_12="Disque"
+STEP_SHORT_13="Reboot"
+
+# === MENU STEP DESCRIPTIONS ===
+STEP_DESC_1="Verifier la connexion internet avant de continuer"
+STEP_DESC_2="Installer les outils necessaires (timeshift, needrestart, etc.)"
+STEP_DESC_3="Sauvegarder les configurations APT dans /var/backups"
+STEP_DESC_4="Creer un snapshot avec Timeshift pour rollback (RECOMMANDE)"
+STEP_DESC_5="Executer apt update pour rafraichir la liste des paquets"
+STEP_DESC_6="Executer apt full-upgrade pour mettre a jour les paquets"
+STEP_DESC_7="Mettre a jour les applications installees avec Flatpak"
+STEP_DESC_8="Mettre a jour les applications installees avec Snap"
+STEP_DESC_9="Verifier les mises a jour BIOS/peripheriques (fwupd)"
+STEP_DESC_10="Supprimer les paquets orphelins et residuels"
+STEP_DESC_11="Supprimer les anciens noyaux (garde 3)"
+STEP_DESC_12="Nettoyer les anciens logs et le cache systeme"
+STEP_DESC_13="Detecter si le systeme doit redemarrer"
+
+# === MENU CONTROLS ===
+MENU_CTRL_ENTER="Executer"
+MENU_CTRL_ALL="Tous"
+MENU_CTRL_NONE="Aucun"
+MENU_CTRL_SAVE="Enreg."
+MENU_CTRL_DELETE="Suppr."
+MENU_CTRL_LANG="Langue"
+MENU_CTRL_QUIT="Quitter"
+
+# === MENU STATUS ===
+MENU_SELECTED="Selectionnes"
+MENU_PROFILE="Profil"
+MENU_PROFILE_SAVED="Enregistre"
+MENU_PROFILE_UNSAVED="Non enregistre"
+MENU_TOTAL="Total"
+MENU_STEPS="etapes"
+MENU_EST_TIME="Temps estime"
+MENU_MIN="min"
+
+# === PROMPTS ===
+PROMPT_CONTINUE="Continuer? (o/N):"
+PROMPT_YES_PATTERN="^[OoYy]$"
+PROMPT_INSTALL_TOOLS="Voulez-vous les installer automatiquement? (o/N):"
+PROMPT_SKIP_SNAPSHOT="Voulez-vous IGNORER la creation du Snapshot Timeshift?"
+PROMPT_SKIP_INSTRUCTIONS="Tapez 'o' pour IGNORER, autre touche pour CREER:"
+PROMPT_CONTINUE_NO_SNAPSHOT="Voulez-vous continuer SANS snapshot? C'est RISQUE."
+PROMPT_CONFIRM_SI="Tapez 'OUI' (majuscules) pour continuer:"
+PROMPT_CONFIRM_YES="OUI"
+PROMPT_CONTINUE_CONFIG="Continuer avec cette configuration? (o/N):"
+PROMPT_DELETE_KERNELS="Continuer la suppression? (o/N):"
+PROMPT_REBOOT_NOW="Voulez-vous redemarrer maintenant? (o/N):"
+
+# === MESSAGES - GENERAL ===
+MSG_CHECKING="Verification"
+MSG_VERIFYING="Verification"
+MSG_CREATING="Creation"
+MSG_UPDATING="Mise a jour"
+MSG_CLEANING="Nettoyage"
+MSG_COMPLETED="Termine"
+MSG_FAILED="Echec"
+MSG_SKIPPED="Ignore"
+MSG_OK="OK"
+MSG_ERROR="ERREUR"
+MSG_WARNING="ATTENTION"
+MSG_INFO="INFO"
+MSG_SUCCESS="SUCCES"
+
+# === MESSAGES - CONNECTIVITY ===
+MSG_CHECKING_CONNECTIVITY="Verification de la connectivite..."
+MSG_CHECKING_CONNECTION_TO="Verification de la connexion a"
+MSG_CONNECTION_OK="Connexion internet: OK"
+MSG_CONNECTION_WARN="Miroir specifique inaccessible, mais connexion internet existante"
+MSG_NO_CONNECTION="Pas de connexion internet. Verifiez votre reseau."
+
+# === MESSAGES - DEPENDENCIES ===
+MSG_CHECKING_TOOLS="Verification des outils recommandes..."
+MSG_TOOLS_SKIPPED="Outils ignores (etapes desactivees)"
+MSG_MISSING_TOOLS="%d outils manquants requis pour les etapes actives:"
+MSG_INSTALLING_TOOLS="Installation des outils..."
+MSG_TOOLS_INSTALLED="Outils installes avec succes"
+MSG_TOOLS_PARTIAL="Certains outils ont echoue a l'installation"
+MSG_TOOLS_OK="Tous les outils necessaires sont installes"
+MSG_USER_SKIPPED_TOOLS="L'utilisateur a decide de continuer sans installer les outils"
+
+# === MESSAGES - BACKUP ===
+MSG_CREATING_BACKUP="Creation de la sauvegarde de configuration (Tar)..."
+MSG_BACKUP_CREATED="Sauvegarde creee"
+MSG_BACKUP_FAILED="Erreur lors de la creation de la sauvegarde Tar"
+
+# === MESSAGES - TIMESHIFT ===
+MSG_CREATING_SNAPSHOT="Creation du Snapshot Systeme (Timeshift)..."
+MSG_TIMESHIFT_NOT_INSTALLED="Timeshift n'est pas installe"
+MSG_TIMESHIFT_NOT_CONFIGURED="TIMESHIFT N'EST PAS CONFIGURE"
+MSG_TIMESHIFT_CONFIG_NEEDED="Timeshift est installe mais necessite une configuration initiale."
+MSG_TIMESHIFT_CONFIG_INSTRUCTIONS="Pour le configurer, executez:"
+MSG_TIMESHIFT_CONFIG_GUI="(interface graphique)"
+MSG_TIMESHIFT_CONFIG_CLI="(terminal)"
+MSG_TIMESHIFT_MUST_CONFIG="Vous devez configurer:"
+MSG_TIMESHIFT_CONFIG_TYPE="Type de snapshot (RSYNC recommande pour ext4/xfs)"
+MSG_TIMESHIFT_CONFIG_DEVICE="Peripherique/partition pour stocker les sauvegardes"
+MSG_TIMESHIFT_SKIPPED_USER="L'utilisateur a ignore le snapshot Timeshift"
+MSG_TIMESHIFT_SKIPPED_NOCONFIG="Timeshift installe mais non configure - etape ignoree"
+MSG_SNAPSHOT_CREATED="Snapshot Timeshift cree avec succes"
+MSG_SNAPSHOT_FAILED="Erreur lors de la creation du snapshot Timeshift"
+MSG_CONTINUE_WITHOUT_SNAPSHOT="Appuyez sur une touche pour continuer sans snapshot..."
+MSG_USER_CONTINUED_NO_SNAPSHOT="L'utilisateur a decide de continuer sans snapshot"
+MSG_ABORTED_NO_SNAPSHOT="Impossible de creer le snapshot Timeshift. Abandon par securite."
+
+# === MESSAGES - REPOSITORIES ===
+MSG_UPDATING_REPOS="Mise a jour de la liste des depots..."
+MSG_REPOS_UPDATED="Depots mis a jour"
+MSG_REPOS_ERROR="Erreur critique lors de la mise a jour des depots"
+
+# === MESSAGES - UPGRADE ===
+MSG_ANALYZING_UPDATES="Analyse et application des mises a jour systeme..."
+MSG_PACKAGES_TO_UPDATE="%d paquets a mettre a jour"
+MSG_SIMULATING_UPGRADE="Simulation de la mise a jour pour detecter les suppressions..."
+MSG_SECURITY_ALERT="ALERTE SECURITE: APT propose de supprimer %d paquets"
+MSG_REMOVING="Suppression:"
+MSG_HAVE_SNAPSHOT="Avez-vous un snapshot valide? Voulez-vous continuer?"
+MSG_ABORTED_MASS_REMOVAL="Abandon automatique en raison du risque de suppression massive en mode sans surveillance."
+MSG_CANCELLED_BY_USER="Annule par l'utilisateur."
+MSG_PACKAGES_UPDATED="%d paquets mis a jour avec succes"
+MSG_SYSTEM_UPTODATE="Systeme deja a jour"
+MSG_UPGRADE_ERROR="Erreur lors de la mise a jour des paquets"
+
+# === MESSAGES - FLATPAK ===
+MSG_UPDATING_FLATPAK="Mise a jour des applications Flatpak..."
+MSG_FLATPAK_NOT_INSTALLED="Flatpak n'est pas installe"
+MSG_FLATPAK_UPDATED="Flatpak mis a jour et nettoye"
+MSG_FLATPAK_ERROR="Erreur lors de la mise a jour de Flatpak"
+
+# === MESSAGES - SNAP ===
+MSG_UPDATING_SNAP="Mise a jour des applications Snap..."
+MSG_SNAP_NOT_INSTALLED="Snap n'est pas installe"
+MSG_SNAP_UPDATED="Snap mis a jour"
+MSG_SNAP_ERROR="Erreur lors de la mise a jour de Snap"
+
+# === MESSAGES - FIRMWARE ===
+MSG_CHECKING_FIRMWARE="Verification des mises a jour firmware..."
+MSG_FWUPD_NOT_INSTALLED="fwupd n'est pas installe"
+MSG_FIRMWARE_METADATA_UPDATED="Metadonnees firmware mises a jour"
+MSG_FIRMWARE_METADATA_DAYS="Metadonnees mises a jour il y a %d jours"
+MSG_FIRMWARE_AVAILABLE="Mises a jour firmware disponibles!"
+MSG_FIRMWARE_UPTODATE="Firmware a jour"
+MSG_FIRMWARE_REFRESH_ERROR="Erreur lors de la mise a jour des metadonnees firmware"
+
+# === MESSAGES - APT CLEANUP ===
+MSG_CLEANING_APT="Nettoyage des paquets orphelins et residuels..."
+MSG_ORPHANS_REMOVED="Paquets orphelins supprimes"
+MSG_RESIDUALS_PURGED="%d fichiers residuels purges"
+MSG_NO_RESIDUALS="Aucun fichier residuel"
+MSG_APT_CACHE_CLEANED="Cache APT nettoye"
+MSG_APT_CLEANUP_OK="Nettoyage APT termine"
+MSG_APT_CLEANUP_ERROR="Erreur nettoyage APT"
+
+# === MESSAGES - KERNELS ===
+MSG_CLEANING_KERNELS="Nettoyage securise des anciens noyaux..."
+MSG_CURRENT_KERNEL="Noyau actuel"
+MSG_KERNEL_IN_USE="Noyau en cours d'utilisation"
+MSG_INSTALLED_KERNELS="Noyaux installes"
+MSG_NO_KERNELS_FOUND="Aucun noyau trouve a gerer"
+MSG_KERNELS_TO_KEEP="Noyaux a conserver:"
+MSG_KERNELS_TO_REMOVE="Noyaux a supprimer:"
+MSG_USER_CANCELLED_KERNELS="L'utilisateur a annule le nettoyage des noyaux"
+MSG_KERNELS_REMOVED="Anciens noyaux supprimes"
+MSG_GRUB_UPDATED="GRUB mis a jour"
+MSG_NO_KERNELS_TO_CLEAN="Aucun ancien noyau a nettoyer"
+MSG_KERNEL_CLEANUP_ERROR="Erreur lors de la suppression des noyaux"
+
+# === MESSAGES - DISK CLEANUP ===
+MSG_CLEANING_DISK="Nettoyage des logs et du cache systeme..."
+MSG_JOURNALCTL_REDUCED="Logs journalctl reduits"
+MSG_TEMP_FILES_DELETED="Anciens fichiers temporaires supprimes"
+MSG_THUMBNAILS_CLEANED="Cache des miniatures nettoye (%d utilisateurs)"
+MSG_DISK_CLEANUP_OK="Nettoyage disque termine"
+
+# === MESSAGES - REBOOT CHECK ===
+MSG_CHECKING_REBOOT="Verification de la necessite de redemarrage..."
+MSG_REBOOT_FILE_DETECTED="Fichier /var/run/reboot-required detecte"
+MSG_FAILED_SERVICES="%d services en etat d'echec"
+MSG_ANALYZING_NEEDRESTART="Analyse du noyau et des services avec needrestart..."
+MSG_KERNEL_OUTDATED="Noyau obsolete detecte"
+MSG_KERNEL_UPTODATE="Noyau a jour"
+MSG_SERVICES_NEED_RESTART="%d services avec bibliotheques obsoletes detectes"
+MSG_NO_SERVICES_RESTART="Aucun service ne necessite de redemarrage"
+MSG_CRITICAL_LIBS_UPDATED="Bibliotheques critiques mises a jour dans cette session"
+MSG_CRITICAL_LIBS_STABLE="Bibliotheques systeme stables (UCSTA persistant, pas de nouveaux changements)"
+MSG_NO_CRITICAL_LIBS_CHANGES="Pas de changements dans les bibliotheques critiques"
+MSG_RESTARTING_SERVICES="Redemarrage automatique des services obsoletes..."
+MSG_NEEDRESTART_NOT_INSTALLED="needrestart non disponible (installation recommandee)"
+MSG_REBOOT_REQUIRED="REDEMARRAGE NECESSAIRE"
+MSG_REBOOT_NOT_REQUIRED="Redemarrage non necessaire"
+MSG_REBOOTING_IN="Redemarrage dans 5 secondes... (Ctrl+C pour annuler)"
+MSG_STAT_REQUIRED="NECESSAIRE"
+MSG_STAT_NOT_NEEDED="Non necessaire"
+
+# === MESSAGES - SUMMARY ===
+MSG_SUMMARY_STATUS="Statut"
+MSG_SUMMARY_DURATION="Duree"
+MSG_SUMMARY_COMPLETED="TERMINE"
+MSG_SUMMARY_COMPLETED_ERRORS="TERMINE AVEC ERREURS"
+MSG_SUMMARY_COMPLETED_WARNINGS="TERMINE AVEC AVERTISSEMENTS"
+MSG_SUMMARY_METRICS="METRIQUES"
+MSG_SUMMARY_COMPLETED_COUNT="Termines"
+MSG_SUMMARY_ERRORS="Erreurs"
+MSG_SUMMARY_SKIPPED="Ignores"
+MSG_SUMMARY_SPACE="Espace"
+MSG_SUMMARY_STEP_DETAIL="DETAIL DES ETAPES"
+MSG_SUMMARY_LOG="Journal"
+MSG_SUMMARY_BACKUPS="Sauvegardes"
+MSG_FIRMWARE_AVAILABLE_NOTE="FIRMWARE: Mises a jour BIOS/Peripherique disponibles."
+MSG_FIRMWARE_INSTALL_HINT="Pour installer: sudo fwupdmgr update"
+
+# === MESSAGES - ROOT CHECK ===
+MSG_ROOT_REQUIRED="Ce script necessite les permissions root"
+MSG_CORRECT_USAGE="Utilisation correcte:"
+MSG_AVAILABLE_OPTIONS="Options disponibles:"
+MSG_VIEW_HELP="Voir l'aide complete"
+MSG_SIMULATE_CHANGES="Simuler sans modifications"
+MSG_UNATTENDED_MODE="Mode sans surveillance"
+
+# === MESSAGES - LOCK ===
+MSG_ALREADY_RUNNING="Une autre instance du script est deja en cours (PID: %s)"
+MSG_APT_BUSY="APT est occupe. Fermez Synaptic/Discover et reessayez."
+
+# === MESSAGES - DISK SPACE ===
+MSG_CHECKING_DISK_SPACE="Verification de l'espace disque..."
+MSG_FREE_SPACE_ROOT="Espace libre dans /: %s Go"
+MSG_FREE_SPACE_BOOT="Espace libre dans /boot: %s Mo"
+MSG_INSUFFICIENT_SPACE="Espace insuffisant dans / (%sGo < %sGo)"
+MSG_LOW_BOOT_SPACE="Peu d'espace dans /boot (%sMo). Nettoyage des noyaux recommande."
+MSG_DISK_SPACE_OK="Espace disque suffisant"
+
+# === MESSAGES - VALIDATION ===
+MSG_VALIDATING_DEPS="Validation des dependances des etapes..."
+MSG_VALIDATION_OK="Validation des dependances OK"
+MSG_CANT_UPGRADE_NO_UPDATE="Impossible de mettre a jour le systeme (STEP_UPGRADE_SYSTEM=1) sans mettre a jour les depots (STEP_UPDATE_REPOS=0). Activez STEP_UPDATE_REPOS."
+MSG_KERNEL_CLEANUP_NO_SNAPSHOT="Le nettoyage des noyaux sans snapshot Timeshift peut etre risque"
+MSG_CONTINUE_ANYWAY="Continuer quand meme? (o/N):"
+MSG_ABORTED_BY_USER="Abandonne par l'utilisateur"
+MSG_CANCELLED_BY_USER="Annule par l'utilisateur"
+
+# === MESSAGES - CONFIG ===
+MSG_CONFIG_LOADED="Configuration chargee depuis"
+MSG_CONFIG_SAVED="Configuration enregistree"
+MSG_CONFIG_DELETED="Configuration supprimee"
+
+# === MESSAGES - DISTRO ===
+MSG_DISTRO_DETECTED="Distribution detectee"
+MSG_DISTRO_FAMILY="Famille"
+MSG_DISTRO_VERSION="Version"
+MSG_DISTRO_CODENAME="Nom de code"
+MSG_DISTRO_MIRROR="Miroir de verification"
+MSG_DISTRO_NOT_SUPPORTED="Distribution non supportee: %s. Ce script ne supporte que les distributions basees sur Debian/Ubuntu."
+MSG_DISTRO_NOT_DETECTED="Impossible de detecter la distribution. Fichier /etc/os-release non trouve."
+
+# === MESSAGES - LOG AND CLI ===
+MSG_LOG_CRITICAL="CRITIQUE"
+MSG_EXECUTING="Execution"
+MSG_STEP_PREFIX="ETAPE"
+MSG_DEPS_VALIDATION_OK="Validation des dependances OK"
+MSG_UPGRADE_WITHOUT_REPOS="Vous ne pouvez pas mettre a jour le systeme (STEP_UPGRADE_SYSTEM=1) sans mettre a jour les depots (STEP_UPDATE_REPOS=0). Activez STEP_UPDATE_REPOS."
+MSG_KERNEL_CLEANUP_RISKY="Nettoyage des kernels sans snapshot Timeshift peut etre risque"
+MSG_SKIPPING_TOOL_CHECK="Ignorer la verification de %s (etape desactivee)"
+MSG_KERNEL_FORCING_INCLUSION="Kernel actuel n'est pas dans les plus recents, inclusion forcee"
+MSG_UCSTA_STATUS="Statut UCSTA (bibliotheques critiques)"
+MSG_MAINTENANCE_COMPLETED="Maintenance terminee en %dm %ds"
+MSG_STARTING_MAINTENANCE="Demarrage de la Maintenance"
+MSG_UNKNOWN_OPTION="Option inconnue"
+MSG_USE_HELP="Utilisez --help pour voir les options disponibles"
+MSG_PROCESS_ABORTED="PROCESSUS INTERROMPU"
+
+# === HELP TEXT ===
+HELP_TITLE="Maintenance Complete pour Distributions Basees sur Debian/Ubuntu"
+HELP_SUPPORTED="Distributions supportees:"
+HELP_USAGE="Utilisation: sudo ./autoclean.sh [options]"
+HELP_OPTIONS="Options:"
+HELP_DRYRUN="Simuler l'execution sans modifications reelles"
+HELP_UNATTENDED="Mode sans surveillance sans confirmations"
+HELP_NOBACKUP="Ne pas creer de sauvegarde de configuration"
+HELP_NOMENU="Ignorer le menu interactif (utiliser config sauvegardee ou defaut)"
+HELP_QUIET="Mode silencieux (journaux uniquement)"
+HELP_LANG="Forcer la langue (en, es, pt, fr, de, it)"
+HELP_HELP="Afficher cette aide"
+HELP_EXAMPLES="Exemples:"
+HELP_EXAMPLE_NORMAL="Execution normale"
+HELP_EXAMPLE_SIMULATE="Simuler les modifications"
+HELP_EXAMPLE_UNATTENDED="Mode sans surveillance"
+HELP_CONFIG="Configuration:"
+HELP_CONFIG_DESC="Editez les variables STEP_* au debut du script pour activer/desactiver les etapes individuelles."
+HELP_MORE_INFO="Plus d'informations dans les commentaires du script."
+
+# === ICONS (ASCII) ===
+ICON_OK="[OK]"
+ICON_FAIL="[XX]"
+ICON_SKIP="[--]"
+ICON_WARN="[!!]"
+ICON_RUN="[..]"
+ICON_PEND="[  ]"

@@ -139,7 +139,13 @@ CONFIG_FILE="${SCRIPT_DIR}/autoclean.conf"
 BACKUP_DIR="/var/backups/debian-maintenance"
 LOCK_FILE="/var/run/debian-maintenance.lock"
 LOG_DIR="/var/log/debian-maintenance"
-SCRIPT_VERSION="2025.11"
+SCRIPT_VERSION="2025.12"
+
+# Configuración de idioma
+LANG_DIR="${SCRIPT_DIR}/lang"
+DEFAULT_LANG="en"
+CURRENT_LANG=""
+AVAILABLE_LANGS=("en" "es" "pt" "fr" "de" "it")
 
 # Parámetros de sistema
 DIAS_LOGS=7
@@ -204,7 +210,7 @@ STAT_FIRMWARE="[..]"
 STAT_CLEAN_APT="[..]"
 STAT_CLEAN_KERNEL="[..]"
 STAT_CLEAN_DISK="[..]"
-STAT_REBOOT="[OK] No requerido"
+STAT_REBOOT="[..]"
 
 # Contadores y tiempo
 SPACE_BEFORE_ROOT=0
@@ -219,27 +225,16 @@ UNATTENDED=false
 QUIET=false
 REBOOT_NEEDED=false
 NO_MENU=false
+UPGRADE_PERFORMED=false
 
 # ============================================================================
 # CONFIGURACIÓN DEL MENÚ INTERACTIVO
 # ============================================================================
 
-# Arrays para el menú interactivo (índice corresponde a cada paso)
-MENU_STEP_NAMES=(
-    "Verificar conectividad"
-    "Verificar dependencias"
-    "Backup configuraciones (tar)"
-    "Snapshot Timeshift"
-    "Actualizar repositorios"
-    "Actualizar sistema (APT)"
-    "Actualizar Flatpak"
-    "Actualizar Snap"
-    "Verificar firmware"
-    "Limpieza APT"
-    "Limpieza kernels"
-    "Limpieza disco/logs"
-    "Verificar reinicio"
-)
+# Arrays para el menú interactivo (se llenan desde archivo de idioma)
+declare -a MENU_STEP_NAMES
+declare -a MENU_STEP_DESCRIPTIONS
+declare -a STEP_SHORT_NAMES
 
 MENU_STEP_VARS=(
     "STEP_CHECK_CONNECTIVITY"
@@ -257,33 +252,72 @@ MENU_STEP_VARS=(
     "STEP_CHECK_REBOOT"
 )
 
-MENU_STEP_DESCRIPTIONS=(
-    "Verifica conexion a internet antes de continuar"
-    "Instala herramientas necesarias (timeshift, needrestart, etc.)"
-    "Guarda configuraciones APT en /var/backups"
-    "Crea snapshot con Timeshift para rollback (RECOMENDADO)"
-    "Ejecuta apt update para actualizar lista de paquetes"
-    "Ejecuta apt full-upgrade para actualizar paquetes"
-    "Actualiza aplicaciones instaladas con Flatpak"
-    "Actualiza aplicaciones instaladas con Snap"
-    "Verifica actualizaciones de BIOS/dispositivos (fwupd)"
-    "Elimina paquetes huerfanos y residuales"
-    "Elimina kernels antiguos (mantiene 3)"
-    "Limpia logs antiguos y cache del sistema"
-    "Detecta si el sistema necesita reiniciarse"
-)
+# Función para actualizar arrays desde variables de idioma
+update_language_arrays() {
+    MENU_STEP_NAMES=(
+        "$STEP_NAME_1"
+        "$STEP_NAME_2"
+        "$STEP_NAME_3"
+        "$STEP_NAME_4"
+        "$STEP_NAME_5"
+        "$STEP_NAME_6"
+        "$STEP_NAME_7"
+        "$STEP_NAME_8"
+        "$STEP_NAME_9"
+        "$STEP_NAME_10"
+        "$STEP_NAME_11"
+        "$STEP_NAME_12"
+        "$STEP_NAME_13"
+    )
+
+    MENU_STEP_DESCRIPTIONS=(
+        "$STEP_DESC_1"
+        "$STEP_DESC_2"
+        "$STEP_DESC_3"
+        "$STEP_DESC_4"
+        "$STEP_DESC_5"
+        "$STEP_DESC_6"
+        "$STEP_DESC_7"
+        "$STEP_DESC_8"
+        "$STEP_DESC_9"
+        "$STEP_DESC_10"
+        "$STEP_DESC_11"
+        "$STEP_DESC_12"
+        "$STEP_DESC_13"
+    )
+
+    STEP_SHORT_NAMES=(
+        "$STEP_SHORT_1"
+        "$STEP_SHORT_2"
+        "$STEP_SHORT_3"
+        "$STEP_SHORT_4"
+        "$STEP_SHORT_5"
+        "$STEP_SHORT_6"
+        "$STEP_SHORT_7"
+        "$STEP_SHORT_8"
+        "$STEP_SHORT_9"
+        "$STEP_SHORT_10"
+        "$STEP_SHORT_11"
+        "$STEP_SHORT_12"
+        "$STEP_SHORT_13"
+    )
+}
 
 # ============================================================================
 # FUNCIONES DE CONFIGURACIÓN PERSISTENTE
 # ============================================================================
 
 save_config() {
-    # Guardar estado actual de los pasos en archivo de configuración
+    # Guardar estado actual de los pasos y preferencias en archivo de configuración
     cat > "$CONFIG_FILE" << EOF
 # Configuración de autoclean - Generado automáticamente
 # Fecha: $(date '+%Y-%m-%d %H:%M:%S')
 # No editar manualmente (usar el menú interactivo)
 
+# Idioma / Language
+SAVED_LANG=$CURRENT_LANG
+
+# Pasos / Steps
 STEP_CHECK_CONNECTIVITY=$STEP_CHECK_CONNECTIVITY
 STEP_CHECK_DEPENDENCIES=$STEP_CHECK_DEPENDENCIES
 STEP_BACKUP_TAR=$STEP_BACKUP_TAR
@@ -323,6 +357,113 @@ config_exists() {
 
 delete_config() {
     rm -f "$CONFIG_FILE" 2>/dev/null
+}
+
+# ============================================================================
+# FUNCIONES DE IDIOMA (i18n)
+# ============================================================================
+
+load_language() {
+    local lang_to_load="$1"
+
+    # Si no se especifica idioma, detectar automáticamente
+    if [ -z "$lang_to_load" ]; then
+        # Prioridad: 1) Config guardada, 2) Variable de entorno, 3) Sistema, 4) Default
+        if [ -n "$SAVED_LANG" ]; then
+            lang_to_load="$SAVED_LANG"
+        elif [ -n "$AUTOCLEAN_LANG" ]; then
+            lang_to_load="$AUTOCLEAN_LANG"
+        else
+            # Detectar idioma del sistema
+            local sys_lang="${LANG%%_*}"
+            sys_lang="${sys_lang%%.*}"
+            lang_to_load="${sys_lang:-$DEFAULT_LANG}"
+        fi
+    fi
+
+    # Verificar que el idioma existe
+    local lang_file="${LANG_DIR}/${lang_to_load}.lang"
+    if [ ! -f "$lang_file" ]; then
+        # Fallback a idioma por defecto
+        lang_file="${LANG_DIR}/${DEFAULT_LANG}.lang"
+        lang_to_load="$DEFAULT_LANG"
+    fi
+
+    # Cargar archivo de idioma
+    if [ -f "$lang_file" ]; then
+        source "$lang_file"
+        CURRENT_LANG="$lang_to_load"
+        # Actualizar arrays con textos del idioma cargado
+        update_language_arrays
+        return 0
+    else
+        # Fallback crítico: usar inglés hardcodeado mínimo
+        echo "ERROR: No language files found in $LANG_DIR"
+        exit 1
+    fi
+}
+
+show_language_selector() {
+    # Nombres de idiomas para mostrar
+    local -a LANG_NAMES=("English" "Español" "Português" "Français" "Deutsch" "Italiano")
+    local selected=0
+    local total=${#AVAILABLE_LANGS[@]}
+
+    # Encontrar índice del idioma actual
+    for i in "${!AVAILABLE_LANGS[@]}"; do
+        if [[ "${AVAILABLE_LANGS[$i]}" == "$CURRENT_LANG" ]]; then
+            selected=$i
+            break
+        fi
+    done
+
+    while true; do
+        clear
+        print_box_top
+        print_box_center "${BOLD}SELECT LANGUAGE / SELECCIONAR IDIOMA${NC}"
+        print_box_sep
+        print_box_line ""
+
+        # Mostrar idiomas con el seleccionado resaltado
+        for i in "${!AVAILABLE_LANGS[@]}"; do
+            if [[ $i -eq $selected ]]; then
+                print_box_line "   ${BRIGHT_CYAN}>${NC} ${GREEN}[x]${NC} ${LANG_NAMES[$i]}"
+            else
+                print_box_line "     ${DIM}[ ] ${LANG_NAMES[$i]}${NC}"
+            fi
+        done
+
+        print_box_line ""
+        print_box_sep
+        print_box_center "${CYAN}[ENTER]${NC} Select  ${CYAN}[ESC]${NC} Back"
+        print_box_bottom
+
+        # Leer tecla
+        local key=""
+        read -rsn1 key
+
+        # Detectar secuencias de escape (flechas o ESC solo)
+        if [[ "$key" == $'\x1b' ]]; then
+            read -rsn2 -t 0.1 key
+            case "$key" in
+                '[A') # Flecha arriba
+                    ((selected--))
+                    [[ $selected -lt 0 ]] && selected=$((total - 1))
+                    ;;
+                '[B') # Flecha abajo
+                    ((selected++))
+                    [[ $selected -ge $total ]] && selected=0
+                    ;;
+                '') # ESC solo (sin secuencia de flecha)
+                    return
+                    ;;
+            esac
+        elif [[ "$key" == "" ]]; then
+            # ENTER - seleccionar idioma
+            load_language "${AVAILABLE_LANGS[$selected]}"
+            return
+        fi
+    done
 }
 
 # ============================================================================
@@ -393,23 +534,6 @@ for i in {0..12}; do
     STEP_TIME_START[$i]=0
     STEP_TIME_END[$i]=0
 done
-
-# Nombres cortos de pasos (max 12 chars para 2 columnas)
-STEP_SHORT_NAMES=(
-    "Conectividad"
-    "Dependencias"
-    "Backup"
-    "Snapshot"
-    "Repos"
-    "Upgrade"
-    "Flatpak"
-    "Snap"
-    "Firmware"
-    "APT Clean"
-    "Kernels"
-    "Disco"
-    "Reinicio"
-)
 
 # ============================================================================
 # FUNCIONES UI ENTERPRISE
@@ -613,8 +737,8 @@ log() {
 }
 
 die() {
-    log "ERROR" "CRÍTICO: $1"
-    echo -e "\n${RED}${BOLD}[XX] PROCESO ABORTADO: $1${NC}"
+    log "ERROR" "${MSG_LOG_CRITICAL}: $1"
+    echo -e "\n${RED}${BOLD}[XX] ${MSG_PROCESS_ABORTED}: $1${NC}"
     rm -f "$LOCK_FILE" 2>/dev/null
     exit 1
 }
@@ -622,8 +746,8 @@ die() {
 safe_run() {
     local cmd="$1"
     local err_msg="$2"
-    
-    log "INFO" "Ejecutando: $cmd"
+
+    log "INFO" "${MSG_EXECUTING}: $cmd"
     
     if [ "$DRY_RUN" = true ]; then 
         log "INFO" "[DRY-RUN] $cmd"
@@ -643,25 +767,25 @@ print_step() {
     [ "$QUIET" = true ] && return
     ((CURRENT_STEP++))
     echo -e "\n${BLUE}${BOLD}>>> [$CURRENT_STEP/$TOTAL_STEPS] $1${NC}"
-    log "INFO" "PASO [$CURRENT_STEP/$TOTAL_STEPS]: $1"
+    log "INFO" "${MSG_STEP_PREFIX} [$CURRENT_STEP/$TOTAL_STEPS]: $1"
 }
 
 print_header() {
     [ "$QUIET" = true ] && return
     clear
     print_box_top
-    print_box_center "${BOLD}MANTENIMIENTO DE SISTEMA${NC} - v${SCRIPT_VERSION}"
+    print_box_center "${BOLD}${MENU_SYSTEM_TITLE}${NC} - v${SCRIPT_VERSION}"
     print_box_bottom
     echo ""
-    echo -e "  ${CYAN}Distribucion:${NC} ${BOLD}${DISTRO_NAME}${NC}"
-    echo -e "  ${CYAN}Familia:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
+    echo -e "  ${CYAN}${MSG_DISTRO_DETECTED}:${NC} ${BOLD}${DISTRO_NAME}${NC}"
+    echo -e "  ${CYAN}${MSG_DISTRO_FAMILY}:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
     echo ""
-    [ "$DRY_RUN" = true ] && echo -e "${YELLOW}[??] MODO DRY-RUN ACTIVADO${NC}\n"
+    [ "$DRY_RUN" = true ] && echo -e "${YELLOW}[??] DRY-RUN MODE${NC}\n"
 }
 
 cleanup() {
     rm -f "$LOCK_FILE" 2>/dev/null
-    log "INFO" "Lock file eliminado"
+    log "INFO" "Lock file removed"
 }
 
 trap cleanup EXIT INT TERM
@@ -673,7 +797,7 @@ trap cleanup EXIT INT TERM
 detect_distro() {
     # Detectar distribución usando /etc/os-release
     if [ ! -f /etc/os-release ]; then
-        die "No se puede detectar la distribución. Archivo /etc/os-release no encontrado."
+        die "${MSG_DISTRO_NOT_DETECTED}"
     fi
 
     # Cargar variables de os-release
@@ -726,17 +850,17 @@ detect_distro() {
                     DISTRO_FAMILY="debian"
                     DISTRO_MIRROR="deb.debian.org"
                 else
-                    die "Distribución no soportada: $DISTRO_NAME. Este script solo soporta distribuciones basadas en Debian/Ubuntu."
+                    die "$(printf "${MSG_DISTRO_NOT_SUPPORTED}" "$DISTRO_NAME")"
                 fi
             else
-                die "Distribución no soportada: $DISTRO_NAME. Este script solo soporta distribuciones basadas en Debian/Ubuntu."
+                die "$(printf "${MSG_DISTRO_NOT_SUPPORTED}" "$DISTRO_NAME")"
             fi
             ;;
     esac
 
-    log "INFO" "Distribución detectada: $DISTRO_NAME ($DISTRO_ID)"
-    log "INFO" "Familia: $DISTRO_FAMILY | Versión: $DISTRO_VERSION | Codename: $DISTRO_CODENAME"
-    log "INFO" "Mirror de verificación: $DISTRO_MIRROR"
+    log "INFO" "${MSG_DISTRO_DETECTED}: $DISTRO_NAME ($DISTRO_ID)"
+    log "INFO" "${MSG_DISTRO_FAMILY}: $DISTRO_FAMILY | ${MSG_DISTRO_VERSION}: $DISTRO_VERSION | ${MSG_DISTRO_CODENAME}: $DISTRO_CODENAME"
+    log "INFO" "${MSG_DISTRO_MIRROR}: $DISTRO_MIRROR"
 }
 
 check_root() {
@@ -857,14 +981,14 @@ show_step_summary() {
     done
 
     print_box_sep
-    print_box_line "Total: ${GREEN}${TOTAL_STEPS}${NC}/13 pasos    Tiempo estimado: ${CYAN}~$((TOTAL_STEPS / 2 + 1)) min${NC}"
+    print_box_line "${MENU_TOTAL}: ${GREEN}${TOTAL_STEPS}${NC}/13 ${MENU_STEPS}    ${MENU_EST_TIME}: ${CYAN}~$((TOTAL_STEPS / 2 + 1)) ${MENU_MIN}${NC}"
     print_box_bottom
     echo ""
 
     if [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
-        read -p "¿Continuar con esta configuración? (s/N): " -n 1 -r
+        read -p "${PROMPT_CONTINUE_CONFIG} " -n 1 -r
         echo
-        [[ ! $REPLY =~ ^[Ss]$ ]] && die "Cancelado por el usuario"
+        [[ ! $REPLY =~ $PROMPT_YES_PATTERN ]] && die "${MSG_CANCELLED_BY_USER}"
     fi
 }
 
@@ -895,11 +1019,11 @@ show_interactive_menu() {
         # Limpiar pantalla y mostrar interfaz enterprise
         clear
         print_box_top
-        print_box_center "${BOLD}CONFIGURACIÓN DE MANTENIMIENTO${NC}"
+        print_box_center "${BOLD}${MENU_TITLE}${NC}"
         print_box_sep
         print_box_center "${DISTRO_NAME} | ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
         print_box_sep
-        print_box_line "${BOLD}PASOS${NC} ${DIM}(←/→ columnas, ↑/↓ filas, ESPACIO toggle, ENTER ejecutar)${NC}"
+        print_box_line "${BOLD}${MENU_STEPS_TITLE}${NC} ${DIM}${MENU_STEPS_HELP}${NC}"
 
         # Mostrar pasos en 3 columnas (5 filas)
         # Cada celda: 15 chars fijos (prefix[1] + bracket[1] + check[1] + bracket[1] + name[11])
@@ -942,9 +1066,9 @@ show_interactive_menu() {
         print_box_sep
         print_box_line "${CYAN}>${NC} ${MENU_STEP_DESCRIPTIONS[$current_index]:0:68}"
         print_box_sep
-        print_box_line "Seleccionados: ${GREEN}${active_count}${NC}/${total_items}    Perfil: $(config_exists && echo "${GREEN}Guardado${NC}" || echo "${DIM}Sin guardar${NC}")"
+        print_box_line "${MENU_SELECTED}: ${GREEN}${active_count}${NC}/${total_items}    ${MENU_PROFILE}: $(config_exists && echo "${GREEN}${MENU_PROFILE_SAVED}${NC}" || echo "${DIM}${MENU_PROFILE_UNSAVED}${NC}")"
         print_box_sep
-        print_box_center "${CYAN}[ENTER]${NC} Ejecutar ${CYAN}[A]${NC} Todos ${CYAN}[N]${NC} Ninguno ${CYAN}[G]${NC} Guardar ${CYAN}[Q]${NC} Salir"
+        print_box_center "${CYAN}[ENTER]${NC} ${MENU_CTRL_ENTER} ${CYAN}[A]${NC} ${MENU_CTRL_ALL} ${CYAN}[N]${NC} ${MENU_CTRL_NONE} ${CYAN}[G]${NC} ${MENU_CTRL_SAVE} ${CYAN}[L]${NC} ${MENU_CTRL_LANG} ${CYAN}[Q]${NC} ${MENU_CTRL_QUIT}"
         print_box_bottom
 
         # Leer tecla
@@ -1003,7 +1127,8 @@ show_interactive_menu() {
                 'n'|'N') for var_name in "${MENU_STEP_VARS[@]}"; do eval "$var_name=0"; done ;;
                 'g'|'G') save_config ;;
                 'd'|'D') config_exists && delete_config ;;
-                'q'|'Q') tput cnorm 2>/dev/null; die "Cancelado por el usuario" ;;
+                'l'|'L') show_language_selector ;;
+                'q'|'Q') tput cnorm 2>/dev/null; die "${MSG_CANCELLED_BY_USER}" ;;
             esac
         fi
     done
@@ -1013,27 +1138,27 @@ show_interactive_menu() {
 }
 
 check_disk_space() {
-    print_step "Verificando espacio en disco..."
-    
+    print_step "${MSG_CHECKING_DISK_SPACE}"
+
     local root_gb=$(df / --output=avail | tail -1 | awk '{print int($1/1024/1024)}')
     local boot_mb=$(df /boot --output=avail 2>/dev/null | tail -1 | awk '{print int($1/1024)}' || echo 0)
-    
-    echo "→ Espacio libre en /: ${root_gb} GB"
-    [ -n "$boot_mb" ] && [ "$boot_mb" -gt 0 ] && echo "→ Espacio libre en /boot: ${boot_mb} MB"
-    
+
+    printf "→ ${MSG_FREE_SPACE_ROOT}\n" "$root_gb"
+    [ -n "$boot_mb" ] && [ "$boot_mb" -gt 0 ] && printf "→ ${MSG_FREE_SPACE_BOOT}\n" "$boot_mb"
+
     if [ "$root_gb" -lt "$MIN_FREE_SPACE_GB" ]; then
-        die "Espacio insuficiente en / (${root_gb}GB < ${MIN_FREE_SPACE_GB}GB)"
+        die "$(printf "$MSG_INSUFFICIENT_SPACE" "$root_gb" "$MIN_FREE_SPACE_GB")"
     fi
-    
+
     if [ -n "$boot_mb" ] && [ "$boot_mb" -gt 0 ] && [ "$boot_mb" -lt "$MIN_FREE_SPACE_BOOT_MB" ]; then
-        log "WARN" "Espacio bajo en /boot (${boot_mb}MB). Se recomienda limpiar kernels."
+        log "WARN" "$(printf "$MSG_LOW_BOOT_SPACE" "$boot_mb")"
     fi
-    
+
     # Guardar espacio inicial
     SPACE_BEFORE_ROOT=$(df / --output=used | tail -1 | awk '{print $1}')
     SPACE_BEFORE_BOOT=$(df /boot --output=used 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
-    
-    log "SUCCESS" "Espacio en disco suficiente"
+
+    log "SUCCESS" "${MSG_DISK_SPACE_OK}"
 }
 
 # ============================================================================
@@ -1043,26 +1168,26 @@ check_disk_space() {
 step_check_connectivity() {
     [ "$STEP_CHECK_CONNECTIVITY" = 0 ] && return
 
-    print_step "Verificando conectividad..."
+    print_step "${MSG_CHECKING_CONNECTIVITY}"
 
     # Usar el mirror correspondiente a la distribución detectada
     local mirror_to_check="${DISTRO_MIRROR:-deb.debian.org}"
 
-    echo "→ Verificando conexión a $mirror_to_check..."
+    echo "→ ${MSG_CHECKING_CONNECTION_TO} $mirror_to_check..."
 
     if ping -c 1 -W 3 "$mirror_to_check" >/dev/null 2>&1; then
-        echo "→ Conexión a internet: OK"
+        echo "→ ${MSG_CONNECTION_OK}"
         STAT_CONNECTIVITY="$ICON_OK"
-        log "SUCCESS" "Conectividad verificada con $mirror_to_check"
+        log "SUCCESS" "${MSG_CONNECTION_OK}"
     else
         # Intentar con un servidor de respaldo genérico
         if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
-            echo -e "${YELLOW}→ Mirror específico no alcanzable, pero hay conexión a internet${NC}"
+            echo -e "${YELLOW}→ ${MSG_CONNECTION_WARN}${NC}"
             STAT_CONNECTIVITY="$ICON_WARN"
-            log "WARN" "Mirror $mirror_to_check no alcanzable, pero hay conectividad general"
+            log "WARN" "${MSG_CONNECTION_WARN}"
         else
             STAT_CONNECTIVITY="$ICON_FAIL"
-            die "Sin conexión a internet. Verifica tu red."
+            die "${MSG_NO_CONNECTION}"
         fi
     fi
 }
@@ -1073,8 +1198,8 @@ step_check_connectivity() {
 
 step_check_dependencies() {
     [ "$STEP_CHECK_DEPENDENCIES" = 0 ] && return
-    
-    print_step "Verificando herramientas recomendadas..."
+
+    print_step "${MSG_CHECKING_TOOLS}"
     
     declare -A TOOLS
     declare -A TOOL_STEPS
@@ -1115,21 +1240,21 @@ step_check_dependencies() {
     
     # Mostrar herramientas omitidas si hay alguna
     if [ ${#skipped_tools[@]} -gt 0 ] && [ "$QUIET" = false ]; then
-        echo -e "${CYAN}→ Herramientas omitidas (pasos desactivados): ${skipped_tools[*]}${NC}"
+        echo -e "${CYAN}→ ${MSG_TOOLS_SKIPPED}: ${skipped_tools[*]}${NC}"
     fi
-    
+
     if [ ${#missing[@]} -gt 0 ]; then
-        echo -e "${YELLOW}[!!] Faltan ${#missing[@]} herramientas necesarias para los pasos activos:${NC}"
+        printf "${YELLOW}[!!] ${MSG_MISSING_TOOLS}${NC}\n" "${#missing[@]}"
         for i in "${!missing[@]}"; do
             echo -e "   • ${missing[$i]}: ${missing_names[$i]}"
         done
         echo ""
-        
+
         if [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
-            read -p "¿Deseas instalarlas automáticamente? (s/N): " -n 1 -r
+            read -p "${PROMPT_INSTALL_TOOLS} " -n 1 -r
             echo
-            if [[ $REPLY =~ ^[Ss]$ ]]; then
-                echo "→ Instalando herramientas..."
+            if [[ $REPLY =~ $PROMPT_YES_PATTERN ]]; then
+                echo "→ ${MSG_INSTALLING_TOOLS}"
                 
                 # Determinar qué paquetes instalar
                 local packages_to_install=""
@@ -1143,25 +1268,25 @@ step_check_dependencies() {
                     esac
                 done
                 
-                if safe_run "apt update && apt install -y $packages_to_install" "Error instalando herramientas"; then
-                    log "SUCCESS" "Herramientas instaladas correctamente"
-                    STAT_DEPENDENCIES="$ICON_OK (instaladas)"
+                if safe_run "apt update && apt install -y $packages_to_install" "Error"; then
+                    log "SUCCESS" "${MSG_TOOLS_INSTALLED}"
+                    STAT_DEPENDENCIES="$ICON_OK"
                 else
-                    log "WARN" "Error al instalar algunas herramientas"
-                    STAT_DEPENDENCIES="${YELLOW}$ICON_WARN Parcial${NC}"
+                    log "WARN" "${MSG_TOOLS_PARTIAL}"
+                    STAT_DEPENDENCIES="${YELLOW}$ICON_WARN${NC}"
                 fi
             else
-                log "WARN" "Usuario decidió continuar sin instalar herramientas"
-                STAT_DEPENDENCIES="${YELLOW}$ICON_WARN Incompleto${NC}"
+                log "WARN" "${MSG_USER_SKIPPED_TOOLS}"
+                STAT_DEPENDENCIES="${YELLOW}$ICON_WARN${NC}"
             fi
         else
-            log "WARN" "Herramientas faltantes en modo desatendido/dry-run"
-            STAT_DEPENDENCIES="${YELLOW}$ICON_WARN Incompleto${NC}"
+            log "WARN" "${MSG_USER_SKIPPED_TOOLS}"
+            STAT_DEPENDENCIES="${YELLOW}$ICON_WARN${NC}"
         fi
     else
-        echo "→ Todas las herramientas necesarias están instaladas"
+        echo "→ ${MSG_TOOLS_OK}"
         STAT_DEPENDENCIES="$ICON_OK"
-        log "SUCCESS" "Todas las herramientas necesarias disponibles"
+        log "SUCCESS" "${MSG_TOOLS_OK}"
     fi
 }
 
@@ -1171,8 +1296,8 @@ step_check_dependencies() {
 
 step_backup_tar() {
     [ "$STEP_BACKUP_TAR" = 0 ] && return
-    
-    print_step "Creando backup de configuraciones (Tar)..."
+
+    print_step "${MSG_CREATING_BACKUP}"
     
     mkdir -p "$BACKUP_DIR"
     local backup_date=$(date +%Y%m%d_%H%M%S)
@@ -1187,16 +1312,16 @@ step_backup_tar() {
         # Lista de paquetes instalados
         dpkg --get-selections > "$BACKUP_DIR/packages_${backup_date}.list" 2>/dev/null
         
-        echo "→ Backup creado: $backup_file"
+        echo "→ ${MSG_BACKUP_CREATED}: $backup_file"
         STAT_BACKUP_TAR="$ICON_OK"
-        log "SUCCESS" "Backup Tar creado"
+        log "SUCCESS" "${MSG_BACKUP_CREATED}"
 
         # Limpiar backups antiguos (mantener últimas 5 ejecuciones)
         ls -t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
         ls -t "$BACKUP_DIR"/packages_*.list 2>/dev/null | tail -n +6 | xargs -r rm -f
     else
         STAT_BACKUP_TAR="$ICON_FAIL"
-        log "ERROR" "Error creando backup Tar"
+        log "ERROR" "${MSG_BACKUP_FAILED}"
     fi
 }
 
@@ -1228,13 +1353,13 @@ check_timeshift_configured() {
 
 step_snapshot_timeshift() {
     [ "$STEP_SNAPSHOT_TIMESHIFT" = 0 ] && return
-    
-    print_step "${ICON_SHIELD} Creando Snapshot de Sistema (Timeshift)..."
-    
+
+    print_step "${ICON_SHIELD} ${MSG_CREATING_SNAPSHOT}"
+
     if ! command -v timeshift &>/dev/null; then
-        echo -e "${YELLOW}→ Timeshift no está instalado${NC}"
-        STAT_SNAPSHOT="${YELLOW}$ICON_SKIP No disponible${NC}"
-        log "WARN" "Timeshift no disponible"
+        echo -e "${YELLOW}→ ${MSG_TIMESHIFT_NOT_INSTALLED}${NC}"
+        STAT_SNAPSHOT="${YELLOW}$ICON_SKIP${NC}"
+        log "WARN" "${MSG_TIMESHIFT_NOT_INSTALLED}"
         return
     fi
 
@@ -1242,24 +1367,24 @@ step_snapshot_timeshift() {
     if ! check_timeshift_configured; then
         echo ""
         print_box_top "$YELLOW"
-        print_box_line "${YELLOW}[!!] TIMESHIFT NO ESTA CONFIGURADO${NC}"
+        print_box_line "${YELLOW}[!!] ${MSG_TIMESHIFT_NOT_CONFIGURED}${NC}"
         print_box_bottom "$YELLOW"
         echo ""
-        echo -e "  Timeshift está instalado pero necesita configuración inicial."
+        echo -e "  ${MSG_TIMESHIFT_CONFIG_NEEDED}"
         echo ""
-        echo -e "  ${CYAN}Para configurarlo, ejecuta:${NC}"
-        echo -e "    ${GREEN}sudo timeshift-gtk${NC}  (interfaz gráfica)"
-        echo -e "    ${GREEN}sudo timeshift --wizard${NC}  (terminal)"
+        echo -e "  ${CYAN}${MSG_TIMESHIFT_CONFIG_INSTRUCTIONS}${NC}"
+        echo -e "    ${GREEN}sudo timeshift-gtk${NC}  ${MSG_TIMESHIFT_CONFIG_GUI}"
+        echo -e "    ${GREEN}sudo timeshift --wizard${NC}  ${MSG_TIMESHIFT_CONFIG_CLI}"
         echo ""
-        echo -e "  ${CYAN}Debes configurar:${NC}"
-        echo -e "    • Tipo de snapshot (RSYNC recomendado para ext4/xfs)"
-        echo -e "    • Dispositivo/partición donde guardar los backups"
+        echo -e "  ${CYAN}${MSG_TIMESHIFT_MUST_CONFIG}${NC}"
+        echo -e "    • ${MSG_TIMESHIFT_CONFIG_TYPE}"
+        echo -e "    • ${MSG_TIMESHIFT_CONFIG_DEVICE}"
         echo ""
-        log "WARN" "Timeshift instalado pero no configurado - saltando paso"
-        STAT_SNAPSHOT="${YELLOW}$ICON_WARN No configurado${NC}"
+        log "WARN" "${MSG_TIMESHIFT_SKIPPED_NOCONFIG}"
+        STAT_SNAPSHOT="${YELLOW}$ICON_WARN${NC}"
 
         if [ "$UNATTENDED" = false ]; then
-            echo -e "${YELLOW}Presiona cualquier tecla para continuar sin snapshot...${NC}"
+            echo -e "${YELLOW}${MSG_CONTINUE_WITHOUT_SNAPSHOT}${NC}"
             read -n 1 -s -r
             echo ""
         fi
@@ -1269,42 +1394,42 @@ step_snapshot_timeshift() {
 
     # Preguntar si desea omitir (solo en modo interactivo)
     if [ "$ASK_TIMESHIFT_RUN" = true ] && [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
-        echo -e "${YELLOW}¿Deseas OMITIR la creación del Snapshot de Timeshift?${NC}"
-        read -p "Escribe 's' para OMITIR, cualquier otra tecla para CREAR: " -n 1 -r
+        echo -e "${YELLOW}${PROMPT_SKIP_SNAPSHOT}${NC}"
+        read -p "${PROMPT_SKIP_INSTRUCTIONS} " -n 1 -r
         echo
-        if [[ $REPLY =~ ^[Ss]$ ]]; then
-            log "WARN" "Usuario omitió snapshot de Timeshift"
-            STAT_SNAPSHOT="${YELLOW}$ICON_SKIP Omitido por usuario${NC}"
+        if [[ $REPLY =~ $PROMPT_YES_PATTERN ]]; then
+            log "WARN" "${MSG_TIMESHIFT_SKIPPED_USER}"
+            STAT_SNAPSHOT="${YELLOW}$ICON_SKIP${NC}"
             return
         fi
     fi
     
     if [ "$DRY_RUN" = true ]; then
-        STAT_SNAPSHOT="${YELLOW}Simulado${NC}"
+        STAT_SNAPSHOT="${YELLOW}DRY-RUN${NC}"
         return
     fi
-    
+
     # Crear snapshot
     local ts_comment="Pre-Maintenance $(date +%Y-%m-%d_%H:%M:%S)"
     if timeshift --create --comments "$ts_comment" --tags O >> "$LOG_FILE" 2>&1; then
-        echo "→ Snapshot Timeshift creado exitosamente"
-        STAT_SNAPSHOT="${GREEN}$ICON_OK Creado${NC}"
-        log "SUCCESS" "Snapshot Timeshift creado"
+        echo "→ ${MSG_SNAPSHOT_CREATED}"
+        STAT_SNAPSHOT="${GREEN}$ICON_OK${NC}"
+        log "SUCCESS" "${MSG_SNAPSHOT_CREATED}"
     else
-        echo -e "${RED}→ Error al crear snapshot de Timeshift${NC}"
-        STAT_SNAPSHOT="${RED}$ICON_FAIL Error${NC}"
-        log "ERROR" "Fallo al crear snapshot de Timeshift"
+        echo -e "${RED}→ ${MSG_SNAPSHOT_FAILED}${NC}"
+        STAT_SNAPSHOT="${RED}$ICON_FAIL${NC}"
+        log "ERROR" "${MSG_SNAPSHOT_FAILED}"
 
         if [ "$UNATTENDED" = false ]; then
-            echo -e "${YELLOW}¿Deseas continuar SIN snapshot? Esto es RIESGOSO.${NC}"
-            read -p "Escribe 'SI' (mayúsculas) para continuar sin backup: " -r CONFIRM
-            if [ "$CONFIRM" != "SI" ]; then
-                die "Abortado por el usuario - sin snapshot de seguridad"
+            echo -e "${YELLOW}${PROMPT_CONTINUE_NO_SNAPSHOT}${NC}"
+            read -p "${PROMPT_CONFIRM_SI} " -r CONFIRM
+            if [ "$CONFIRM" != "${PROMPT_CONFIRM_YES}" ]; then
+                die "${MSG_ABORTED_NO_SNAPSHOT}"
             fi
-            log "WARN" "Usuario decidió continuar sin snapshot"
+            log "WARN" "${MSG_USER_CONTINUED_NO_SNAPSHOT}"
         else
             # En modo desatendido, abortar por seguridad
-            die "No se pudo crear el snapshot de Timeshift. Abortando por seguridad."
+            die "${MSG_ABORTED_NO_SNAPSHOT}"
         fi
     fi
 }
@@ -1315,18 +1440,18 @@ step_snapshot_timeshift() {
 
 step_update_repos() {
     [ "$STEP_UPDATE_REPOS" = 0 ] && return
-    
-    print_step "Actualizando lista de repositorios..."
-    
+
+    print_step "${MSG_UPDATING_REPOS}"
+
     # Reparar dpkg antes de actualizar
     dpkg --configure -a >> "$LOG_FILE" 2>&1
-    
-    if safe_run "apt update" "Error al actualizar repositorios"; then
-        echo "→ Repositorios actualizados"
+
+    if safe_run "apt update" "Error"; then
+        echo "→ ${MSG_REPOS_UPDATED}"
         STAT_REPO="$ICON_OK"
     else
         STAT_REPO="$ICON_FAIL"
-        die "Error crítico al actualizar repositorios"
+        die "${MSG_REPOS_ERROR}"
     fi
 }
 
@@ -1336,52 +1461,53 @@ step_update_repos() {
 
 step_upgrade_system() {
     [ "$STEP_UPGRADE_SYSTEM" = 0 ] && return
-    
-    print_step "Analizando y aplicando actualizaciones del sistema..."
-    
+
+    print_step "${MSG_ANALYZING_UPDATES}"
+
     # Contar actualizaciones disponibles
     local updates_output=$(apt list --upgradable 2>/dev/null)
     local updates=$(echo "$updates_output" | grep -c '\[upgradable' || echo 0)
     updates=${updates//[^0-9]/}
     updates=${updates:-0}
     updates=$((updates + 0))
-    
+
     if [ "$updates" -gt 0 ]; then
-        echo "→ $updates paquetes para actualizar"
-        
+        printf "→ ${MSG_PACKAGES_TO_UPDATE}\n" "$updates"
+
         # Análisis heurístico de riesgo (borrados masivos)
-        log "INFO" "Simulando actualización para detectar borrados..."
+        log "INFO" "${MSG_SIMULATING_UPGRADE}"
         local simulation=$(apt full-upgrade -s 2>/dev/null)
         local remove_count=$(echo "$simulation" | grep "^Remv" | wc -l)
-        
+
         if [ "$remove_count" -gt "$MAX_REMOVALS_ALLOWED" ]; then
-            echo -e "\n${RED}${BOLD}[!!] ALERTA DE SEGURIDAD: APT propone eliminar $remove_count paquetes${NC}"
-            echo "$simulation" | grep "^Remv" | head -n 5 | sed 's/^Remv/ - Eliminando:/'
-            
+            printf "\n${RED}${BOLD}[!!] ${MSG_SECURITY_ALERT}${NC}\n" "$remove_count"
+            echo "$simulation" | grep "^Remv" | head -n 5 | sed "s/^Remv/ - ${MSG_REMOVING}/"
+
             if [ "$UNATTENDED" = true ]; then
-                die "Abortado automáticamente por riesgo de eliminación masiva en modo desatendido."
+                die "${MSG_ABORTED_MASS_REMOVAL}"
             fi
-            
-            echo -e "\n${YELLOW}¿Tienes un snapshot válido? ¿Quieres proceder?${NC}"
-            read -p "Escribe 'SI' (mayúsculas) para continuar: " -r CONFIRM
-            if [ "$CONFIRM" != "SI" ]; then
-                die "Cancelado por el usuario."
+
+            echo -e "\n${YELLOW}${MSG_HAVE_SNAPSHOT}${NC}"
+            read -p "${PROMPT_CONFIRM_SI} " -r CONFIRM
+            if [ "$CONFIRM" != "${PROMPT_CONFIRM_YES}" ]; then
+                die "${MSG_CANCELLED_BY_USER}"
             fi
         fi
-        
+
         # Ejecutar actualización
-        if safe_run "apt full-upgrade -y" "Error aplicando actualizaciones"; then
-            echo "→ $updates paquetes actualizados exitosamente"
-            STAT_UPGRADE="$ICON_OK ($updates instalados)"
-            log "SUCCESS" "$updates paquetes actualizados"
+        if safe_run "apt full-upgrade -y" "Error"; then
+            printf "→ ${MSG_PACKAGES_UPDATED}\n" "$updates"
+            STAT_UPGRADE="$ICON_OK"
+            UPGRADE_PERFORMED=true
+            log "SUCCESS" "$(printf "$MSG_PACKAGES_UPDATED" "$updates")"
         else
             STAT_UPGRADE="$ICON_FAIL"
-            log "ERROR" "Error actualizando paquetes"
+            log "ERROR" "${MSG_UPGRADE_ERROR}"
         fi
     else
-        echo "→ Sistema ya actualizado"
-        STAT_UPGRADE="$ICON_OK (sin cambios)"
-        log "INFO" "No hay actualizaciones disponibles"
+        echo "→ ${MSG_SYSTEM_UPTODATE}"
+        STAT_UPGRADE="$ICON_OK"
+        log "INFO" "${MSG_SYSTEM_UPTODATE}"
     fi
 }
 
@@ -1391,27 +1517,28 @@ step_upgrade_system() {
 
 step_update_flatpak() {
     [ "$STEP_UPDATE_FLATPAK" = 0 ] && return
-    
-    print_step "Actualizando aplicaciones Flatpak..."
-    
+
+    print_step "${MSG_UPDATING_FLATPAK}"
+
     if ! command -v flatpak &>/dev/null; then
-        echo "→ Flatpak no está instalado"
-        STAT_FLATPAK="$ICON_SKIP (no instalado)"
+        echo "→ ${MSG_FLATPAK_NOT_INSTALLED}"
+        STAT_FLATPAK="$ICON_SKIP"
         return
     fi
-    
-    if safe_run "flatpak update -y" "Error actualizando Flatpak"; then
+
+    if safe_run "flatpak update -y" "Error"; then
         # Limpiar referencias huérfanas
-        safe_run "flatpak uninstall --unused -y" "Error limpiando Flatpak huérfanos"
-        
+        safe_run "flatpak uninstall --unused -y" "Error"
+
         # Reparar instalación
-        safe_run "flatpak repair" "Error reparando Flatpak"
-        
-        echo "→ Flatpak actualizado y limpiado"
+        safe_run "flatpak repair" "Error"
+
+        echo "→ ${MSG_FLATPAK_UPDATED}"
         STAT_FLATPAK="$ICON_OK"
-        log "SUCCESS" "Flatpak actualizado"
+        log "SUCCESS" "${MSG_FLATPAK_UPDATED}"
     else
         STAT_FLATPAK="$ICON_FAIL"
+        log "ERROR" "${MSG_FLATPAK_ERROR}"
     fi
 }
 
@@ -1421,21 +1548,22 @@ step_update_flatpak() {
 
 step_update_snap() {
     [ "$STEP_UPDATE_SNAP" = 0 ] && return
-    
-    print_step "Actualizando aplicaciones Snap..."
-    
+
+    print_step "${MSG_UPDATING_SNAP}"
+
     if ! command -v snap &>/dev/null; then
-        echo "→ Snap no está instalado"
-        STAT_SNAP="$ICON_SKIP (no instalado)"
+        echo "→ ${MSG_SNAP_NOT_INSTALLED}"
+        STAT_SNAP="$ICON_SKIP"
         return
     fi
-    
-    if safe_run "snap refresh" "Error actualizando Snap"; then
-        echo "→ Snap actualizado"
+
+    if safe_run "snap refresh" "Error"; then
+        echo "→ ${MSG_SNAP_UPDATED}"
         STAT_SNAP="$ICON_OK"
-        log "SUCCESS" "Snap actualizado"
+        log "SUCCESS" "${MSG_SNAP_UPDATED}"
     else
         STAT_SNAP="$ICON_FAIL"
+        log "ERROR" "${MSG_SNAP_ERROR}"
     fi
 }
 
@@ -1445,12 +1573,12 @@ step_update_snap() {
 
 step_check_firmware() {
     [ "$STEP_CHECK_FIRMWARE" = 0 ] && return
-    
-    print_step "Verificando actualizaciones de firmware..."
-    
+
+    print_step "${MSG_CHECKING_FIRMWARE}"
+
     if ! command -v fwupdmgr &>/dev/null; then
-        echo "→ fwupd no está instalado"
-        STAT_FIRMWARE="$ICON_SKIP (no instalado)"
+        echo "→ ${MSG_FWUPD_NOT_INSTALLED}"
+        STAT_FIRMWARE="$ICON_SKIP"
         return
     fi
     
@@ -1460,19 +1588,19 @@ step_check_firmware() {
     local days_old=$(( (current_time - last_refresh) / 86400 ))
     
     if [ "$days_old" -gt 7 ]; then
-        safe_run "fwupdmgr refresh --force" "Error actualizando metadata de firmware"
-        echo "→ Metadata de firmware actualizada"
+        safe_run "fwupdmgr refresh --force" "${MSG_FIRMWARE_REFRESH_ERROR}"
+        echo "→ ${MSG_FIRMWARE_METADATA_UPDATED}"
     else
-        echo "→ Metadata actualizada hace $days_old días"
+        printf "→ ${MSG_FIRMWARE_METADATA_DAYS}\n" "$days_old"
     fi
-    
+
     # Verificar si hay actualizaciones disponibles
     if fwupdmgr get-updates >/dev/null 2>&1; then
-        echo -e "${YELLOW}→ ¡Hay actualizaciones de Firmware disponibles!${NC}"
-        STAT_FIRMWARE="${YELLOW}$ICON_WARN DISPONIBLE${NC}"
-        log "WARN" "Actualizaciones de firmware disponibles"
+        echo -e "${YELLOW}→ ${MSG_FIRMWARE_AVAILABLE}${NC}"
+        STAT_FIRMWARE="${YELLOW}$ICON_WARN AVAILABLE${NC}"
+        log "WARN" "${MSG_FIRMWARE_AVAILABLE}"
     else
-        echo "→ Firmware actualizado"
+        echo "→ ${MSG_FIRMWARE_UPTODATE}"
         STAT_FIRMWARE="$ICON_OK"
     fi
 }
@@ -1483,40 +1611,40 @@ step_check_firmware() {
 
 step_cleanup_apt() {
     [ "$STEP_CLEANUP_APT" = 0 ] && return
-    
-    print_step "Limpieza de paquetes huérfanos y residuales..."
-    
+
+    print_step "${MSG_CLEANING_APT}"
+
     # Autoremove (paquetes huérfanos)
-    if safe_run "apt autoremove -y" "Error en autoremove"; then
-        echo "→ Paquetes huérfanos eliminados"
+    if safe_run "apt autoremove -y" "Error"; then
+        echo "→ ${MSG_ORPHANS_REMOVED}"
     else
         STAT_CLEAN_APT="$ICON_FAIL"
         return
     fi
-    
+
     # Purge (paquetes con config residual)
     local pkgs_rc=$(dpkg -l 2>/dev/null | grep "^rc" | awk '{print $2}')
     if [ -n "$pkgs_rc" ]; then
         local rc_count=$(echo "$pkgs_rc" | wc -l)
         if echo "$pkgs_rc" | xargs apt purge -y >/dev/null 2>&1; then
-            echo "→ $rc_count archivos residuales purgados"
-            log "INFO" "$rc_count paquetes residuales purgados"
+            printf "→ ${MSG_RESIDUALS_PURGED}\n" "$rc_count"
+            log "INFO" "$(printf "$MSG_RESIDUALS_PURGED" "$rc_count")"
         else
             STAT_CLEAN_APT="$ICON_FAIL"
-            log "ERROR" "Error purgando residuales"
+            log "ERROR" "${MSG_APT_CLEANUP_ERROR}"
             return
         fi
     else
-        echo "→ No hay archivos residuales"
+        echo "→ ${MSG_NO_RESIDUALS}"
     fi
-    
+
     # Autoclean o clean
-    if safe_run "apt $APT_CLEAN_MODE" "Error limpiando caché APT"; then
-        echo "→ Caché de APT limpiado"
+    if safe_run "apt $APT_CLEAN_MODE" "Error"; then
+        echo "→ ${MSG_APT_CACHE_CLEANED}"
     fi
-    
+
     STAT_CLEAN_APT="$ICON_OK"
-    log "SUCCESS" "Limpieza APT completada"
+    log "SUCCESS" "${MSG_APT_CLEANUP_OK}"
 }
 
 # ============================================================================
@@ -1525,28 +1653,28 @@ step_cleanup_apt() {
 
 step_cleanup_kernels() {
     [ "$STEP_CLEANUP_KERNELS" = 0 ] && return
-    
-    print_step "Limpieza segura de Kernels antiguos..."
-    
+
+    print_step "${MSG_CLEANING_KERNELS}"
+
     # Obtener kernel actual
     local current_kernel=$(uname -r)
     local current_kernel_pkg="linux-image-${current_kernel}"
-    
-    log "INFO" "Kernel actual: $current_kernel"
-    echo "→ Kernel en uso: $current_kernel"
-    
+
+    log "INFO" "${MSG_CURRENT_KERNEL}: $current_kernel"
+    echo "→ ${MSG_KERNEL_IN_USE}: $current_kernel"
+
     # Obtener todos los kernels instalados
     local installed_kernels=$(dpkg -l 2>/dev/null | awk '/^ii.*linux-image-[0-9]/ {print $2}' | grep -v "meta")
-    
+
     if [ -z "$installed_kernels" ]; then
-        echo "→ No se encontraron kernels para gestionar"
-        STAT_CLEAN_KERNEL="$ICON_OK (Ninguno encontrado)"
+        echo "→ ${MSG_NO_KERNELS_FOUND}"
+        STAT_CLEAN_KERNEL="$ICON_OK"
         return
     fi
-    
+
     # Contar kernels
     local kernel_count=$(echo "$installed_kernels" | wc -l)
-    echo "→ Kernels instalados: $kernel_count"
+    echo "→ ${MSG_INSTALLED_KERNELS}: $kernel_count"
     
     # Mantener: kernel actual + los N más recientes
     local kernels_to_keep=$(echo "$installed_kernels" | sort -V | tail -n "$KERNELS_TO_KEEP")
@@ -1566,42 +1694,42 @@ step_cleanup_kernels() {
     done
     
     if [ -n "$kernels_to_remove" ]; then
-        echo "→ Kernels a mantener:"
+        echo "→ ${MSG_KERNELS_TO_KEEP}"
         echo "$kernels_to_keep" | sed 's/^/   [x] /'
         echo ""
-        echo "→ Kernels a eliminar:"
+        echo "→ ${MSG_KERNELS_TO_REMOVE}"
         echo "$kernels_to_remove" | tr ' ' '\n' | sed 's/^/   [-] /'
-        
+
         # Confirmación en modo interactivo
         if [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
-            read -p "¿Continuar con la eliminación? (s/N): " -n 1 -r
+            read -p "${PROMPT_DELETE_KERNELS} " -n 1 -r
             echo
-            if [[ ! $REPLY =~ ^[Ss]$ ]]; then
-                log "INFO" "Usuario canceló limpieza de kernels"
-                STAT_CLEAN_KERNEL="$ICON_SKIP (Cancelado)"
-                echo "→ Limpieza de kernels cancelada"
+            if [[ ! $REPLY =~ $PROMPT_YES_PATTERN ]]; then
+                log "INFO" "${MSG_USER_CANCELLED_KERNELS}"
+                STAT_CLEAN_KERNEL="$ICON_SKIP"
+                echo "→ ${MSG_USER_CANCELLED_KERNELS}"
                 return
             fi
         fi
-        
+
         # Eliminar kernels
         if echo "$kernels_to_remove" | xargs apt purge -y >> "$LOG_FILE" 2>&1; then
-            echo "→ Kernels antiguos eliminados"
+            echo "→ ${MSG_KERNELS_REMOVED}"
             STAT_CLEAN_KERNEL="$ICON_OK"
-            log "SUCCESS" "Kernels antiguos eliminados"
-            
+            log "SUCCESS" "${MSG_KERNELS_REMOVED}"
+
             # Regenerar GRUB
             if command -v update-grub &>/dev/null; then
-                safe_run "update-grub" "Error actualizando GRUB"
-                echo "→ GRUB actualizado"
+                safe_run "update-grub" "Error"
+                echo "→ ${MSG_GRUB_UPDATED}"
             fi
         else
             STAT_CLEAN_KERNEL="$ICON_FAIL"
-            log "ERROR" "Error eliminando kernels"
+            log "ERROR" "${MSG_KERNEL_CLEANUP_ERROR}"
         fi
     else
-        echo "→ No hay kernels antiguos para limpiar"
-        STAT_CLEAN_KERNEL="$ICON_OK (Nada que limpiar)"
+        echo "→ ${MSG_NO_KERNELS_TO_CLEAN}"
+        STAT_CLEAN_KERNEL="$ICON_OK"
     fi
 }
 
@@ -1611,20 +1739,20 @@ step_cleanup_kernels() {
 
 step_cleanup_disk() {
     [ "$STEP_CLEANUP_DISK" = 0 ] && return
-    
-    print_step "Limpieza de logs y caché del sistema..."
-    
+
+    print_step "${MSG_CLEANING_DISK}"
+
     # Journalctl
     if command -v journalctl &>/dev/null; then
-        if safe_run "journalctl --vacuum-time=${DIAS_LOGS}d --vacuum-size=500M" "Error limpiando journalctl"; then
-            echo "→ Logs de journalctl reducidos"
+        if safe_run "journalctl --vacuum-time=${DIAS_LOGS}d --vacuum-size=500M" "Error"; then
+            echo "→ ${MSG_JOURNALCTL_REDUCED}"
         fi
     fi
-    
+
     # Archivos temporales antiguos
     find /var/tmp -type f -atime +30 -delete 2>/dev/null && \
-        echo "→ Archivos temporales antiguos eliminados" || true
-    
+        echo "→ ${MSG_TEMP_FILES_DELETED}" || true
+
     # Thumbnails
     local cleaned_homes=0
     for user_home in /home/* /root; do
@@ -1632,10 +1760,10 @@ step_cleanup_disk() {
             rm -rf "$user_home/.cache/thumbnails/"* 2>/dev/null && ((cleaned_homes++))
         fi
     done
-    [ "$cleaned_homes" -gt 0 ] && echo "→ Caché de miniaturas limpiado ($cleaned_homes usuarios)"
-    
+    [ "$cleaned_homes" -gt 0 ] && printf "→ ${MSG_THUMBNAILS_CLEANED}\n" "$cleaned_homes"
+
     STAT_CLEAN_DISK="$ICON_OK"
-    log "SUCCESS" "Limpieza de disco completada"
+    log "SUCCESS" "${MSG_DISK_CLEANUP_OK}"
 }
 
 # ============================================================================
@@ -1644,24 +1772,24 @@ step_cleanup_disk() {
 
 step_check_reboot() {
     [ "$STEP_CHECK_REBOOT" = 0 ] && return
-    
-    print_step "Verificando necesidad de reinicio..."
-    
+
+    print_step "${MSG_CHECKING_REBOOT}"
+
     # Verificar archivo de reinicio requerido
     if [ -f /var/run/reboot-required ]; then
         REBOOT_NEEDED=true
-        log "WARN" "Archivo /var/run/reboot-required presente"
-        echo "→ Detectado archivo /var/run/reboot-required"
+        log "WARN" "${MSG_REBOOT_FILE_DETECTED}"
+        echo "→ ${MSG_REBOOT_FILE_DETECTED}"
     fi
-    
+
     # Verificar servicios fallidos
     local failed_services=$(systemctl --failed --no-legend 2>/dev/null | wc -l)
     failed_services=${failed_services//[^0-9]/}
     failed_services=${failed_services:-0}
-    
+
     if [ "$failed_services" -gt 0 ]; then
-        log "WARN" "$failed_services servicios fallidos detectados"
-        echo -e "${YELLOW}→ $failed_services servicios en estado fallido${NC}"
+        log "WARN" "$(printf "$MSG_FAILED_SERVICES" "$failed_services")"
+        printf "${YELLOW}→ ${MSG_FAILED_SERVICES}${NC}\n" "$failed_services"
         
         if [ "$UNATTENDED" = false ]; then
             systemctl --failed --no-pager 2>/dev/null | head -10
@@ -1670,41 +1798,41 @@ step_check_reboot() {
     
     # Needrestart - Verificación avanzada
     if command -v needrestart &>/dev/null; then
-        echo "→ Analizando kernel y servicios con needrestart..."
-        
+        echo "→ ${MSG_ANALYZING_NEEDRESTART}"
+
         # Ejecutar needrestart en modo batch
         local needrestart_output=$(needrestart -b 2>/dev/null)
-        
+
         # Extraer información del kernel
         local running_kernel=$(echo "$needrestart_output" | grep "NEEDRESTART-KCUR:" | awk '{print $2}')
         local expected_kernel=$(echo "$needrestart_output" | grep "NEEDRESTART-KEXP:" | awk '{print $2}')
         local kernel_status=$(echo "$needrestart_output" | grep "NEEDRESTART-KSTA:" | awk '{print $2}')
-        
-        log "INFO" "Kernel en ejecución: $running_kernel"
-        log "INFO" "Kernel esperado: $expected_kernel"
-        log "INFO" "Estado KSTA: $kernel_status"
-        
+
+        log "INFO" "Running kernel: $running_kernel"
+        log "INFO" "Expected kernel: $expected_kernel"
+        log "INFO" "KSTA status: $kernel_status"
+
         # VERIFICACIÓN 1: Kernel desactualizado (COMPARACIÓN DIRECTA)
         if [ -n "$expected_kernel" ] && [ -n "$running_kernel" ]; then
             if [ "$running_kernel" != "$expected_kernel" ]; then
                 REBOOT_NEEDED=true
-                log "WARN" "Kernel desactualizado: $running_kernel → $expected_kernel"
-                echo -e "${YELLOW}→ Kernel desactualizado detectado${NC}"
+                log "WARN" "${MSG_KERNEL_OUTDATED}: $running_kernel → $expected_kernel"
+                echo -e "${YELLOW}→ ${MSG_KERNEL_OUTDATED}${NC}"
             else
-                log "INFO" "Kernel actualizado (coincide con el esperado)"
-                echo "→ Kernel actualizado"
+                log "INFO" "${MSG_KERNEL_UPTODATE}"
+                echo "→ ${MSG_KERNEL_UPTODATE}"
             fi
         fi
-        
+
         # VERIFICACIÓN 2: Servicios que necesitan reinicio
         local services_restart=$(echo "$needrestart_output" | grep "NEEDRESTART-SVC:" | wc -l)
         services_restart=${services_restart//[^0-9]/}
         services_restart=${services_restart:-0}
         services_restart=$((services_restart + 0))
-        
+
         if [ "$services_restart" -gt 0 ]; then
-            log "INFO" "$services_restart servicios requieren reinicio"
-            echo "→ $services_restart servicios con librerías obsoletas detectados"
+            log "INFO" "$(printf "$MSG_SERVICES_NEED_RESTART" "$services_restart")"
+            printf "→ ${MSG_SERVICES_NEED_RESTART}\n" "$services_restart"
         fi
         
         # VERIFICACIÓN 3: Librerías críticas (LÓGICA REFINADA)
@@ -1722,49 +1850,43 @@ step_check_reboot() {
         
         if [ -n "$critical_libs" ] && [ "$critical_libs" = "1" ]; then
             # Verificar si hubo actualizaciones DE SISTEMA en esta sesión
-            local system_updated=false
-            
-            # Si el estado de upgrade NO es "sin cambios" ni "skip", hubo actualizaciones
-            if [[ "$STAT_UPGRADE" == *"instalado"* ]] || [[ "$STAT_UPGRADE" == *"actualizado"* ]]; then
-                system_updated=true
-            fi
-            
-            if [ "$system_updated" = true ]; then
+            # Usamos el flag UPGRADE_PERFORMED que se establece en step_upgrade_system()
+            if [ "$UPGRADE_PERFORMED" = true ]; then
                 REBOOT_NEEDED=true
-                log "WARN" "Librerías críticas actualizadas en esta sesión, reinicio requerido"
-                echo -e "${YELLOW}→ Librerías críticas actualizadas en esta sesión${NC}"
+                log "WARN" "${MSG_CRITICAL_LIBS_UPDATED}"
+                echo -e "${YELLOW}→ ${MSG_CRITICAL_LIBS_UPDATED}${NC}"
             else
                 # UCSTA=1 es de una actualización anterior, no de ahora
-                log "INFO" "UCSTA=1 persistente de actualización anterior (no de esta sesión)"
-                echo "→ Librerías del sistema estables (UCSTA persistente, sin cambios nuevos)"
+                log "INFO" "UCSTA=1 persistent from previous update (not this session)"
+                echo "→ ${MSG_CRITICAL_LIBS_STABLE}"
             fi
         else
-            log "INFO" "No hay cambios en librerías críticas"
-            echo "→ No hay cambios en librerías críticas"
+            log "INFO" "${MSG_NO_CRITICAL_LIBS_CHANGES}"
+            echo "→ ${MSG_NO_CRITICAL_LIBS_CHANGES}"
         fi
         
         # Intentar reiniciar servicios automáticamente
         if [ "$DRY_RUN" = false ]; then
             if [ "$services_restart" -gt 0 ]; then
-                echo "→ Reiniciando servicios obsoletos automáticamente..."
+                echo "→ ${MSG_RESTARTING_SERVICES}"
                 needrestart -r a >> "$LOG_FILE" 2>&1
-                log "INFO" "Needrestart ejecutado para $services_restart servicios"
+                log "INFO" "Needrestart executed for $services_restart services"
             else
-                echo "→ No hay servicios que necesiten reinicio"
+                echo "→ ${MSG_NO_SERVICES_RESTART}"
             fi
         fi
     else
-        log "INFO" "needrestart no está instalado"
-        echo "→ needrestart no disponible (recomendado instalarlo)"
+        log "INFO" "needrestart not installed"
+        echo "→ ${MSG_NEEDRESTART_NOT_INSTALLED}"
     fi
     
     # Establecer estado final
     if [ "$REBOOT_NEEDED" = true ]; then
-        STAT_REBOOT="${RED}$ICON_WARN REQUERIDO${NC}"
-        log "WARN" "REINICIO REQUERIDO"
+        STAT_REBOOT="${RED}$ICON_WARN ${MSG_STAT_REQUIRED}${NC}"
+        log "WARN" "${MSG_REBOOT_REQUIRED}"
     else
-        STAT_REBOOT="${GREEN}$ICON_OK No necesario${NC}"
-        log "INFO" "No se requiere reinicio"
+        STAT_REBOOT="${GREEN}$ICON_OK ${MSG_STAT_NOT_NEEDED}${NC}"
+        log "INFO" "${MSG_REBOOT_NOT_REQUIRED}"
     fi
 }
 
@@ -1832,15 +1954,15 @@ show_final_summary() {
     done
 
     # Determinar estado general
-    local overall_status="COMPLETADO"
+    local overall_status="${MSG_SUMMARY_COMPLETED}"
     local overall_color="${GREEN}"
     local overall_icon="${ICON_SUM_OK}"
     if [ $error_count -gt 0 ]; then
-        overall_status="COMPLETADO CON ERRORES"
+        overall_status="${MSG_SUMMARY_COMPLETED_ERRORS}"
         overall_color="${RED}"
         overall_icon="${ICON_SUM_FAIL}"
     elif [ $warning_count -gt 0 ]; then
-        overall_status="COMPLETADO CON AVISOS"
+        overall_status="${MSG_SUMMARY_COMPLETED_WARNINGS}"
         overall_color="${YELLOW}"
         overall_icon="${ICON_SUM_WARN}"
     fi
@@ -1861,14 +1983,14 @@ show_final_summary() {
     # === RESUMEN ENTERPRISE 3 COLUMNAS (78 chars) ===
     echo ""
     print_box_top
-    print_box_center "${BOLD}RESUMEN DE EJECUCIÓN${NC}"
+    print_box_center "${BOLD}${MENU_SUMMARY_TITLE}${NC}"
     print_box_sep
-    print_box_line "Estado: ${overall_color}${overall_icon} ${overall_status}${NC}                          Duración: ${CYAN}${duration_str}${NC}"
+    print_box_line "${MSG_SUMMARY_STATUS}: ${overall_color}${overall_icon} ${overall_status}${NC}                          ${MSG_SUMMARY_DURATION}: ${CYAN}${duration_str}${NC}"
     print_box_sep
-    print_box_line "${BOLD}MÉTRICAS${NC}"
-    print_box_line "Completados: ${GREEN}${success_count}${NC}    Errores: ${RED}${error_count}${NC}    Omitidos: ${YELLOW}${skipped_count}${NC}    Espacio: ${CYAN}${total_freed} MB${NC}"
+    print_box_line "${BOLD}${MSG_SUMMARY_METRICS}${NC}"
+    print_box_line "${MSG_SUMMARY_COMPLETED_COUNT}: ${GREEN}${success_count}${NC}    ${MSG_SUMMARY_ERRORS}: ${RED}${error_count}${NC}    ${MSG_SUMMARY_SKIPPED}: ${YELLOW}${skipped_count}${NC}    ${MSG_SUMMARY_SPACE}: ${CYAN}${total_freed} MB${NC}"
     print_box_sep
-    print_box_line "${BOLD}DETALLE DE PASOS${NC}"
+    print_box_line "${BOLD}${MSG_SUMMARY_STEP_DETAIL}${NC}"
 
     # Generar líneas de 3 columnas (5 filas x 3 cols = 15 slots, usamos 13)
     # Formato fijo: icono[4] + espacio[1] + nombre[10] = 15 chars por celda
@@ -1894,31 +2016,31 @@ show_final_summary() {
 
     # Estado de reinicio
     if [ "$REBOOT_NEEDED" = true ]; then
-        print_box_line "${RED}${ICON_SUM_WARN} REINICIO REQUERIDO${NC} - Actualiz. de kernel/librerías críticas"
+        print_box_line "${RED}${ICON_SUM_WARN} ${MSG_REBOOT_REQUIRED}${NC}"
     else
-        print_box_line "${GREEN}${ICON_SUM_OK} No se requiere reinicio${NC}"
+        print_box_line "${GREEN}${ICON_SUM_OK} ${MSG_REBOOT_NOT_REQUIRED}${NC}"
     fi
 
     print_box_sep
-    print_box_line "Log: ${DIM}${LOG_FILE}${NC}"
-    [ "$STEP_BACKUP_TAR" = 1 ] && print_box_line "Backups: ${DIM}${BACKUP_DIR}${NC}"
+    print_box_line "${MSG_SUMMARY_LOG}: ${DIM}${LOG_FILE}${NC}"
+    [ "$STEP_BACKUP_TAR" = 1 ] && print_box_line "${MSG_SUMMARY_BACKUPS}: ${DIM}${BACKUP_DIR}${NC}"
     print_box_bottom
     echo ""
 
     # Advertencias fuera del box
-    if [[ "$STAT_FIRMWARE" == *"DISPONIBLE"* ]]; then
-        echo -e "${YELLOW}[!!] FIRMWARE: Hay actualizaciones de BIOS/Dispositivos disponibles.${NC}"
-        echo "   → Para instalar: sudo fwupdmgr update"
+    if [[ "$STAT_FIRMWARE" == *"DISPONIBLE"* ]] || [[ "$STAT_FIRMWARE" == *"AVAILABLE"* ]]; then
+        echo -e "${YELLOW}[!!] ${MSG_FIRMWARE_AVAILABLE_NOTE}${NC}"
+        echo "   → ${MSG_FIRMWARE_INSTALL_HINT}"
         echo ""
     fi
 
     if [ "$REBOOT_NEEDED" = true ] && [ "$UNATTENDED" = false ]; then
         echo ""
-        read -p "¿Deseas reiniciar ahora? (s/N): " -n 1 -r
+        read -p "${PROMPT_REBOOT_NOW} " -n 1 -r
         echo
-        if [[ $REPLY =~ ^[Ss]$ ]]; then
-            log "INFO" "Usuario solicitó reinicio inmediato"
-            echo "Reiniciando en 5 segundos... (Ctrl+C para cancelar)"
+        if [[ $REPLY =~ $PROMPT_YES_PATTERN ]]; then
+            log "INFO" "User requested immediate reboot"
+            echo "${MSG_REBOOTING_IN}"
             sleep 5
             reboot
         fi
@@ -1950,6 +2072,15 @@ while [[ $# -gt 0 ]]; do
         --no-menu)
             NO_MENU=true
             shift
+            ;;
+        --lang)
+            if [ -n "$2" ]; then
+                AUTOCLEAN_LANG="$2"
+                shift 2
+            else
+                echo "Error: --lang requires a language code (en, es)"
+                exit 1
+            fi
             ;;
         --help)
             cat << 'EOF'
@@ -1997,6 +2128,14 @@ done
 # EJECUCIÓN MAESTRA
 # ============================================================================
 
+# Cargar configuración guardada si existe (para obtener SAVED_LANG antes de cargar idioma)
+if config_exists; then
+    load_config
+fi
+
+# Cargar idioma (usa SAVED_LANG si existe, o detecta del sistema)
+load_language
+
 # Verificar permisos de root ANTES de cualquier operación
 check_root
 
@@ -2011,12 +2150,6 @@ check_lock
 
 # Detectar distribución (debe ejecutarse antes de print_header)
 detect_distro
-
-# Cargar configuración guardada si existe
-if config_exists; then
-    load_config
-    log "INFO" "Configuración cargada desde $CONFIG_FILE"
-fi
 
 # Contar pasos iniciales
 count_active_steps

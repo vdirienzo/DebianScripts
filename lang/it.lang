@@ -1,0 +1,344 @@
+# ============================================================================
+# Autoclean - File di Lingua Italiano (it)
+# ============================================================================
+# Encoding: UTF-8
+# ============================================================================
+
+# === GENERAL ===
+LANG_NAME="Italiano"
+LANG_CODE="it"
+
+# === MENU TITLES ===
+MENU_TITLE="CONFIGURAZIONE MANUTENZIONE"
+MENU_SYSTEM_TITLE="MANUTENZIONE SISTEMA"
+MENU_SUMMARY_TITLE="RIEPILOGO ESECUZIONE"
+MENU_STEPS_TITLE="PASSAGGI"
+MENU_STEPS_HELP="(frecce per navigare, SPAZIO selezionare, INVIO eseguire)"
+MENU_LANGUAGE_TITLE="SELEZIONA LINGUA"
+MENU_LANGUAGE_PROMPT="Usa le frecce per navigare, INVIO per selezionare"
+
+# === MENU STEP NAMES (full) ===
+STEP_NAME_1="Verifica connettivita"
+STEP_NAME_2="Verifica dipendenze"
+STEP_NAME_3="Backup configurazioni (tar)"
+STEP_NAME_4="Snapshot Timeshift"
+STEP_NAME_5="Aggiorna repository"
+STEP_NAME_6="Aggiorna sistema (APT)"
+STEP_NAME_7="Aggiorna Flatpak"
+STEP_NAME_8="Aggiorna Snap"
+STEP_NAME_9="Verifica firmware"
+STEP_NAME_10="Pulizia APT"
+STEP_NAME_11="Pulizia kernel"
+STEP_NAME_12="Pulizia disco/log"
+STEP_NAME_13="Verifica riavvio"
+
+# === MENU STEP NAMES (short for grid) ===
+STEP_SHORT_1="Connet."
+STEP_SHORT_2="Dipend."
+STEP_SHORT_3="Backup"
+STEP_SHORT_4="Snapshot"
+STEP_SHORT_5="Repo"
+STEP_SHORT_6="Aggiorna"
+STEP_SHORT_7="Flatpak"
+STEP_SHORT_8="Snap"
+STEP_SHORT_9="Firmware"
+STEP_SHORT_10="APT Pul"
+STEP_SHORT_11="Kernel"
+STEP_SHORT_12="Disco"
+STEP_SHORT_13="Riavvio"
+
+# === MENU STEP DESCRIPTIONS ===
+STEP_DESC_1="Verificare la connessione internet prima di continuare"
+STEP_DESC_2="Installare strumenti necessari (timeshift, needrestart, ecc.)"
+STEP_DESC_3="Salvare configurazioni APT in /var/backups"
+STEP_DESC_4="Creare snapshot con Timeshift per rollback (CONSIGLIATO)"
+STEP_DESC_5="Eseguire apt update per aggiornare lista pacchetti"
+STEP_DESC_6="Eseguire apt full-upgrade per aggiornare i pacchetti"
+STEP_DESC_7="Aggiornare applicazioni installate con Flatpak"
+STEP_DESC_8="Aggiornare applicazioni installate con Snap"
+STEP_DESC_9="Verificare aggiornamenti BIOS/dispositivi (fwupd)"
+STEP_DESC_10="Rimuovere pacchetti orfani e residui"
+STEP_DESC_11="Rimuovere kernel vecchi (mantiene 3)"
+STEP_DESC_12="Pulire log vecchi e cache di sistema"
+STEP_DESC_13="Rilevare se il sistema deve essere riavviato"
+
+# === MENU CONTROLS ===
+MENU_CTRL_ENTER="Esegui"
+MENU_CTRL_ALL="Tutti"
+MENU_CTRL_NONE="Nessuno"
+MENU_CTRL_SAVE="Salva"
+MENU_CTRL_DELETE="Elimina"
+MENU_CTRL_LANG="Lingua"
+MENU_CTRL_QUIT="Esci"
+
+# === MENU STATUS ===
+MENU_SELECTED="Selezionati"
+MENU_PROFILE="Profilo"
+MENU_PROFILE_SAVED="Salvato"
+MENU_PROFILE_UNSAVED="Non salvato"
+MENU_TOTAL="Totale"
+MENU_STEPS="passaggi"
+MENU_EST_TIME="Tempo stimato"
+MENU_MIN="min"
+
+# === PROMPTS ===
+PROMPT_CONTINUE="Continuare? (s/N):"
+PROMPT_YES_PATTERN="^[SsYy]$"
+PROMPT_INSTALL_TOOLS="Vuoi installarli automaticamente? (s/N):"
+PROMPT_SKIP_SNAPSHOT="Vuoi SALTARE la creazione dello Snapshot Timeshift?"
+PROMPT_SKIP_INSTRUCTIONS="Digita 's' per SALTARE, altro tasto per CREARE:"
+PROMPT_CONTINUE_NO_SNAPSHOT="Vuoi continuare SENZA snapshot? Questo e RISCHIOSO."
+PROMPT_CONFIRM_SI="Digita 'SI' (maiuscolo) per continuare:"
+PROMPT_CONFIRM_YES="SI"
+PROMPT_CONTINUE_CONFIG="Continuare con questa configurazione? (s/N):"
+PROMPT_DELETE_KERNELS="Continuare con l'eliminazione? (s/N):"
+PROMPT_REBOOT_NOW="Vuoi riavviare ora? (s/N):"
+
+# === MESSAGES - GENERAL ===
+MSG_CHECKING="Verifica"
+MSG_VERIFYING="Verifica"
+MSG_CREATING="Creazione"
+MSG_UPDATING="Aggiornamento"
+MSG_CLEANING="Pulizia"
+MSG_COMPLETED="Completato"
+MSG_FAILED="Fallito"
+MSG_SKIPPED="Saltato"
+MSG_OK="OK"
+MSG_ERROR="ERRORE"
+MSG_WARNING="ATTENZIONE"
+MSG_INFO="INFO"
+MSG_SUCCESS="SUCCESSO"
+
+# === MESSAGES - CONNECTIVITY ===
+MSG_CHECKING_CONNECTIVITY="Verifica connettivita..."
+MSG_CHECKING_CONNECTION_TO="Verifica connessione a"
+MSG_CONNECTION_OK="Connessione internet: OK"
+MSG_CONNECTION_WARN="Mirror specifico non raggiungibile, ma connessione internet presente"
+MSG_NO_CONNECTION="Nessuna connessione internet. Controllare la rete."
+
+# === MESSAGES - DEPENDENCIES ===
+MSG_CHECKING_TOOLS="Verifica strumenti consigliati..."
+MSG_TOOLS_SKIPPED="Strumenti saltati (passaggi disattivati)"
+MSG_MISSING_TOOLS="Mancano %d strumenti richiesti per i passaggi attivi:"
+MSG_INSTALLING_TOOLS="Installazione strumenti..."
+MSG_TOOLS_INSTALLED="Strumenti installati con successo"
+MSG_TOOLS_PARTIAL="Alcuni strumenti non sono stati installati"
+MSG_TOOLS_OK="Tutti gli strumenti necessari sono installati"
+MSG_USER_SKIPPED_TOOLS="L'utente ha deciso di continuare senza installare gli strumenti"
+
+# === MESSAGES - BACKUP ===
+MSG_CREATING_BACKUP="Creazione backup configurazione (Tar)..."
+MSG_BACKUP_CREATED="Backup creato"
+MSG_BACKUP_FAILED="Errore nella creazione del backup Tar"
+
+# === MESSAGES - TIMESHIFT ===
+MSG_CREATING_SNAPSHOT="Creazione Snapshot Sistema (Timeshift)..."
+MSG_TIMESHIFT_NOT_INSTALLED="Timeshift non e installato"
+MSG_TIMESHIFT_NOT_CONFIGURED="TIMESHIFT NON E CONFIGURATO"
+MSG_TIMESHIFT_CONFIG_NEEDED="Timeshift e installato ma necessita configurazione iniziale."
+MSG_TIMESHIFT_CONFIG_INSTRUCTIONS="Per configurarlo, eseguire:"
+MSG_TIMESHIFT_CONFIG_GUI="(interfaccia grafica)"
+MSG_TIMESHIFT_CONFIG_CLI="(terminale)"
+MSG_TIMESHIFT_MUST_CONFIG="Devi configurare:"
+MSG_TIMESHIFT_CONFIG_TYPE="Tipo di snapshot (RSYNC consigliato per ext4/xfs)"
+MSG_TIMESHIFT_CONFIG_DEVICE="Dispositivo/partizione per salvare i backup"
+MSG_TIMESHIFT_SKIPPED_USER="L'utente ha saltato lo snapshot Timeshift"
+MSG_TIMESHIFT_SKIPPED_NOCONFIG="Timeshift installato ma non configurato - passaggio saltato"
+MSG_SNAPSHOT_CREATED="Snapshot Timeshift creato con successo"
+MSG_SNAPSHOT_FAILED="Errore nella creazione dello snapshot Timeshift"
+MSG_CONTINUE_WITHOUT_SNAPSHOT="Premi un tasto per continuare senza snapshot..."
+MSG_USER_CONTINUED_NO_SNAPSHOT="L'utente ha deciso di continuare senza snapshot"
+MSG_ABORTED_NO_SNAPSHOT="Impossibile creare snapshot Timeshift. Interruzione per sicurezza."
+
+# === MESSAGES - REPOSITORIES ===
+MSG_UPDATING_REPOS="Aggiornamento lista repository..."
+MSG_REPOS_UPDATED="Repository aggiornati"
+MSG_REPOS_ERROR="Errore critico nell'aggiornamento dei repository"
+
+# === MESSAGES - UPGRADE ===
+MSG_ANALYZING_UPDATES="Analisi e applicazione aggiornamenti sistema..."
+MSG_PACKAGES_TO_UPDATE="%d pacchetti da aggiornare"
+MSG_SIMULATING_UPGRADE="Simulazione upgrade per rilevare rimozioni..."
+MSG_SECURITY_ALERT="AVVISO SICUREZZA: APT propone di rimuovere %d pacchetti"
+MSG_REMOVING="Rimozione:"
+MSG_HAVE_SNAPSHOT="Hai uno snapshot valido? Vuoi procedere?"
+MSG_ABORTED_MASS_REMOVAL="Interrotto automaticamente per rischio rimozione massiva in modalita non presidiata."
+MSG_CANCELLED_BY_USER="Annullato dall'utente."
+MSG_PACKAGES_UPDATED="%d pacchetti aggiornati con successo"
+MSG_SYSTEM_UPTODATE="Sistema gia aggiornato"
+MSG_UPGRADE_ERROR="Errore nell'aggiornamento dei pacchetti"
+
+# === MESSAGES - FLATPAK ===
+MSG_UPDATING_FLATPAK="Aggiornamento applicazioni Flatpak..."
+MSG_FLATPAK_NOT_INSTALLED="Flatpak non e installato"
+MSG_FLATPAK_UPDATED="Flatpak aggiornato e pulito"
+MSG_FLATPAK_ERROR="Errore nell'aggiornamento di Flatpak"
+
+# === MESSAGES - SNAP ===
+MSG_UPDATING_SNAP="Aggiornamento applicazioni Snap..."
+MSG_SNAP_NOT_INSTALLED="Snap non e installato"
+MSG_SNAP_UPDATED="Snap aggiornato"
+MSG_SNAP_ERROR="Errore nell'aggiornamento di Snap"
+
+# === MESSAGES - FIRMWARE ===
+MSG_CHECKING_FIRMWARE="Verifica aggiornamenti firmware..."
+MSG_FWUPD_NOT_INSTALLED="fwupd non e installato"
+MSG_FIRMWARE_METADATA_UPDATED="Metadati firmware aggiornati"
+MSG_FIRMWARE_METADATA_DAYS="Metadati aggiornati %d giorni fa"
+MSG_FIRMWARE_AVAILABLE="Aggiornamenti firmware disponibili!"
+MSG_FIRMWARE_UPTODATE="Firmware aggiornato"
+MSG_FIRMWARE_REFRESH_ERROR="Errore nell'aggiornamento dei metadati firmware"
+
+# === MESSAGES - APT CLEANUP ===
+MSG_CLEANING_APT="Pulizia pacchetti orfani e residui..."
+MSG_ORPHANS_REMOVED="Pacchetti orfani rimossi"
+MSG_RESIDUALS_PURGED="%d file residui eliminati"
+MSG_NO_RESIDUALS="Nessun file residuo"
+MSG_APT_CACHE_CLEANED="Cache APT pulita"
+MSG_APT_CLEANUP_OK="Pulizia APT completata"
+MSG_APT_CLEANUP_ERROR="Errore pulizia APT"
+
+# === MESSAGES - KERNELS ===
+MSG_CLEANING_KERNELS="Pulizia sicura dei kernel vecchi..."
+MSG_CURRENT_KERNEL="Kernel attuale"
+MSG_KERNEL_IN_USE="Kernel in uso"
+MSG_INSTALLED_KERNELS="Kernel installati"
+MSG_NO_KERNELS_FOUND="Nessun kernel trovato da gestire"
+MSG_KERNELS_TO_KEEP="Kernel da mantenere:"
+MSG_KERNELS_TO_REMOVE="Kernel da rimuovere:"
+MSG_USER_CANCELLED_KERNELS="L'utente ha annullato la pulizia dei kernel"
+MSG_KERNELS_REMOVED="Kernel vecchi rimossi"
+MSG_GRUB_UPDATED="GRUB aggiornato"
+MSG_NO_KERNELS_TO_CLEAN="Nessun kernel vecchio da pulire"
+MSG_KERNEL_CLEANUP_ERROR="Errore nella rimozione dei kernel"
+
+# === MESSAGES - DISK CLEANUP ===
+MSG_CLEANING_DISK="Pulizia log e cache di sistema..."
+MSG_JOURNALCTL_REDUCED="Log journalctl ridotti"
+MSG_TEMP_FILES_DELETED="File temporanei vecchi eliminati"
+MSG_THUMBNAILS_CLEANED="Cache miniature pulita (%d utenti)"
+MSG_DISK_CLEANUP_OK="Pulizia disco completata"
+
+# === MESSAGES - REBOOT CHECK ===
+MSG_CHECKING_REBOOT="Verifica necessita riavvio..."
+MSG_REBOOT_FILE_DETECTED="Rilevato file /var/run/reboot-required"
+MSG_FAILED_SERVICES="%d servizi in stato di errore"
+MSG_ANALYZING_NEEDRESTART="Analisi kernel e servizi con needrestart..."
+MSG_KERNEL_OUTDATED="Rilevato kernel obsoleto"
+MSG_KERNEL_UPTODATE="Kernel aggiornato"
+MSG_SERVICES_NEED_RESTART="%d servizi con librerie obsolete rilevati"
+MSG_NO_SERVICES_RESTART="Nessun servizio necessita riavvio"
+MSG_CRITICAL_LIBS_UPDATED="Librerie critiche aggiornate in questa sessione"
+MSG_CRITICAL_LIBS_STABLE="Librerie di sistema stabili (UCSTA persistente, nessuna nuova modifica)"
+MSG_NO_CRITICAL_LIBS_CHANGES="Nessuna modifica nelle librerie critiche"
+MSG_RESTARTING_SERVICES="Riavvio automatico servizi obsoleti..."
+MSG_NEEDRESTART_NOT_INSTALLED="needrestart non disponibile (installazione consigliata)"
+MSG_REBOOT_REQUIRED="RIAVVIO NECESSARIO"
+MSG_REBOOT_NOT_REQUIRED="Riavvio non necessario"
+MSG_REBOOTING_IN="Riavvio tra 5 secondi... (Ctrl+C per annullare)"
+MSG_STAT_REQUIRED="NECESSARIO"
+MSG_STAT_NOT_NEEDED="Non necessario"
+
+# === MESSAGES - SUMMARY ===
+MSG_SUMMARY_STATUS="Stato"
+MSG_SUMMARY_DURATION="Durata"
+MSG_SUMMARY_COMPLETED="COMPLETATO"
+MSG_SUMMARY_COMPLETED_ERRORS="COMPLETATO CON ERRORI"
+MSG_SUMMARY_COMPLETED_WARNINGS="COMPLETATO CON AVVISI"
+MSG_SUMMARY_METRICS="METRICHE"
+MSG_SUMMARY_COMPLETED_COUNT="Completati"
+MSG_SUMMARY_ERRORS="Errori"
+MSG_SUMMARY_SKIPPED="Saltati"
+MSG_SUMMARY_SPACE="Spazio"
+MSG_SUMMARY_STEP_DETAIL="DETTAGLIO PASSAGGI"
+MSG_SUMMARY_LOG="Log"
+MSG_SUMMARY_BACKUPS="Backup"
+MSG_FIRMWARE_AVAILABLE_NOTE="FIRMWARE: Aggiornamenti BIOS/Dispositivo disponibili."
+MSG_FIRMWARE_INSTALL_HINT="Per installare: sudo fwupdmgr update"
+
+# === MESSAGES - ROOT CHECK ===
+MSG_ROOT_REQUIRED="Questo script richiede permessi di root"
+MSG_CORRECT_USAGE="Uso corretto:"
+MSG_AVAILABLE_OPTIONS="Opzioni disponibili:"
+MSG_VIEW_HELP="Visualizza aiuto completo"
+MSG_SIMULATE_CHANGES="Simula senza modifiche"
+MSG_UNATTENDED_MODE="Modalita non presidiata"
+
+# === MESSAGES - LOCK ===
+MSG_ALREADY_RUNNING="Un'altra istanza dello script e gia in esecuzione (PID: %s)"
+MSG_APT_BUSY="APT e occupato. Chiudi Synaptic/Discover e riprova."
+
+# === MESSAGES - DISK SPACE ===
+MSG_CHECKING_DISK_SPACE="Verifica spazio disco..."
+MSG_FREE_SPACE_ROOT="Spazio libero in /: %s GB"
+MSG_FREE_SPACE_BOOT="Spazio libero in /boot: %s MB"
+MSG_INSUFFICIENT_SPACE="Spazio insufficiente in / (%sGB < %sGB)"
+MSG_LOW_BOOT_SPACE="Poco spazio in /boot (%sMB). Consigliata pulizia kernel."
+MSG_DISK_SPACE_OK="Spazio disco sufficiente"
+
+# === MESSAGES - VALIDATION ===
+MSG_VALIDATING_DEPS="Validazione dipendenze passaggi..."
+MSG_VALIDATION_OK="Validazione dipendenze OK"
+MSG_CANT_UPGRADE_NO_UPDATE="Impossibile aggiornare sistema (STEP_UPGRADE_SYSTEM=1) senza aggiornare repository (STEP_UPDATE_REPOS=0). Abilitare STEP_UPDATE_REPOS."
+MSG_KERNEL_CLEANUP_NO_SNAPSHOT="La pulizia kernel senza snapshot Timeshift puo essere rischiosa"
+MSG_CONTINUE_ANYWAY="Continuare comunque? (s/N):"
+MSG_ABORTED_BY_USER="Interrotto dall'utente"
+MSG_CANCELLED_BY_USER="Annullato dall'utente"
+
+# === MESSAGES - CONFIG ===
+MSG_CONFIG_LOADED="Configurazione caricata da"
+MSG_CONFIG_SAVED="Configurazione salvata"
+MSG_CONFIG_DELETED="Configurazione eliminata"
+
+# === MESSAGES - DISTRO ===
+MSG_DISTRO_DETECTED="Distribuzione rilevata"
+MSG_DISTRO_FAMILY="Famiglia"
+MSG_DISTRO_VERSION="Versione"
+MSG_DISTRO_CODENAME="Nome in codice"
+MSG_DISTRO_MIRROR="Mirror di verifica"
+MSG_DISTRO_NOT_SUPPORTED="Distribuzione non supportata: %s. Questo script supporta solo distribuzioni basate su Debian/Ubuntu."
+MSG_DISTRO_NOT_DETECTED="Impossibile rilevare la distribuzione. File /etc/os-release non trovato."
+
+# === MESSAGES - LOG AND CLI ===
+MSG_LOG_CRITICAL="CRITICO"
+MSG_EXECUTING="Esecuzione"
+MSG_STEP_PREFIX="PASSO"
+MSG_DEPS_VALIDATION_OK="Validazione dipendenze OK"
+MSG_UPGRADE_WITHOUT_REPOS="Non puoi aggiornare il sistema (STEP_UPGRADE_SYSTEM=1) senza aggiornare i repository (STEP_UPDATE_REPOS=0). Attiva STEP_UPDATE_REPOS."
+MSG_KERNEL_CLEANUP_RISKY="Pulizia kernel senza snapshot Timeshift puo essere rischioso"
+MSG_SKIPPING_TOOL_CHECK="Ignorando verifica di %s (passo disattivato)"
+MSG_KERNEL_FORCING_INCLUSION="Kernel attuale non e nei piu recenti, forzando inclusione"
+MSG_UCSTA_STATUS="Stato UCSTA (librerie critiche)"
+MSG_MAINTENANCE_COMPLETED="Manutenzione completata in %dm %ds"
+MSG_STARTING_MAINTENANCE="Avvio Manutenzione"
+MSG_UNKNOWN_OPTION="Opzione sconosciuta"
+MSG_USE_HELP="Usa --help per vedere le opzioni disponibili"
+MSG_PROCESS_ABORTED="PROCESSO INTERROTTO"
+
+# === HELP TEXT ===
+HELP_TITLE="Manutenzione Completa per Distribuzioni Basate su Debian/Ubuntu"
+HELP_SUPPORTED="Distribuzioni supportate:"
+HELP_USAGE="Uso: sudo ./autoclean.sh [opzioni]"
+HELP_OPTIONS="Opzioni:"
+HELP_DRYRUN="Simula esecuzione senza modifiche reali"
+HELP_UNATTENDED="Modalita non presidiata senza conferme"
+HELP_NOBACKUP="Non creare backup di configurazione"
+HELP_NOMENU="Salta menu interattivo (usa config salvata o predefinita)"
+HELP_QUIET="Modalita silenziosa (solo log)"
+HELP_LANG="Forza lingua (en, es, pt, fr, de, it)"
+HELP_HELP="Mostra questo aiuto"
+HELP_EXAMPLES="Esempi:"
+HELP_EXAMPLE_NORMAL="Esecuzione normale"
+HELP_EXAMPLE_SIMULATE="Simula modifiche"
+HELP_EXAMPLE_UNATTENDED="Modalita non presidiata"
+HELP_CONFIG="Configurazione:"
+HELP_CONFIG_DESC="Modifica le variabili STEP_* all'inizio dello script per abilitare/disabilitare i singoli passaggi."
+HELP_MORE_INFO="Maggiori informazioni nei commenti dello script."
+
+# === ICONS (ASCII) ===
+ICON_OK="[OK]"
+ICON_FAIL="[XX]"
+ICON_SKIP="[--]"
+ICON_WARN="[!!]"
+ICON_RUN="[..]"
+ICON_PEND="[  ]"

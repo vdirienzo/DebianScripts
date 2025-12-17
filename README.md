@@ -23,7 +23,7 @@ Coleccion de scripts de mantenimiento y actualizacion para distribuciones basada
 
 ### autoclean.sh - Script Principal (RECOMENDADO)
 
-**Version:** 2025.11
+**Version:** 2025.12
 **Ultima revision:** Diciembre 2025
 **Autor:** Homero Thompson del Lago del Terror
 **Contribuciones UI/UX:** Dreadblitz
@@ -66,8 +66,16 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 - **Configuracion persistente**: Guarda tu configuracion preferida en `autoclean.conf`
 - **Descripcion en tiempo real**: Ayuda contextual de cada paso mientras navegas
 
-### Deteccion y Compatibilidad
+### Multi-Idioma (i18n)
 
+- **6 idiomas soportados**: Ingles (en), Espanol (es), Portugues (pt), Frances (fr), Aleman (de), Italiano (it)
+- **Deteccion automatica de idioma**: Detecta el idioma del sistema y lo aplica automaticamente
+- **Selector de idioma integrado**: Tecla `[L]` en el menu principal para cambiar idioma en tiempo real
+- **Archivos de idioma externos**: Facil de agregar nuevos idiomas sin modificar el script principal
+- **Patrones de confirmacion localizados**: S/N, Y/N, O/N, J/N segun el idioma
+- **Parametro --lang**: Fuerza un idioma especifico desde linea de comandos
+
+### Deteccion y Compatibilidad
 - **Deteccion automatica de distribucion**: Identifica Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
 - **Adaptacion dinamica**: El script adapta su comportamiento segun la distribucion detectada
 - **Mirror inteligente**: Verifica conectividad usando el servidor correspondiente a cada distribucion
@@ -337,6 +345,7 @@ Opciones:
   --no-backup        No crear backup de configuraciones
   --no-menu          Omitir menu interactivo (usar config guardada o por defecto)
   --quiet            Modo silencioso (solo logs)
+  --lang CODIGO      Forzar idioma (en, es, pt, fr, de, it)
   --help             Mostrar ayuda completa
 ```
 
@@ -510,12 +519,13 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 
 - **Scripts totales:** 1
 - **Script principal:** autoclean.sh
-- **Version actual:** 2025.11
-- **Lineas de codigo:** ~2000+
+- **Version actual:** 2025.12
+- **Lineas de codigo:** ~2200+
 - **Pasos modulares:** 13
+- **Idiomas soportados:** 6 (en, es, pt, fr, de, it)
 - **Distribuciones soportadas:** 7+ (auto-deteccion)
 - **Compatible con:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
-- **Interfaz:** Enterprise UI con grid 3x5 y navegacion bidimensional
+- **Interfaz:** Enterprise UI con grid 3x5, navegacion bidimensional y selector de idioma
 
 ---
 
