@@ -22,11 +22,12 @@ Coleccion de scripts de mantenimiento y actualizacion para distribuciones basada
 
 ### autoclean.sh - Script Principal (RECOMENDADO)
 
-**Version:** 2025
+**Version:** 2025.11
 **Ultima revision:** Diciembre 2025
 **Autor:** Homero Thompson del Lago del Terror
+**Contribuciones UI/UX:** Dreadblitz
 
-Script de mantenimiento integral para distribuciones basadas en Debian/Ubuntu con enfasis en seguridad, control granular, **deteccion automatica de distribucion** y **menu interactivo de configuracion**.
+Script de mantenimiento integral para distribuciones basadas en Debian/Ubuntu con enfasis en seguridad, control granular, **deteccion automatica de distribucion** y **menu interactivo de configuracion con interfaz enterprise**.
 
 ---
 
@@ -53,6 +54,16 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 ---
 
 ## Caracteristicas Principales
+
+### Nuevas en v2025.11
+
+- **Interfaz Enterprise**: Nueva UI con marco azul consistente y alineacion perfecta
+- **Menu en 3 columnas**: Visualizacion compacta de los 13 pasos en grid 5x3
+- **Resumen en 3 columnas**: El reporte final muestra todos los pasos de forma compacta
+- **Navegacion mejorada**: Flechas ←/→ para columnas, ↑/↓ para filas
+- **Iconos ASCII**: [OK], [--], [x] para compatibilidad maxima con terminales
+- **Funciones UI reutilizables**: `print_box_line()`, `print_box_center()`, `display_width()`
+- **Contribucion de Dreadblitz**: Mejoras UX/UI basadas en PR #2
 
 ### Nuevas en v2025.10
 
@@ -188,43 +199,35 @@ STEP_UPDATE_SNAP=0
 
 ## Menu Interactivo
 
-Al ejecutar el script sin argumentos, se muestra un menu interactivo que permite seleccionar que pasos ejecutar:
+Al ejecutar el script sin argumentos, se muestra un menu interactivo en formato grid 3x5 que permite seleccionar que pasos ejecutar:
 
 ```
-╔═══════════════════════════════════════════════════════════════╗
-║           CONFIGURACIÓN DE PASOS - MENÚ INTERACTIVO           ║
-╚═══════════════════════════════════════════════════════════════╝
-
-  Usa ↑/↓ para navegar, ESPACIO para activar/desactivar, ENTER para ejecutar
-
-  > [✓] Verificar conectividad
-    [✓] Verificar dependencias
-    [✓] Backup configuraciones (tar)
-    [✓] Snapshot Timeshift 🛡️
-    [✓] Actualizar repositorios
-    [✓] Actualizar sistema (APT)
-    [✓] Actualizar Flatpak
-    [ ] Actualizar Snap
-    [✓] Verificar firmware
-    [✓] Limpieza APT
-    [✓] Limpieza kernels
-    [✓] Limpieza disco/logs
-    [✓] Verificar reinicio
-
-  ─────────────────────────────────────────────────────────────
-  💡 Verifica conexión a internet antes de continuar
-  ─────────────────────────────────────────────────────────────
-
-  💾 Configuración guardada: Sí (autoclean.conf)
-
-  [ENTER] Ejecutar  [A] Todos  [N] Ninguno  [G] Guardar  [D] Borrar config  [Q] Salir
+╔════════════════════════════════════════════════════════════════════════════╗
+║                    CONFIGURACION DE MANTENIMIENTO                          ║
+╠════════════════════════════════════════════════════════════════════════════╣
+║                   Debian GNU/Linux | debian (forky)                        ║
+╠════════════════════════════════════════════════════════════════════════════╣
+║ PASOS (←/→ columnas, ↑/↓ filas, ESPACIO toggle, ENTER ejecutar)            ║
+║  [x]Conectivida  [x]Dependencia  [x]Backup                                 ║
+║  [x]Snapshot     [x]Repos       >[x]Upgrade                                ║
+║  [x]Flatpak      [ ]Snap         [x]Firmware                               ║
+║  [x]APT Clean    [x]Kernels      [x]Disco                                  ║
+║  [x]Reinicio                                                               ║
+╠════════════════════════════════════════════════════════════════════════════╣
+║ > Ejecuta apt full-upgrade para actualizar paquetes                        ║
+╠════════════════════════════════════════════════════════════════════════════╣
+║ Seleccionados: 12/13    Perfil: Guardado                                   ║
+╠════════════════════════════════════════════════════════════════════════════╣
+║          [ENTER] Ejecutar [A] Todos [N] Ninguno [G] Guardar [Q] Salir      ║
+╚════════════════════════════════════════════════════════════════════════════╝
 ```
 
 ### Controles del Menu
 
 | Tecla | Accion |
 |-------|--------|
-| ↑ / ↓ | Navegar entre opciones |
+| ← / → | Navegar entre columnas |
+| ↑ / ↓ | Navegar dentro de la columna |
 | ESPACIO | Activar/desactivar paso seleccionado |
 | ENTER | Ejecutar con la configuracion actual |
 | A | Activar todos los pasos |
@@ -502,22 +505,14 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 
 - **Scripts totales:** 1
 - **Script principal:** autoclean.sh
-- **Version actual:** 2025.10
-- **Lineas de codigo:** ~1750+
+- **Version actual:** 2025.11
+- **Lineas de codigo:** ~1900+
 - **Pasos modulares:** 13
 - **Distribuciones soportadas:** 7+ (auto-deteccion)
 - **Compatible con:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
+- **Interfaz:** Enterprise UI con grid 3x5 y navegacion bidimensional
 
 ---
 
-## Roadmap Futuro
-
-- [ ] Soporte para notificaciones por email
-- [ ] Integracion con Discord/Slack para notificaciones
-- [ ] Dashboard web para visualizar logs
-- [ ] Sistema de plugins para extensibilidad
-- [x] ~~Interfaz TUI (Terminal User Interface) con dialogos interactivos~~ **Completado en v2025.8**
-
----
 
 **Ultima actualizacion del README:** Diciembre 2025

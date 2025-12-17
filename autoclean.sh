@@ -2,9 +2,10 @@
 # ============================================================================
 # Script de Mantenimiento Integral para Distribuciones basadas en Debian
 # ============================================================================
-# Versión: 2025 
+# Versión: 2025.11
 # Última revisión: Diciembre 2025
-# Autor: Homero Thompson del Lago del Terror 
+# Autor: Homero Thompson del Lago del Terror
+# Contribuciones UI/UX: Dreadblitz (github.com/Dreadblitz)
 #
 # ====================== DISTRIBUCIONES SOPORTADAS ======================
 # Este script detecta y soporta automáticamente las siguientes distribuciones:
@@ -138,7 +139,7 @@ CONFIG_FILE="${SCRIPT_DIR}/autoclean.conf"
 BACKUP_DIR="/var/backups/debian-maintenance"
 LOCK_FILE="/var/run/debian-maintenance.lock"
 LOG_DIR="/var/log/debian-maintenance"
-SCRIPT_VERSION="2025.10"
+SCRIPT_VERSION="2025.11"
 
 # Parámetros de sistema
 DIAS_LOGS=7
@@ -257,18 +258,18 @@ MENU_STEP_VARS=(
 )
 
 MENU_STEP_DESCRIPTIONS=(
-    "Verifica conexión a internet antes de continuar"
+    "Verifica conexion a internet antes de continuar"
     "Instala herramientas necesarias (timeshift, needrestart, etc.)"
     "Guarda configuraciones APT en /var/backups"
-    "Crea snapshot del sistema para rollback (RECOMENDADO)"
+    "Crea snapshot con Timeshift para rollback (RECOMENDADO)"
     "Ejecuta apt update para actualizar lista de paquetes"
     "Ejecuta apt full-upgrade para actualizar paquetes"
     "Actualiza aplicaciones instaladas con Flatpak"
     "Actualiza aplicaciones instaladas con Snap"
-    "Verifica actualizaciones de BIOS/dispositivos"
-    "Elimina paquetes huérfanos y residuales"
+    "Verifica actualizaciones de BIOS/dispositivos (fwupd)"
+    "Elimina paquetes huerfanos y residuales"
     "Elimina kernels antiguos (mantiene 3)"
-    "Limpia logs antiguos y caché del sistema"
+    "Limpia logs antiguos y cache del sistema"
     "Detecta si el sistema necesita reiniciarse"
 )
 
@@ -346,6 +347,178 @@ ICON_CLOCK="⏱️"
 ICON_ROCKET="🚀"
 
 # ============================================================================
+# UI ENTERPRISE - Colores adicionales y controles
+# ============================================================================
+
+# Colores brillantes
+BRIGHT_GREEN='\033[1;32m'
+BRIGHT_YELLOW='\033[1;33m'
+BRIGHT_CYAN='\033[1;36m'
+DIM='\033[2m'
+
+# Control de cursor
+CURSOR_HIDE='\033[?25l'
+CURSOR_SHOW='\033[?25h'
+CLEAR_LINE='\033[2K'
+
+# Íconos ASCII de ancho fijo (4 chars) - garantiza alineación
+ICON_SUM_OK='[OK]'
+ICON_SUM_FAIL='[XX]'
+ICON_SUM_WARN='[!!]'
+ICON_SUM_SKIP='[--]'
+ICON_SUM_RUN='[..]'
+ICON_SUM_PEND='[  ]'
+
+# Caracteres de progress bar
+PROGRESS_FILLED="█"
+PROGRESS_EMPTY="░"
+
+# Spinner frames (estilo dots)
+SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+SPINNER_PID=""
+SPINNER_ACTIVE=false
+
+# Constantes de diseño UI (terminal 80x24)
+BOX_WIDTH=78
+BOX_INNER=76
+
+# Arrays de estado de pasos para resumen
+declare -a STEP_STATUS_ARRAY
+declare -a STEP_TIME_START
+declare -a STEP_TIME_END
+
+# Inicializar arrays de estado
+for i in {0..12}; do
+    STEP_STATUS_ARRAY[$i]="pending"
+    STEP_TIME_START[$i]=0
+    STEP_TIME_END[$i]=0
+done
+
+# Nombres cortos de pasos (max 12 chars para 2 columnas)
+STEP_SHORT_NAMES=(
+    "Conectividad"
+    "Dependencias"
+    "Backup"
+    "Snapshot"
+    "Repos"
+    "Upgrade"
+    "Flatpak"
+    "Snap"
+    "Firmware"
+    "APT Clean"
+    "Kernels"
+    "Disco"
+    "Reinicio"
+)
+
+# ============================================================================
+# FUNCIONES UI ENTERPRISE
+# ============================================================================
+
+# Calcular longitud de display (sin emojis en lineas criticas)
+display_width() {
+    local text="$1"
+    # Remover códigos ANSI y contar caracteres
+    local clean=$(printf '%b' "$text" | sed 's/\x1b\[[0-9;]*m//g')
+    echo ${#clean}
+}
+
+# Imprimir línea con bordes alineados automáticamente (78 cols)
+print_box_line() {
+    local content="$1"
+    local visible_len=$(display_width "$content")
+    local padding=$((BOX_INNER - visible_len - 1))
+    [ $padding -lt 0 ] && padding=0
+    printf "${BLUE}║${NC} %b%*s${BLUE}║${NC}\n" "$content" "$padding" ""
+}
+
+# Imprimir línea centrada
+print_box_center() {
+    local content="$1"
+    local visible_len=$(display_width "$content")
+    local total_pad=$((BOX_INNER - visible_len))
+    local left_pad=$((total_pad / 2))
+    local right_pad=$((total_pad - left_pad))
+    [ $left_pad -lt 0 ] && left_pad=0
+    [ $right_pad -lt 0 ] && right_pad=0
+    printf "${BLUE}║${NC}%*s%b%*s${BLUE}║${NC}\n" "$left_pad" "" "$content" "$right_pad" ""
+}
+
+# Imprimir separador horizontal
+print_box_sep() {
+    echo -e "${BLUE}╠$(printf '═%.0s' $(seq 1 $BOX_INNER))╣${NC}"
+}
+
+# Obtener ícono ASCII por estado
+get_step_icon_summary() {
+    local status=$1
+    case $status in
+        "success")  echo "${GREEN}${ICON_SUM_OK}${NC}" ;;
+        "error")    echo "${RED}${ICON_SUM_FAIL}${NC}" ;;
+        "warning")  echo "${YELLOW}${ICON_SUM_WARN}${NC}" ;;
+        "skipped")  echo "${YELLOW}${ICON_SUM_SKIP}${NC}" ;;
+        "running")  echo "${CYAN}${ICON_SUM_RUN}${NC}" ;;
+        *)          echo "${DIM}${ICON_SUM_PEND}${NC}" ;;
+    esac
+}
+
+# Actualizar estado de un paso
+update_step_status() {
+    local step_index=$1
+    local new_status=$2
+    STEP_STATUS_ARRAY[$step_index]="$new_status"
+    case $new_status in
+        "running")
+            STEP_TIME_START[$step_index]=$(date +%s)
+            ;;
+        "success"|"error"|"skipped"|"warning")
+            STEP_TIME_END[$step_index]=$(date +%s)
+            ;;
+    esac
+}
+
+# Spinner - Animación durante operaciones largas
+start_spinner() {
+    local message="${1:-Procesando...}"
+    [ "$QUIET" = true ] && return
+    [ "$SPINNER_ACTIVE" = true ] && return
+    SPINNER_ACTIVE=true
+    printf "${CURSOR_HIDE}"
+    (
+        local i=0
+        local frames_count=${#SPINNER_FRAMES[@]}
+        while true; do
+            printf "\r  ${CYAN}${SPINNER_FRAMES[$i]}${NC} ${message}   "
+            i=$(( (i + 1) % frames_count ))
+            sleep 0.1
+        done
+    ) &
+    SPINNER_PID=$!
+    disown $SPINNER_PID 2>/dev/null
+}
+
+stop_spinner() {
+    local status=${1:-0}
+    local message="${2:-}"
+    [ "$QUIET" = true ] && return
+    [ "$SPINNER_ACTIVE" = false ] && return
+    if [ -n "$SPINNER_PID" ] && kill -0 "$SPINNER_PID" 2>/dev/null; then
+        kill "$SPINNER_PID" 2>/dev/null
+        wait "$SPINNER_PID" 2>/dev/null
+    fi
+    SPINNER_PID=""
+    SPINNER_ACTIVE=false
+    printf "\r${CLEAR_LINE}"
+    case $status in
+        0) printf "  ${GREEN}${ICON_OK}${NC} ${message}\n" ;;
+        1) printf "  ${RED}${ICON_FAIL}${NC} ${message}\n" ;;
+        2) printf "  ${YELLOW}${ICON_WARN}${NC} ${message}\n" ;;
+        3) printf "  ${DIM}${ICON_SKIP}${NC} ${message}\n" ;;
+    esac
+    printf "${CURSOR_SHOW}"
+}
+
+# ============================================================================
 # FUNCIONES BASE Y UTILIDADES
 # ============================================================================
 
@@ -413,12 +586,12 @@ print_step() {
 print_header() {
     [ "$QUIET" = true ] && return
     clear
-    echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║       MANTENIMIENTO DE SISTEMA - v${SCRIPT_VERSION}           ║${NC}"
-    echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════╝${NC}"
+    echo -e "${BLUE}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+    print_box_center "${BOLD}MANTENIMIENTO DE SISTEMA${NC} - v${SCRIPT_VERSION}"
+    echo -e "${BLUE}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
     echo ""
-    echo -e "  ${CYAN}🐧 Distribución:${NC} ${BOLD}${DISTRO_NAME}${NC}"
-    echo -e "  ${CYAN}📦 Familia:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
+    echo -e "  ${CYAN}Distribucion:${NC} ${BOLD}${DISTRO_NAME}${NC}"
+    echo -e "  ${CYAN}Familia:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
     echo ""
     [ "$DRY_RUN" = true ] && echo -e "${YELLOW}🔍 MODO DRY-RUN ACTIVADO${NC}\n"
 }
@@ -506,9 +679,9 @@ detect_distro() {
 check_root() {
     if [ "$EUID" -ne 0 ]; then
         echo ""
-        echo -e "${RED}╔═══════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${RED}║  ❌ ERROR: Este script requiere permisos de root              ║${NC}"
-        echo -e "${RED}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${RED}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+        echo -e "${RED}║  ❌ ERROR: Este script requiere permisos de root$(printf ' %.0s' $(seq 1 25))║${NC}"
+        echo -e "${RED}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
         echo ""
         echo -e "  ${YELLOW}Uso correcto:${NC}"
         echo -e "    ${GREEN}sudo ./autoclean.sh${NC}"
@@ -582,44 +755,46 @@ validate_step_dependencies() {
 
 show_step_summary() {
     [ "$QUIET" = true ] && return
-    
-    echo -e "${MAGENTA}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${MAGENTA}${BOLD}║        CONFIGURACIÓN DE PASOS - RESUMEN                       ║${NC}"
-    echo -e "${MAGENTA}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
+
+    local step_vars=("STEP_CHECK_CONNECTIVITY" "STEP_CHECK_DEPENDENCIES" "STEP_BACKUP_TAR"
+                     "STEP_SNAPSHOT_TIMESHIFT" "STEP_UPDATE_REPOS" "STEP_UPGRADE_SYSTEM"
+                     "STEP_UPDATE_FLATPAK" "STEP_UPDATE_SNAP" "STEP_CHECK_FIRMWARE"
+                     "STEP_CLEANUP_APT" "STEP_CLEANUP_KERNELS" "STEP_CLEANUP_DISK" "STEP_CHECK_REBOOT")
+
+    echo -e "${BLUE}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+    print_box_center "${BOLD}CONFIGURACIÓN DE PASOS - RESUMEN${NC}"
+    print_box_sep
+    print_box_center "${DISTRO_NAME} | ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
+    print_box_sep
+    print_box_line "${BOLD}PASOS A EJECUTAR${NC}"
+
+    # Mostrar en 3 columnas (5 filas)
+    for row in {0..4}; do
+        local line=""
+        for col in {0..2}; do
+            local idx=$((row * 3 + col))
+            if [ $idx -lt 13 ]; then
+                local var_name="${step_vars[$idx]}"
+                local var_value="${!var_name}"
+                local name="${STEP_SHORT_NAMES[$idx]:0:10}"
+                local icon
+
+                if [ "$var_value" = "1" ]; then
+                    icon="${GREEN}[✓]${NC}"
+                else
+                    icon="${DIM}[--]${NC}"
+                fi
+                line+=$(printf " %b %-10s " "$icon" "$name")
+            fi
+        done
+        print_box_line "$line"
+    done
+
+    print_box_sep
+    print_box_line "Total: ${GREEN}${TOTAL_STEPS}${NC}/13 pasos    Tiempo estimado: ${CYAN}~$((TOTAL_STEPS / 2 + 1)) min${NC}"
+    echo -e "${BLUE}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
     echo ""
-    
-    local step_num=0
-    
-    show_step_line() {
-        local enabled=$1
-        local name=$2
-        ((step_num++))
-        if [ "$enabled" = 1 ]; then
-            echo -e "  ${GREEN}✅ [$step_num]${NC} $name"
-        else
-            echo -e "  ${YELLOW}⏩ [$step_num]${NC} $name ${YELLOW}[OMITIDO]${NC}"
-        fi
-    }
-    
-    show_step_line "$STEP_CHECK_CONNECTIVITY" "Verificar conectividad"
-    show_step_line "$STEP_CHECK_DEPENDENCIES" "Verificar dependencias"
-    show_step_line "$STEP_BACKUP_TAR" "Backup configuraciones (tar)"
-    show_step_line "$STEP_SNAPSHOT_TIMESHIFT" "Snapshot Timeshift ${ICON_SHIELD}"
-    show_step_line "$STEP_UPDATE_REPOS" "Actualizar repositorios"
-    show_step_line "$STEP_UPGRADE_SYSTEM" "Actualizar sistema (APT)"
-    show_step_line "$STEP_UPDATE_FLATPAK" "Actualizar Flatpak"
-    show_step_line "$STEP_UPDATE_SNAP" "Actualizar Snap"
-    show_step_line "$STEP_CHECK_FIRMWARE" "Verificar firmware"
-    show_step_line "$STEP_CLEANUP_APT" "Limpieza APT"
-    show_step_line "$STEP_CLEANUP_KERNELS" "Limpieza kernels"
-    show_step_line "$STEP_CLEANUP_DISK" "Limpieza disco/logs"
-    show_step_line "$STEP_CHECK_REBOOT" "Verificar reinicio"
-    
-    echo ""
-    echo -e "  ${CYAN}${ICON_ROCKET} Total de pasos a ejecutar: ${BOLD}$TOTAL_STEPS${NC}${CYAN} de 13${NC}"
-    echo -e "  ${CYAN}${ICON_CLOCK} Tiempo estimado: ~$((TOTAL_STEPS / 2 + 1)) minutos${NC}"
-    echo ""
-    
+
     if [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
         read -p "¿Continuar con esta configuración? (s/N): " -n 1 -r
         echo
@@ -638,70 +813,69 @@ show_interactive_menu() {
 
     # Ocultar cursor
     tput civis 2>/dev/null
-
-    # Restaurar cursor al salir
     trap 'tput cnorm 2>/dev/null' RETURN
 
     while [ "$menu_running" = true ]; do
-        # Limpiar pantalla y mostrar header
-        clear
-        echo -e "${CYAN}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${CYAN}${BOLD}║           CONFIGURACIÓN DE PASOS - MENÚ INTERACTIVO           ║${NC}"
-        echo -e "${CYAN}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
-        echo ""
-        echo -e "  ${CYAN}🐧 Distribución:${NC} ${BOLD}${DISTRO_NAME}${NC}"
-        echo -e "  ${CYAN}📦 Familia:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
-        echo ""
-        echo -e "  ${YELLOW}Usa ↑/↓ para navegar, ESPACIO para activar/desactivar, ENTER para ejecutar${NC}"
-        echo ""
-
-        # Mostrar opciones del menú
-        for i in "${!MENU_STEP_NAMES[@]}"; do
-            local var_name="${MENU_STEP_VARS[$i]}"
-            local var_value="${!var_name}"
-            local checkbox="[ ]"
-            local line_color=""
-            local line_end=""
-
-            # Determinar estado del checkbox
-            if [ "$var_value" = "1" ]; then
-                checkbox="${GREEN}[✓]${NC}"
-            else
-                checkbox="${YELLOW}[ ]${NC}"
-            fi
-
-            # Resaltar línea actual
-            if [ $i -eq $current_index ]; then
-                line_color="${BOLD}${CYAN}"
-                line_end="${NC}"
-                echo -e "  ${BLUE}>${NC} ${checkbox} ${line_color}${MENU_STEP_NAMES[$i]}${line_end}"
-            else
-                echo -e "    ${checkbox} ${MENU_STEP_NAMES[$i]}"
-            fi
-        done
-
         # Contar pasos activos
         local active_count=0
         for var_name in "${MENU_STEP_VARS[@]}"; do
             [ "${!var_name}" = "1" ] && ((active_count++))
         done
 
-        # Mostrar descripción del paso actual
-        echo ""
-        echo -e "  ─────────────────────────────────────────────────────────────"
-        echo -e "  ${CYAN}💡 ${MENU_STEP_DESCRIPTIONS[$current_index]}${NC}"
-        echo -e "  ─────────────────────────────────────────────────────────────"
-        echo ""
-        echo -e "  ${GREEN}${ICON_ROCKET} Pasos seleccionados: ${BOLD}${active_count}${NC}${GREEN} de ${total_items}${NC}"
+        # Calcular fila y columna actual
+        local cur_row=$((current_index / 3))
+        local cur_col=$((current_index % 3))
 
-        # Mostrar estado de configuración guardada
-        if config_exists; then
-            echo -e "  ${MAGENTA}💾 Configuración guardada: ${BOLD}Sí${NC} ${MAGENTA}(${CONFIG_FILE})${NC}"
-        else
-            echo -e "  ${YELLOW}💾 Configuración guardada: No${NC}"
-        fi
-        echo ""
-        echo -e "  ${BLUE}[ENTER]${NC} Ejecutar  ${BLUE}[A]${NC} Todos  ${BLUE}[N]${NC} Ninguno  ${BLUE}[G]${NC} Guardar  ${BLUE}[D]${NC} Borrar config  ${BLUE}[Q]${NC} Salir"
+        # Limpiar pantalla y mostrar interfaz enterprise
+        clear
+        echo -e "${BLUE}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+        print_box_center "${BOLD}CONFIGURACIÓN DE MANTENIMIENTO${NC}"
+        print_box_sep
+        print_box_center "${DISTRO_NAME} | ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
+        print_box_sep
+        print_box_line "${BOLD}PASOS${NC} ${DIM}(←/→ columnas, ↑/↓ filas, ESPACIO toggle, ENTER ejecutar)${NC}"
+
+        # Mostrar pasos en 3 columnas (5 filas)
+        for row in {0..4}; do
+            local line=""
+            for col in {0..2}; do
+                local idx=$((row * 3 + col))
+                if [ $idx -lt $total_items ]; then
+                    local var_name="${MENU_STEP_VARS[$idx]}"
+                    local var_value="${!var_name}"
+                    local name="${STEP_SHORT_NAMES[$idx]:0:11}"
+
+                    # Construir celda con ancho fijo (16 chars: 1+3+1+11)
+                    local prefix=" "
+                    local check=" "
+                    [ "$var_value" = "1" ] && check="x"
+                    [ $idx -eq $current_index ] && prefix=">"
+
+                    # Formatear SIN colores para ancho fijo
+                    local cell=$(printf "%s[%s]%-11s" "$prefix" "$check" "$name")
+
+                    # Aplicar colores DESPUÉS
+                    if [ $idx -eq $current_index ]; then
+                        line+="${BRIGHT_CYAN}${cell}${NC}"
+                    elif [ "$var_value" = "1" ]; then
+                        line+=$(printf " ${GREEN}[x]${NC}%-11s" "$name")
+                    else
+                        line+=$(printf " ${DIM}[ ]${NC}%-11s" "$name")
+                    fi
+                else
+                    line+=$(printf "%16s" "")
+                fi
+            done
+            print_box_line "$line"
+        done
+
+        print_box_sep
+        print_box_line "${CYAN}>${NC} ${MENU_STEP_DESCRIPTIONS[$current_index]:0:68}"
+        print_box_sep
+        print_box_line "Seleccionados: ${GREEN}${active_count}${NC}/${total_items}    Perfil: $(config_exists && echo "${GREEN}Guardado${NC}" || echo "${DIM}Sin guardar${NC}")"
+        print_box_sep
+        print_box_center "${CYAN}[ENTER]${NC} Ejecutar ${CYAN}[A]${NC} Todos ${CYAN}[N]${NC} Ninguno ${CYAN}[G]${NC} Guardar ${CYAN}[Q]${NC} Salir"
+        echo -e "${BLUE}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
 
         # Leer tecla
         local key=""
@@ -711,75 +885,61 @@ show_interactive_menu() {
         if [[ "$key" == $'\x1b' ]]; then
             read -rsn2 -t 0.1 key
             case "$key" in
-                '[A') # Flecha arriba
-                    ((current_index--))
-                    [ $current_index -lt 0 ] && current_index=$((total_items - 1))
+                '[A') # Arriba: misma columna, fila anterior
+                    if [ $cur_row -gt 0 ]; then
+                        ((current_index-=3))
+                    else
+                        # Ir a la última fila de la columna
+                        local last_row=$(( (total_items - 1) / 3 ))
+                        local new_idx=$((last_row * 3 + cur_col))
+                        [ $new_idx -ge $total_items ] && new_idx=$((new_idx - 3))
+                        current_index=$new_idx
+                    fi
                     ;;
-                '[B') # Flecha abajo
-                    ((current_index++))
-                    [ $current_index -ge $total_items ] && current_index=0
+                '[B') # Abajo: misma columna, fila siguiente
+                    local new_idx=$((current_index + 3))
+                    if [ $new_idx -lt $total_items ]; then
+                        current_index=$new_idx
+                    else
+                        # Volver a la primera fila de la columna
+                        current_index=$cur_col
+                    fi
+                    ;;
+                '[C') # Derecha: columna siguiente
+                    if [ $cur_col -lt 2 ] && [ $((current_index + 1)) -lt $total_items ]; then
+                        ((current_index++))
+                    else
+                        current_index=$((cur_row * 3))
+                    fi
+                    ;;
+                '[D') # Izquierda: columna anterior
+                    if [ $cur_col -gt 0 ]; then
+                        ((current_index--))
+                    else
+                        local new_idx=$((cur_row * 3 + 2))
+                        [ $new_idx -ge $total_items ] && new_idx=$((total_items - 1))
+                        current_index=$new_idx
+                    fi
                     ;;
             esac
-        # Espacio - toggle opción actual (comparación explícita)
         elif [[ "$key" == " " ]]; then
             local var_name="${MENU_STEP_VARS[$current_index]}"
-            if [ "${!var_name}" = "1" ]; then
-                eval "$var_name=0"
-            else
-                eval "$var_name=1"
-            fi
-        # Enter - ejecutar (string vacío después de read)
+            [ "${!var_name}" = "1" ] && eval "$var_name=0" || eval "$var_name=1"
         elif [[ "$key" == "" ]]; then
             menu_running=false
-        # Otras teclas
         else
             case "$key" in
-                'a'|'A') # Activar todos
-                    for var_name in "${MENU_STEP_VARS[@]}"; do
-                        eval "$var_name=1"
-                    done
-                    ;;
-                'n'|'N') # Desactivar todos
-                    for var_name in "${MENU_STEP_VARS[@]}"; do
-                        eval "$var_name=0"
-                    done
-                    ;;
-                'g'|'G') # Guardar configuración
-                    if save_config; then
-                        # Mostrar mensaje temporal
-                        tput cup $(($(tput lines)-2)) 0
-                        echo -e "  ${GREEN}${BOLD}✓ Configuración guardada en ${CONFIG_FILE}${NC}          "
-                        sleep 1
-                    fi
-                    ;;
-                'd'|'D') # Borrar configuración guardada
-                    if config_exists; then
-                        delete_config
-                        tput cup $(($(tput lines)-2)) 0
-                        echo -e "  ${YELLOW}✓ Configuración eliminada${NC}                              "
-                        sleep 1
-                    fi
-                    ;;
-                'q'|'Q') # Salir
-                    tput cnorm 2>/dev/null
-                    die "Cancelado por el usuario"
-                    ;;
+                'a'|'A') for var_name in "${MENU_STEP_VARS[@]}"; do eval "$var_name=1"; done ;;
+                'n'|'N') for var_name in "${MENU_STEP_VARS[@]}"; do eval "$var_name=0"; done ;;
+                'g'|'G') save_config ;;
+                'd'|'D') config_exists && delete_config ;;
+                'q'|'Q') tput cnorm 2>/dev/null; die "Cancelado por el usuario" ;;
             esac
         fi
     done
 
-    # Restaurar cursor
     tput cnorm 2>/dev/null
-
-    # Recontar pasos activos después de la selección
     count_active_steps
-
-    # Mostrar confirmación
-    clear
-    echo -e "${GREEN}${BOLD}✓ Configuración guardada${NC}"
-    echo -e "  Se ejecutarán ${BOLD}$TOTAL_STEPS${NC} pasos."
-    echo ""
-    sleep 1
 }
 
 check_disk_space() {
@@ -1011,9 +1171,9 @@ step_snapshot_timeshift() {
     # Verificar si Timeshift está CONFIGURADO
     if ! check_timeshift_configured; then
         echo ""
-        echo -e "${YELLOW}╔═══════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${YELLOW}║  ⚠️  TIMESHIFT NO ESTÁ CONFIGURADO                            ║${NC}"
-        echo -e "${YELLOW}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${YELLOW}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+        echo -e "${YELLOW}║  ⚠️  TIMESHIFT NO ESTÁ CONFIGURADO$(printf ' %.0s' $(seq 1 39))║${NC}"
+        echo -e "${YELLOW}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
         echo ""
         echo -e "  Timeshift está instalado pero necesita configuración inicial."
         echo ""
@@ -1544,20 +1704,77 @@ step_check_reboot() {
 
 show_final_summary() {
     [ "$QUIET" = true ] && exit 0
-    
+
     # Calcular tiempo de ejecución
     local end_time=$(date +%s)
     local execution_time=$((end_time - START_TIME))
     local minutes=$((execution_time / 60))
     local seconds=$((execution_time % 60))
-    
+    local duration_str=$(printf "%02d:%02d" $minutes $seconds)
+
     # Calcular espacio liberado
     local space_after_root=$(df / --output=used | tail -1 | awk '{print $1}')
     local space_after_boot=$(df /boot --output=used 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
-    
     local space_freed_root=$(( (SPACE_BEFORE_ROOT - space_after_root) / 1024 ))
     local space_freed_boot=$(( (SPACE_BEFORE_BOOT - space_after_boot) / 1024 ))
-    
+    [ $space_freed_root -lt 0 ] && space_freed_root=0
+    [ $space_freed_boot -lt 0 ] && space_freed_boot=0
+    local total_freed=$((space_freed_root + space_freed_boot))
+
+    # Mapear STAT_* a STEP_STATUS_ARRAY para resumen
+    # Índice: 0=Conectividad, 1=Dependencias, 2=Backup, 3=Snapshot, 4=Repos
+    #         5=Upgrade, 6=Flatpak, 7=Snap, 8=Firmware, 9=APT, 10=Kernels, 11=Disco, 12=Reinicio
+    local step_vars=("STEP_CHECK_CONNECTIVITY" "STEP_CHECK_DEPENDENCIES" "STEP_BACKUP_TAR"
+                     "STEP_SNAPSHOT_TIMESHIFT" "STEP_UPDATE_REPOS" "STEP_UPGRADE_SYSTEM"
+                     "STEP_UPDATE_FLATPAK" "STEP_UPDATE_SNAP" "STEP_CHECK_FIRMWARE"
+                     "STEP_CLEANUP_APT" "STEP_CLEANUP_KERNELS" "STEP_CLEANUP_DISK" "STEP_CHECK_REBOOT")
+    local stat_vars=("STAT_CONNECTIVITY" "STAT_DEPENDENCIES" "STAT_BACKUP_TAR" "STAT_SNAPSHOT"
+                     "STAT_REPO" "STAT_UPGRADE" "STAT_FLATPAK" "STAT_SNAP" "STAT_FIRMWARE"
+                     "STAT_CLEAN_APT" "STAT_CLEAN_KERNEL" "STAT_CLEAN_DISK" "STAT_REBOOT")
+
+    # Contar resultados y determinar estados
+    local success_count=0 error_count=0 skipped_count=0 warning_count=0
+    for i in {0..12}; do
+        local step_var="${step_vars[$i]}"
+        local stat_var="${stat_vars[$i]}"
+        local step_enabled="${!step_var}"
+        local stat_value="${!stat_var}"
+
+        if [ "$step_enabled" != "1" ]; then
+            STEP_STATUS_ARRAY[$i]="skipped"
+            ((skipped_count++))
+        elif [[ "$stat_value" == *"$ICON_OK"* ]] || [[ "$stat_value" == *"✅"* ]]; then
+            STEP_STATUS_ARRAY[$i]="success"
+            ((success_count++))
+        elif [[ "$stat_value" == *"$ICON_FAIL"* ]] || [[ "$stat_value" == *"❌"* ]]; then
+            STEP_STATUS_ARRAY[$i]="error"
+            ((error_count++))
+        elif [[ "$stat_value" == *"$ICON_WARN"* ]] || [[ "$stat_value" == *"⚠"* ]] || [[ "$stat_value" == *"WARN"* ]]; then
+            STEP_STATUS_ARRAY[$i]="warning"
+            ((warning_count++))
+        elif [[ "$stat_value" == *"$ICON_SKIP"* ]] || [[ "$stat_value" == *"⏩"* ]] || [[ "$stat_value" == *"Omitido"* ]]; then
+            STEP_STATUS_ARRAY[$i]="skipped"
+            ((skipped_count++))
+        else
+            STEP_STATUS_ARRAY[$i]="success"
+            ((success_count++))
+        fi
+    done
+
+    # Determinar estado general
+    local overall_status="COMPLETADO"
+    local overall_color="${GREEN}"
+    local overall_icon="${ICON_SUM_OK}"
+    if [ $error_count -gt 0 ]; then
+        overall_status="COMPLETADO CON ERRORES"
+        overall_color="${RED}"
+        overall_icon="${ICON_SUM_FAIL}"
+    elif [ $warning_count -gt 0 ]; then
+        overall_status="COMPLETADO CON AVISOS"
+        overall_color="${YELLOW}"
+        overall_icon="${ICON_SUM_WARN}"
+    fi
+
     # Enviar notificación desktop si está disponible
     if [ -n "$DISPLAY" ] && command -v notify-send &>/dev/null; then
         if [ "$REBOOT_NEEDED" = true ]; then
@@ -1566,75 +1783,72 @@ show_final_summary() {
             notify-send "Mantenimiento Debian" "Completado exitosamente." -u normal -i emblem-default 2>/dev/null
         fi
     fi
-    
+
     log "INFO" "=========================================="
     log "INFO" "Mantenimiento completado en ${minutes}m ${seconds}s"
     log "INFO" "=========================================="
-    
+
+    # === RESUMEN ENTERPRISE 3 COLUMNAS (78 chars) ===
     echo ""
-    echo -e "${BLUE}╔═══════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${BLUE}║                 RESUMEN DE MANTENIMIENTO                      ║${NC}"
-    echo -e "${BLUE}╚═══════════════════════════════════════════════════════════════╝${NC}"
-    echo ""
-    
-    # Mostrar solo los pasos que se ejecutaron
-    [ "$STEP_CHECK_CONNECTIVITY" = 1 ] && echo -e "  🌐 Conectividad:       $STAT_CONNECTIVITY"
-    [ "$STEP_CHECK_DEPENDENCIES" = 1 ] && echo -e "  🔧 Dependencias:       $STAT_DEPENDENCIES"
-    [ "$STEP_BACKUP_TAR" = 1 ] && echo -e "  💾 Backup Tar:         $STAT_BACKUP_TAR"
-    [ "$STEP_SNAPSHOT_TIMESHIFT" = 1 ] && echo -e "  $ICON_SHIELD Timeshift:         $STAT_SNAPSHOT"
-    [ "$STEP_UPDATE_REPOS" = 1 ] && echo -e "  📦 Repositorios:       $STAT_REPO"
-    [ "$STEP_UPGRADE_SYSTEM" = 1 ] && echo -e "  ⬆️  Sistema (APT):      $STAT_UPGRADE"
-    [ "$STEP_UPDATE_FLATPAK" = 1 ] && echo -e "  📦 Flatpak:            $STAT_FLATPAK"
-    [ "$STEP_UPDATE_SNAP" = 1 ] && echo -e "  📦 Snap:               $STAT_SNAP"
-    [ "$STEP_CHECK_FIRMWARE" = 1 ] && echo -e "  🔌 Firmware:           $STAT_FIRMWARE"
-    [ "$STEP_CLEANUP_APT" = 1 ] && echo -e "  🧹 Limpieza APT:       $STAT_CLEAN_APT"
-    [ "$STEP_CLEANUP_KERNELS" = 1 ] && echo -e "  🧠 Limpieza Kernels:   $STAT_CLEAN_KERNEL"
-    [ "$STEP_CLEANUP_DISK" = 1 ] && echo -e "  💾 Limpieza Disco:     $STAT_CLEAN_DISK"
-    [ "$STEP_CHECK_REBOOT" = 1 ] && echo ""
-    [ "$STEP_CHECK_REBOOT" = 1 ] && echo -e "──────────────────────────────────────────────────────────────"
-    [ "$STEP_CHECK_REBOOT" = 1 ] && echo -e "  🔄 ESTADO DE REINICIO: $STAT_REBOOT"
-    [ "$STEP_CHECK_REBOOT" = 1 ] && echo -e "──────────────────────────────────────────────────────────────"
-    
-    echo ""
-    
-    # Estadísticas
-    if [ "$space_freed_root" -gt 0 ] || [ "$space_freed_boot" -gt 0 ]; then
-        echo -e "  💿 Espacio liberado:"
-        [ "$space_freed_root" -gt 0 ] && echo -e "     • /: ${GREEN}${space_freed_root} MB${NC}"
-        [ "$space_freed_boot" -gt 0 ] && echo -e "     • /boot: ${GREEN}${space_freed_boot} MB${NC}"
+    echo -e "${BLUE}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+    print_box_center "${BOLD}RESUMEN DE EJECUCIÓN${NC}"
+    print_box_sep
+    print_box_line "Estado: ${overall_color}${overall_icon} ${overall_status}${NC}                          Duración: ${CYAN}${duration_str}${NC}"
+    print_box_sep
+    print_box_line "${BOLD}MÉTRICAS${NC}"
+    print_box_line "Completados: ${GREEN}${success_count}${NC}    Errores: ${RED}${error_count}${NC}    Omitidos: ${YELLOW}${skipped_count}${NC}    Espacio: ${CYAN}${total_freed} MB${NC}"
+    print_box_sep
+    print_box_line "${BOLD}DETALLE DE PASOS${NC}"
+
+    # Generar líneas de 3 columnas (5 filas x 3 cols = 15 slots, usamos 13)
+    # Fila 0: 0,1,2 | Fila 1: 3,4,5 | Fila 2: 6,7,8 | Fila 3: 9,10,11 | Fila 4: 12
+    for row in {0..4}; do
+        local line=""
+        for col in {0..2}; do
+            local idx=$((row * 3 + col))
+            if [ $idx -le 12 ]; then
+                local icon=$(get_step_icon_summary "${STEP_STATUS_ARRAY[$idx]}")
+                local name="${STEP_SHORT_NAMES[$idx]:0:10}"
+                local col_content=$(printf "%b %-10s" "$icon" "$name")
+                line+="$col_content  "
+            fi
+        done
+        print_box_line "$line"
+    done
+
+    print_box_sep
+
+    # Estado de reinicio
+    if [ "$REBOOT_NEEDED" = true ]; then
+        print_box_line "${RED}${ICON_SUM_WARN} REINICIO REQUERIDO${NC} - Actualiz. de kernel/librerías críticas"
+    else
+        print_box_line "${GREEN}${ICON_SUM_OK} No se requiere reinicio${NC}"
     fi
-    
-    echo -e "  ⏱️  Tiempo de ejecución: ${minutes}m ${seconds}s"
+
+    print_box_sep
+    print_box_line "Log: ${DIM}${LOG_FILE}${NC}"
+    [ "$STEP_BACKUP_TAR" = 1 ] && print_box_line "Backups: ${DIM}${BACKUP_DIR}${NC}"
+    echo -e "${BLUE}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
     echo ""
-    
-    # Advertencias finales
+
+    # Advertencias fuera del box
     if [[ "$STAT_FIRMWARE" == *"DISPONIBLE"* ]]; then
         echo -e "${YELLOW}💡 FIRMWARE: Hay actualizaciones de BIOS/Dispositivos disponibles.${NC}"
         echo "   → Para instalar: sudo fwupdmgr update"
         echo ""
     fi
-    
-    if [ "$REBOOT_NEEDED" = true ]; then
-        echo -e "${RED}${BOLD}⚠️  REINICIO REQUERIDO${NC}"
-        echo -e "${YELLOW}   Se necesita reiniciar para aplicar actualizaciones críticas.${NC}"
-        
-        if [ "$UNATTENDED" = false ]; then
-            echo ""
-            read -p "¿Deseas reiniciar ahora? (s/N): " -n 1 -r
-            echo
-            if [[ $REPLY =~ ^[Ss]$ ]]; then
-                log "INFO" "Usuario solicitó reinicio inmediato"
-                echo "Reiniciando en 5 segundos... (Ctrl+C para cancelar)"
-                sleep 5
-                reboot
-            fi
-        fi
+
+    if [ "$REBOOT_NEEDED" = true ] && [ "$UNATTENDED" = false ]; then
         echo ""
+        read -p "¿Deseas reiniciar ahora? (s/N): " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Ss]$ ]]; then
+            log "INFO" "Usuario solicitó reinicio inmediato"
+            echo "Reiniciando en 5 segundos... (Ctrl+C para cancelar)"
+            sleep 5
+            reboot
+        fi
     fi
-    
-    echo "📄 Log completo: $LOG_FILE"
-    [ "$STEP_BACKUP_TAR" = 1 ] && echo "💾 Backups en: $BACKUP_DIR"
-    echo ""
 }
 
 # ============================================================================
