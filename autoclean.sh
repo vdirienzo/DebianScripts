@@ -147,6 +147,12 @@ DEFAULT_LANG="en"
 CURRENT_LANG=""
 AVAILABLE_LANGS=("en" "es" "pt" "fr" "de" "it")
 
+# Configuración de tema
+THEME_DIR="${SCRIPT_DIR}/themes"
+DEFAULT_THEME="default"
+CURRENT_THEME=""
+AVAILABLE_THEMES=("default" "norton" "turbo" "green" "amber")
+
 # Parámetros de sistema
 DIAS_LOGS=7
 KERNELS_TO_KEEP=3
@@ -317,6 +323,9 @@ save_config() {
 # Idioma / Language
 SAVED_LANG=$CURRENT_LANG
 
+# Tema / Theme
+SAVED_THEME=$CURRENT_THEME
+
 # Pasos / Steps
 STEP_CHECK_CONNECTIVITY=$STEP_CHECK_CONNECTIVITY
 STEP_CHECK_DEPENDENCIES=$STEP_CHECK_DEPENDENCIES
@@ -427,15 +436,15 @@ show_language_selector() {
         # Mostrar idiomas con el seleccionado resaltado
         for i in "${!AVAILABLE_LANGS[@]}"; do
             if [[ $i -eq $selected ]]; then
-                print_box_line "   ${BRIGHT_CYAN}>${NC} ${GREEN}[x]${NC} ${LANG_NAMES[$i]}"
+                print_box_line "   ${TEXT_SELECTED}>${NC} ${TEXT_ACTIVE}[x]${NC} ${LANG_NAMES[$i]}"
             else
-                print_box_line "     ${DIM}[ ] ${LANG_NAMES[$i]}${NC}"
+                print_box_line "     ${TEXT_INACTIVE}[ ] ${LANG_NAMES[$i]}${NC}"
             fi
         done
 
         print_box_line ""
         print_box_sep
-        print_box_center "${CYAN}[ENTER]${NC} Select  ${CYAN}[ESC]${NC} Back"
+        print_box_center "${STATUS_INFO}[ENTER]${NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${NC} ${MENU_BACK:-Back}"
         print_box_bottom
 
         # Leer tecla
@@ -467,7 +476,127 @@ show_language_selector() {
 }
 
 # ============================================================================
-# COLORES E ICONOS
+# SISTEMA DE TEMAS
+# ============================================================================
+
+load_theme() {
+    local theme_to_load="$1"
+
+    # Prioridad: 1. Parámetro, 2. Config guardada, 3. Default
+    if [ -z "$theme_to_load" ]; then
+        if [ -n "$SAVED_THEME" ]; then
+            theme_to_load="$SAVED_THEME"
+        else
+            theme_to_load="$DEFAULT_THEME"
+        fi
+    fi
+
+    # Verificar que el archivo existe
+    local theme_file="${THEME_DIR}/${theme_to_load}.theme"
+    if [ ! -f "$theme_file" ]; then
+        theme_file="${THEME_DIR}/${DEFAULT_THEME}.theme"
+        theme_to_load="$DEFAULT_THEME"
+    fi
+
+    # Cargar archivo de tema
+    if [ -f "$theme_file" ]; then
+        source "$theme_file"
+        CURRENT_THEME="$theme_to_load"
+        apply_theme
+    fi
+}
+
+apply_theme() {
+    # Mapear variables del tema a las variables globales del script
+    RED="${T_RED:-\033[0;31m}"
+    GREEN="${T_GREEN:-\033[0;32m}"
+    YELLOW="${T_YELLOW:-\033[1;33m}"
+    BLUE="${T_BLUE:-\033[0;34m}"
+    CYAN="${T_CYAN:-\033[0;36m}"
+    MAGENTA="${T_MAGENTA:-\033[0;35m}"
+    BRIGHT_GREEN="${T_BRIGHT_GREEN:-\033[1;32m}"
+    BRIGHT_YELLOW="${T_BRIGHT_YELLOW:-\033[1;33m}"
+    BRIGHT_CYAN="${T_BRIGHT_CYAN:-\033[1;36m}"
+    DIM="${T_DIM:-\033[2m}"
+
+    # Variables semanticas adicionales (usadas por funciones UI)
+    BOX_BORDER="${T_BOX_BORDER:-$BLUE}"
+    BOX_TITLE="${T_BOX_TITLE:-$BOLD}"
+    TEXT_SELECTED="${T_TEXT_SELECTED:-$BRIGHT_CYAN}"
+    TEXT_ACTIVE="${T_TEXT_ACTIVE:-$GREEN}"
+    TEXT_INACTIVE="${T_TEXT_INACTIVE:-$DIM}"
+    STATUS_OK="${T_STATUS_OK:-$GREEN}"
+    STATUS_ERROR="${T_STATUS_ERROR:-$RED}"
+    STATUS_WARN="${T_STATUS_WARN:-$YELLOW}"
+    STATUS_INFO="${T_STATUS_INFO:-$CYAN}"
+    STEP_HEADER="${T_STEP_HEADER:-$BLUE}"
+}
+
+show_theme_selector() {
+    # Nombres de temas para mostrar
+    local -a THEME_NAMES=("Default" "Norton Commander" "Bloody Red" "Green Terminal" "Amber Terminal")
+    local selected=0
+    local total=${#AVAILABLE_THEMES[@]}
+
+    # Encontrar indice del tema actual
+    for i in "${!AVAILABLE_THEMES[@]}"; do
+        if [[ "${AVAILABLE_THEMES[$i]}" == "$CURRENT_THEME" ]]; then
+            selected=$i
+            break
+        fi
+    done
+
+    while true; do
+        clear
+        print_box_top
+        print_box_center "${BOLD}${MENU_THEME_TITLE:-SELECT THEME / SELECCIONAR TEMA}${NC}"
+        print_box_sep
+        print_box_line ""
+
+        # Mostrar temas con el seleccionado resaltado
+        for i in "${!AVAILABLE_THEMES[@]}"; do
+            if [[ $i -eq $selected ]]; then
+                print_box_line "   ${TEXT_SELECTED}>${NC} ${TEXT_ACTIVE}[x]${NC} ${THEME_NAMES[$i]}"
+            else
+                print_box_line "     ${TEXT_INACTIVE}[ ] ${THEME_NAMES[$i]}${NC}"
+            fi
+        done
+
+        print_box_line ""
+        print_box_sep
+        print_box_center "${STATUS_INFO}[ENTER]${NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${NC} ${MENU_BACK:-Back}"
+        print_box_bottom
+
+        # Leer tecla
+        local key=""
+        read -rsn1 key
+
+        # Detectar secuencias de escape (flechas o ESC solo)
+        if [[ "$key" == $'\x1b' ]]; then
+            read -rsn2 -t 0.1 key
+            case "$key" in
+                '[A') # Flecha arriba
+                    ((selected--))
+                    [[ $selected -lt 0 ]] && selected=$((total - 1))
+                    ;;
+                '[B') # Flecha abajo
+                    ((selected++))
+                    [[ $selected -ge $total ]] && selected=0
+                    ;;
+                '') # ESC solo
+                    return
+                    ;;
+            esac
+        elif [[ "$key" == "" ]]; then
+            # ENTER - seleccionar tema
+            load_theme "${AVAILABLE_THEMES[$selected]}"
+            return
+        fi
+    done
+}
+
+# ============================================================================
+# COLORES E ICONOS (valores por defecto, serán sobrescritos por el tema)
 # ============================================================================
 
 RED='\033[0;31m'
@@ -496,6 +625,24 @@ BRIGHT_GREEN='\033[1;32m'
 BRIGHT_YELLOW='\033[1;33m'
 BRIGHT_CYAN='\033[1;36m'
 DIM='\033[2m'
+
+# Variables semanticas de tema (valores por defecto)
+BOX_BORDER="$BLUE"
+BOX_TITLE="$BOLD"
+TEXT_SELECTED="$BRIGHT_CYAN"
+TEXT_ACTIVE="$GREEN"
+TEXT_INACTIVE="$DIM"
+STATUS_OK="$GREEN"
+STATUS_ERROR="$RED"
+STATUS_WARN="$YELLOW"
+STATUS_INFO="$CYAN"
+STEP_HEADER="$BLUE"
+
+# Colores FIJOS para metricas (NO cambian con el tema)
+FIXED_GREEN='\033[0;32m'
+FIXED_RED='\033[0;31m'
+FIXED_YELLOW='\033[1;33m'
+FIXED_CYAN='\033[0;36m'
 
 # Control de cursor
 CURSOR_HIDE='\033[?25l'
@@ -574,7 +721,7 @@ print_box_line() {
     local content="$1"
 
     # Imprimir borde izquierdo + espacio
-    printf '%b' "${BLUE}║${NC} "
+    printf '%b' "${BOX_BORDER:-$BLUE}║${NC} "
 
     # Imprimir contenido
     printf '%b' "$content"
@@ -582,7 +729,7 @@ print_box_line() {
     # Mover cursor a columna BOX_WIDTH-1 (posición fija del borde derecho)
     # y luego imprimir espacio + borde derecho
     printf '\033[%dG' "$BOX_WIDTH"
-    printf '%b\n' "${BLUE}║${NC}"
+    printf '%b\n' "${BOX_BORDER:-$BLUE}║${NC}"
 }
 
 # Imprimir línea centrada - MÉTODO ULTRA-ROBUSTO
@@ -604,25 +751,25 @@ print_box_center() {
     left_spaces=$(make_spaces "$left_pad")
 
     # Imprimir: borde + espacios izquierdos + contenido
-    printf '%b' "${BLUE}║${NC}"
+    printf '%b' "${BOX_BORDER:-$BLUE}║${NC}"
     printf '%s' "$left_spaces"
     printf '%b' "$content"
 
     # Posicionar cursor en columna fija y imprimir borde derecho
     printf '\033[%dG' "$BOX_WIDTH"
-    printf '%b\n' "${BLUE}║${NC}"
+    printf '%b\n' "${BOX_BORDER:-$BLUE}║${NC}"
 }
 
 # Imprimir separador horizontal
 print_box_sep() {
-    printf '%b' "${BLUE}╠"
+    printf '%b' "${BOX_BORDER:-$BLUE}╠"
     printf '═%.0s' $(seq 1 $BOX_INNER)
     printf '%b\n' "╣${NC}"
 }
 
 # Imprimir marco superior
 print_box_top() {
-    local color="${1:-$BLUE}"
+    local color="${1:-${BOX_BORDER:-$BLUE}}"
     printf '%b' "${color}╔"
     printf '═%.0s' $(seq 1 $BOX_INNER)
     printf '%b\n' "╗${NC}"
@@ -630,7 +777,7 @@ print_box_top() {
 
 # Imprimir marco inferior
 print_box_bottom() {
-    local color="${1:-$BLUE}"
+    local color="${1:-${BOX_BORDER:-$BLUE}}"
     printf '%b' "${color}╚"
     printf '═%.0s' $(seq 1 $BOX_INNER)
     printf '%b\n' "╝${NC}"
@@ -1068,7 +1215,7 @@ show_interactive_menu() {
         print_box_sep
         print_box_line "${MENU_SELECTED}: ${GREEN}${active_count}${NC}/${total_items}    ${MENU_PROFILE}: $(config_exists && echo "${GREEN}${MENU_PROFILE_SAVED}${NC}" || echo "${DIM}${MENU_PROFILE_UNSAVED}${NC}")"
         print_box_sep
-        print_box_center "${CYAN}[ENTER]${NC} ${MENU_CTRL_ENTER} ${CYAN}[A]${NC} ${MENU_CTRL_ALL} ${CYAN}[N]${NC} ${MENU_CTRL_NONE} ${CYAN}[G]${NC} ${MENU_CTRL_SAVE} ${CYAN}[L]${NC} ${MENU_CTRL_LANG} ${CYAN}[Q]${NC} ${MENU_CTRL_QUIT}"
+        print_box_center "${CYAN}[ENTER]${NC} ${MENU_CTRL_ENTER} ${CYAN}[A]${NC} ${MENU_CTRL_ALL} ${CYAN}[N]${NC} ${MENU_CTRL_NONE} ${CYAN}[G]${NC} ${MENU_CTRL_SAVE} ${CYAN}[L]${NC} ${MENU_CTRL_LANG} ${CYAN}[T]${NC} ${MENU_CTRL_THEME:-Theme} ${CYAN}[Q]${NC} ${MENU_CTRL_QUIT}"
         print_box_bottom
 
         # Leer tecla
@@ -1128,6 +1275,7 @@ show_interactive_menu() {
                 'g'|'G') save_config ;;
                 'd'|'D') config_exists && delete_config ;;
                 'l'|'L') show_language_selector ;;
+                't'|'T') show_theme_selector ;;
                 'q'|'Q') tput cnorm 2>/dev/null; die "${MSG_CANCELLED_BY_USER}" ;;
             esac
         fi
@@ -1985,10 +2133,10 @@ show_final_summary() {
     print_box_top
     print_box_center "${BOLD}${MENU_SUMMARY_TITLE}${NC}"
     print_box_sep
-    print_box_line "${MSG_SUMMARY_STATUS}: ${overall_color}${overall_icon} ${overall_status}${NC}                          ${MSG_SUMMARY_DURATION}: ${CYAN}${duration_str}${NC}"
+    print_box_line "${MSG_SUMMARY_STATUS}: ${overall_color}${overall_icon} ${overall_status}${NC}                          ${MSG_SUMMARY_DURATION}: ${FIXED_CYAN}${duration_str}${NC}"
     print_box_sep
     print_box_line "${BOLD}${MSG_SUMMARY_METRICS}${NC}"
-    print_box_line "${MSG_SUMMARY_COMPLETED_COUNT}: ${GREEN}${success_count}${NC}    ${MSG_SUMMARY_ERRORS}: ${RED}${error_count}${NC}    ${MSG_SUMMARY_SKIPPED}: ${YELLOW}${skipped_count}${NC}    ${MSG_SUMMARY_SPACE}: ${CYAN}${total_freed} MB${NC}"
+    print_box_line "${MSG_SUMMARY_COMPLETED_COUNT}: ${FIXED_GREEN}${success_count}${NC}    ${MSG_SUMMARY_ERRORS}: ${FIXED_RED}${error_count}${NC}    ${MSG_SUMMARY_SKIPPED}: ${FIXED_YELLOW}${skipped_count}${NC}    ${MSG_SUMMARY_SPACE}: ${FIXED_CYAN}${total_freed} MB${NC}"
     print_box_sep
     print_box_line "${BOLD}${MSG_SUMMARY_STEP_DETAIL}${NC}"
 
@@ -2135,6 +2283,9 @@ fi
 
 # Cargar idioma (usa SAVED_LANG si existe, o detecta del sistema)
 load_language
+
+# Cargar tema (usa SAVED_THEME si existe, o usa default)
+load_theme
 
 # Verificar permisos de root ANTES de cualquier operación
 check_root

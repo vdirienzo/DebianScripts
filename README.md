@@ -75,6 +75,22 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 - **Patrones de confirmacion localizados**: S/N, Y/N, O/N, J/N segun el idioma
 - **Parametro --lang**: Fuerza un idioma especifico desde linea de comandos
 
+### Temas de Colores
+
+- **5 temas incluidos**: Default, Norton Commander, Bloody Red, Green Terminal, Amber Terminal
+- **Selector de tema integrado**: Tecla `[T]` en el menu principal para cambiar tema en tiempo real
+- **Archivos de tema externos**: Facil de agregar nuevos temas en la carpeta `themes/`
+- **Configuracion persistente**: El tema seleccionado se guarda en `autoclean.conf`
+- **Colores informativos fijos**: Los colores de metricas (Completed/Errors/Skipped) siempre usan verde/rojo/amarillo para consistencia
+
+| Tema | Descripcion |
+|------|-------------|
+| Default | Azul/Cyan/Verde - tema original |
+| Norton Commander | Cyan/Amarillo - estilo clasico NC |
+| Bloody Red | Tonos rojos intensos |
+| Green Terminal | Monocromo verde retro |
+| Amber Terminal | Monocromo ambar vintage |
+
 ### Deteccion y Compatibilidad
 - **Deteccion automatica de distribucion**: Identifica Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
 - **Adaptacion dinamica**: El script adapta su comportamiento segun la distribucion detectada
@@ -247,6 +263,8 @@ Al ejecutar el script sin argumentos, se muestra un menu interactivo en formato 
 | N | Desactivar todos los pasos |
 | G | Guardar configuracion actual |
 | D | Borrar configuracion guardada |
+| L | Selector de idioma |
+| T | Selector de tema |
 | Q | Salir sin ejecutar |
 
 ### Configuracion Persistente
@@ -520,12 +538,13 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 - **Scripts totales:** 1
 - **Script principal:** autoclean.sh
 - **Version actual:** 2025.12
-- **Lineas de codigo:** ~2200+
+- **Lineas de codigo:** ~2300+
 - **Pasos modulares:** 13
 - **Idiomas soportados:** 6 (en, es, pt, fr, de, it)
+- **Temas de colores:** 5 (Default, Norton Commander, Bloody Red, Green Terminal, Amber Terminal)
 - **Distribuciones soportadas:** 7+ (auto-deteccion)
 - **Compatible con:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
-- **Interfaz:** Enterprise UI con grid 3x5, navegacion bidimensional y selector de idioma
+- **Interfaz:** Enterprise UI con grid 3x5, navegacion bidimensional, selector de idioma y temas
 
 ---
 

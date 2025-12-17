@@ -1,0 +1,30 @@
+# Autoclean Theme: Bloody Red
+# Paleta oscura con tonos rojos intensos
+
+THEME_NAME="Bloody Red"
+THEME_CODE="turbo"
+
+# Colores base - variaciones de rojo
+T_RED='\033[0;31m'
+T_GREEN='\033[1;31m'              # Rojo brillante como "verde"
+T_YELLOW='\033[0;91m'             # Rojo claro
+T_BLUE='\033[0;31m'               # Rojo oscuro
+T_CYAN='\033[1;31m'               # Rojo brillante
+T_MAGENTA='\033[0;35m'            # Magenta oscuro
+T_BRIGHT_GREEN='\033[1;91m'       # Rojo muy brillante
+T_BRIGHT_YELLOW='\033[1;91m'      # Rojo muy brillante
+T_BRIGHT_CYAN='\033[1;31m'        # Rojo brillante
+T_DIM='\033[2;31m'                # Rojo atenuado
+
+# Colores semanticos - Bloody Red style
+T_BOX_BORDER='\033[0;31m'         # Rojo oscuro - bordes
+T_BOX_TITLE='\033[1;91m'          # Rojo muy brillante - titulos
+T_TEXT_NORMAL='\033[0;91m'        # Rojo claro - texto normal
+T_TEXT_SELECTED='\033[1;97;41m'   # Blanco sobre fondo rojo - seleccion
+T_TEXT_ACTIVE='\033[1;91m'        # Rojo muy brillante - items activos
+T_TEXT_INACTIVE='\033[2;31m'      # Rojo atenuado - items inactivos
+T_STATUS_OK='\033[1;91m'          # Rojo brillante - exito
+T_STATUS_ERROR='\033[1;97;41m'    # Blanco sobre rojo - error
+T_STATUS_WARN='\033[0;91m'        # Rojo claro - advertencia
+T_STATUS_INFO='\033[0;31m'        # Rojo - info
+T_STEP_HEADER='\033[1;31m'        # Rojo brillante - encabezado

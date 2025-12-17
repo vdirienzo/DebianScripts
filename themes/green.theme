@@ -1,0 +1,30 @@
+# Autoclean Theme: Green Terminal
+# El estilo retro de terminales verdes fosforescentes
+
+THEME_NAME="Green Terminal"
+THEME_CODE="green"
+
+# Colores base - todo en verde
+T_RED='\033[0;32m'
+T_GREEN='\033[0;32m'
+T_YELLOW='\033[1;32m'
+T_BLUE='\033[0;32m'
+T_CYAN='\033[0;32m'
+T_MAGENTA='\033[0;32m'
+T_BRIGHT_GREEN='\033[1;32m'
+T_BRIGHT_YELLOW='\033[1;32m'
+T_BRIGHT_CYAN='\033[1;32m'
+T_DIM='\033[2;32m'
+
+# Colores semanticos - Monocromo verde
+T_BOX_BORDER='\033[0;32m'       # Verde - bordes
+T_BOX_TITLE='\033[1;32m'        # Verde brillante - titulos
+T_TEXT_NORMAL='\033[0;32m'      # Verde - texto normal
+T_TEXT_SELECTED='\033[1;32;42m' # Verde brillante sobre fondo verde - seleccion
+T_TEXT_ACTIVE='\033[1;32m'      # Verde brillante - activos
+T_TEXT_INACTIVE='\033[2;32m'    # Verde atenuado - inactivos
+T_STATUS_OK='\033[1;32m'        # Verde brillante
+T_STATUS_ERROR='\033[0;32m'     # Verde (sin distincion de color)
+T_STATUS_WARN='\033[1;32m'      # Verde brillante
+T_STATUS_INFO='\033[0;32m'      # Verde
+T_STEP_HEADER='\033[1;32m'      # Verde brillante - encabezado
