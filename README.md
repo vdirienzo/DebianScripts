@@ -57,11 +57,12 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 
 ### Nuevas en v2025.11
 
-- **Interfaz Enterprise**: Nueva UI con marco azul consistente y alineacion perfecta
+- **Interfaz Enterprise 100% ASCII**: UI sin emojis para compatibilidad total con cualquier terminal
 - **Menu en 3 columnas**: Visualizacion compacta de los 13 pasos en grid 5x3
 - **Resumen en 3 columnas**: El reporte final muestra todos los pasos de forma compacta
 - **Navegacion mejorada**: Flechas ←/→ para columnas, ↑/↓ para filas
-- **Iconos ASCII**: [OK], [--], [x] para compatibilidad maxima con terminales
+- **Iconos ASCII puros**: `[OK]`, `[XX]`, `[--]`, `[!!]`, `[..]` para alineacion perfecta
+- **Sin emojis**: Eliminados todos los emojis para evitar problemas de alineacion
 - **Funciones UI reutilizables**: `print_box_line()`, `print_box_center()`, `display_width()`
 - **Contribucion de Dreadblitz**: Mejoras UX/UI basadas en PR #2
 
