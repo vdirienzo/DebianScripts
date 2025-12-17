@@ -224,6 +224,8 @@ El script muestra un resumen detallado al finalizar con el estado de cada paso:
 
 ![Resumen de Ejecucion 2](screenshots/resumen-ejecucion-2.png)
 
+![Resumen de Ejecucion 3](screenshots/resumen-ejecucion-3.png)
+
 ---
 
 ## Menu Interactivo
