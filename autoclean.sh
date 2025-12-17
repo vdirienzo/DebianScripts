@@ -325,18 +325,39 @@ delete_config() {
 }
 
 # ============================================================================
-# COLORES E ICONOS
+# COLORES E ICONOS - ENTERPRISE EDITION
 # ============================================================================
 
+# Colores base
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 MAGENTA='\033[0;35m'
+WHITE='\033[1;37m'
+GRAY='\033[0;90m'
 BOLD='\033[1m'
+DIM='\033[2m'
 NC='\033[0m'
 
+# Colores brillantes
+BRIGHT_RED='\033[1;31m'
+BRIGHT_GREEN='\033[1;32m'
+BRIGHT_YELLOW='\033[1;33m'
+BRIGHT_BLUE='\033[1;34m'
+BRIGHT_CYAN='\033[1;36m'
+BRIGHT_MAGENTA='\033[1;35m'
+
+# Control de cursor
+CURSOR_HIDE='\033[?25l'
+CURSOR_SHOW='\033[?25h'
+CLEAR_LINE='\033[2K'
+MOVE_UP='\033[1A'
+SAVE_CURSOR='\033[s'
+RESTORE_CURSOR='\033[u'
+
+# Iconos principales
 ICON_OK="✅"
 ICON_FAIL="❌"
 ICON_SKIP="⏩"
@@ -344,6 +365,508 @@ ICON_WARN="⚠️"
 ICON_SHIELD="🛡️"
 ICON_CLOCK="⏱️"
 ICON_ROCKET="🚀"
+
+# Iconos adicionales enterprise
+ICON_RUNNING="🔄"
+ICON_PENDING="⏳"
+
+# Íconos ASCII puros para resumen (garantizado 1 char width)
+ICON_SUM_OK='[OK]'
+ICON_SUM_FAIL='[XX]'
+ICON_SUM_WARN='[!!]'
+ICON_SUM_SKIP='[--]'
+ICON_SUM_RUN='[..]'
+ICON_SUM_PEND='[  ]'
+ICON_PACKAGE="📦"
+ICON_DISK="💾"
+ICON_NETWORK="🌐"
+ICON_TOOLS="🔧"
+ICON_CLEAN="🧹"
+ICON_KERNEL="🧠"
+ICON_FIRMWARE="🔌"
+ICON_REBOOT="🔄"
+
+# Caracteres para progress bar
+PROGRESS_FILLED="█"
+PROGRESS_EMPTY="░"
+PROGRESS_HEAD="▓"
+
+# Spinner frames (estilo dots)
+SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
+
+# Variables de control del spinner
+SPINNER_PID=""
+SPINNER_ACTIVE=false
+
+# Arrays de estado de pasos para dashboard
+declare -a STEP_STATUS_ARRAY
+declare -a STEP_TIME_START
+declare -a STEP_TIME_END
+
+# Inicializar arrays de estado
+for i in {0..12}; do
+    STEP_STATUS_ARRAY[$i]="pending"
+    STEP_TIME_START[$i]=0
+    STEP_TIME_END[$i]=0
+done
+
+# Nombres cortos de pasos para dashboard
+STEP_SHORT_NAMES=(
+    "Conectividad"
+    "Dependencias"
+    "Backup"
+    "Snapshot"
+    "Repos"
+    "Upgrade"
+    "Flatpak"
+    "Snap"
+    "Firmware"
+    "APT Clean"
+    "Kernels"
+    "Disk"
+    "Reboot"
+)
+
+# ============================================================================
+# FUNCIONES UX/UI ENTERPRISE
+# ============================================================================
+
+# ------------------------------------------------------------------------------
+# Progress Bar - Muestra barra de progreso visual
+# Uso: show_progress_bar current total [width] [label]
+# ------------------------------------------------------------------------------
+show_progress_bar() {
+    local current=$1
+    local total=$2
+    local width=${3:-40}
+    local label=${4:-""}
+
+    # Evitar división por cero
+    [ "$total" -eq 0 ] && total=1
+
+    local percent=$((current * 100 / total))
+    local filled=$((current * width / total))
+    local empty=$((width - filled))
+
+    # Construir barra
+    local bar=""
+    for ((i=0; i<filled; i++)); do
+        bar+="${PROGRESS_FILLED}"
+    done
+    if [ $filled -lt $width ] && [ $current -gt 0 ]; then
+        bar+="${PROGRESS_HEAD}"
+        empty=$((empty - 1))
+    fi
+    for ((i=0; i<empty; i++)); do
+        bar+="${PROGRESS_EMPTY}"
+    done
+
+    # Color según progreso
+    local color="${CYAN}"
+    [ $percent -ge 50 ] && color="${YELLOW}"
+    [ $percent -ge 80 ] && color="${GREEN}"
+    [ $percent -eq 100 ] && color="${BRIGHT_GREEN}"
+
+    # Imprimir
+    printf "\r  ${color}${bar}${NC} %3d%% " "$percent"
+    [ -n "$label" ] && printf "${DIM}(%s)${NC}" "$label"
+}
+
+# ------------------------------------------------------------------------------
+# Progress Bar con ETA
+# Uso: show_progress_bar_eta current total start_time [width] [label]
+# ------------------------------------------------------------------------------
+show_progress_bar_eta() {
+    local current=$1
+    local total=$2
+    local start_time=$3
+    local width=${4:-35}
+    local label=${5:-""}
+
+    [ "$total" -eq 0 ] && total=1
+
+    local percent=$((current * 100 / total))
+    local filled=$((current * width / total))
+    local empty=$((width - filled))
+
+    # Calcular ETA
+    local now=$(date +%s)
+    local elapsed=$((now - start_time))
+    local eta="--:--"
+
+    if [ $current -gt 0 ] && [ $elapsed -gt 0 ]; then
+        local rate=$((current * 1000 / elapsed))  # items per 1000 seconds
+        if [ $rate -gt 0 ]; then
+            local remaining=$(( (total - current) * 1000 / rate ))
+            local eta_min=$((remaining / 60))
+            local eta_sec=$((remaining % 60))
+            eta=$(printf "%02d:%02d" $eta_min $eta_sec)
+        fi
+    fi
+
+    # Construir barra
+    local bar=""
+    for ((i=0; i<filled; i++)); do bar+="${PROGRESS_FILLED}"; done
+    [ $filled -lt $width ] && [ $current -gt 0 ] && { bar+="${PROGRESS_HEAD}"; empty=$((empty - 1)); }
+    for ((i=0; i<empty; i++)); do bar+="${PROGRESS_EMPTY}"; done
+
+    # Color
+    local color="${CYAN}"
+    [ $percent -ge 50 ] && color="${YELLOW}"
+    [ $percent -ge 80 ] && color="${GREEN}"
+
+    printf "\r  ${color}${bar}${NC} %3d%% ${DIM}ETA: %s${NC} " "$percent" "$eta"
+    [ -n "$label" ] && printf "${DIM}%s${NC}" "$label"
+}
+
+# ------------------------------------------------------------------------------
+# Spinner - Animación durante operaciones largas
+# Uso: start_spinner "mensaje" && comando && stop_spinner
+# ------------------------------------------------------------------------------
+start_spinner() {
+    local message="${1:-Procesando...}"
+
+    [ "$QUIET" = true ] && return
+    [ "$SPINNER_ACTIVE" = true ] && return
+
+    SPINNER_ACTIVE=true
+
+    # Ocultar cursor
+    printf "${CURSOR_HIDE}"
+
+    # Iniciar spinner en background
+    (
+        local i=0
+        local frames_count=${#SPINNER_FRAMES[@]}
+        while true; do
+            printf "\r  ${CYAN}${SPINNER_FRAMES[$i]}${NC} ${message}   "
+            i=$(( (i + 1) % frames_count ))
+            sleep 0.1
+        done
+    ) &
+    SPINNER_PID=$!
+    disown $SPINNER_PID 2>/dev/null
+}
+
+stop_spinner() {
+    local status=${1:-0}  # 0=success, 1=error, 2=warning, 3=skip
+    local message="${2:-}"
+
+    [ "$QUIET" = true ] && return
+    [ "$SPINNER_ACTIVE" = false ] && return
+
+    # Detener proceso de spinner
+    if [ -n "$SPINNER_PID" ] && kill -0 "$SPINNER_PID" 2>/dev/null; then
+        kill "$SPINNER_PID" 2>/dev/null
+        wait "$SPINNER_PID" 2>/dev/null
+    fi
+
+    SPINNER_PID=""
+    SPINNER_ACTIVE=false
+
+    # Limpiar línea y mostrar resultado
+    printf "\r${CLEAR_LINE}"
+
+    case $status in
+        0) printf "  ${GREEN}${ICON_OK}${NC} ${message}\n" ;;
+        1) printf "  ${RED}${ICON_FAIL}${NC} ${message}\n" ;;
+        2) printf "  ${YELLOW}${ICON_WARN}${NC} ${message}\n" ;;
+        3) printf "  ${GRAY}${ICON_SKIP}${NC} ${message}\n" ;;
+    esac
+
+    # Restaurar cursor
+    printf "${CURSOR_SHOW}"
+}
+
+# ------------------------------------------------------------------------------
+# Dashboard de estado en tiempo real
+# ------------------------------------------------------------------------------
+get_step_icon() {
+    local status=$1
+    case $status in
+        "pending")  echo "${GRAY}${ICON_PENDING}${NC}" ;;
+        "running")  echo "${CYAN}${ICON_RUNNING}${NC}" ;;
+        "success")  echo "${GREEN}${ICON_OK}${NC}" ;;
+        "error")    echo "${RED}${ICON_FAIL}${NC}" ;;
+        "skipped")  echo "${YELLOW}${ICON_SKIP}${NC}" ;;
+        "warning")  echo "${YELLOW}${ICON_WARN}${NC}" ;;
+        *)          echo "${GRAY}○${NC}" ;;
+    esac
+}
+
+# Íconos de ancho fijo para resumen (evita desalineación)
+get_step_icon_summary() {
+    local status=$1
+    case $status in
+        "pending")  echo "${GRAY}${ICON_SUM_PEND}${NC}" ;;
+        "running")  echo "${CYAN}${ICON_SUM_RUN}${NC}" ;;
+        "success")  echo "${GREEN}${ICON_SUM_OK}${NC}" ;;
+        "error")    echo "${RED}${ICON_SUM_FAIL}${NC}" ;;
+        "skipped")  echo "${YELLOW}${ICON_SUM_SKIP}${NC}" ;;
+        "warning")  echo "${YELLOW}${ICON_SUM_WARN}${NC}" ;;
+        *)          echo "${GRAY}${ICON_SUM_PEND}${NC}" ;;
+    esac
+}
+
+# Función para calcular longitud visible (sin códigos ANSI)
+visible_length() {
+    local text="$1"
+    local clean
+    clean=$(echo -e "$text" | sed 's/\x1b\[[0-9;]*m//g')
+    echo ${#clean}
+}
+
+# Función para imprimir línea con borde alineado automáticamente
+print_box_line() {
+    local content="$1"
+    local box_width=64  # Ancho interno del contenido
+
+    local visible_len
+    visible_len=$(visible_length "$content")
+
+    local padding=$((box_width - visible_len))
+    [ $padding -lt 0 ] && padding=0
+
+    local spaces
+    spaces=$(printf '%*s' "$padding" '')
+
+    echo -e "${BLUE}║${NC} ${content}${spaces} ${BLUE}║${NC}"
+}
+
+update_step_status() {
+    local step_index=$1
+    local new_status=$2  # pending, running, success, error, skipped, warning
+
+    STEP_STATUS_ARRAY[$step_index]="$new_status"
+
+    case $new_status in
+        "running")
+            STEP_TIME_START[$step_index]=$(date +%s)
+            ;;
+        "success"|"error"|"skipped"|"warning")
+            STEP_TIME_END[$step_index]=$(date +%s)
+            ;;
+    esac
+}
+
+show_dashboard() {
+    [ "$QUIET" = true ] && return
+
+    local current_step=${1:-0}
+    local step_name=${2:-""}
+    local detail=${3:-""}
+
+    # Calcular tiempo transcurrido
+    local now=$(date +%s)
+    local elapsed=$((now - START_TIME))
+    local elapsed_min=$((elapsed / 60))
+    local elapsed_sec=$((elapsed % 60))
+    local elapsed_str=$(printf "%02d:%02d" $elapsed_min $elapsed_sec)
+
+    # Limpiar pantalla y mostrar dashboard
+    clear
+
+    # Header
+    echo -e "${BLUE}╔══════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BLUE}║${NC}  ${BOLD}DEBIAN MAINTENANCE${NC} v${SCRIPT_VERSION}            ${ICON_CLOCK} ${elapsed_str}  ${BLUE}║${NC}"
+    echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
+
+    # Info del sistema
+    printf "${BLUE}║${NC}  ${CYAN}🐧${NC} %-20s ${CYAN}📦${NC} %-20s        ${BLUE}║${NC}\n" "${DISTRO_NAME:0:20}" "${DISTRO_FAMILY^}"
+    echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
+
+    # Paso actual con detalle
+    if [ -n "$step_name" ]; then
+        printf "${BLUE}║${NC}  ${BRIGHT_CYAN}▶ Step %d/%d:${NC} %-45s ${BLUE}║${NC}\n" "$((current_step + 1))" "$TOTAL_STEPS" "${step_name:0:45}"
+        if [ -n "$detail" ]; then
+            printf "${BLUE}║${NC}    ${DIM}%-60s${NC} ${BLUE}║${NC}\n" "${detail:0:60}"
+        fi
+        echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
+    fi
+
+    # Grid de estados (4 columnas)
+    echo -e "${BLUE}║${NC}                                                                  ${BLUE}║${NC}"
+
+    local col=0
+    local line=""
+    for i in {0..12}; do
+        local icon=$(get_step_icon "${STEP_STATUS_ARRAY[$i]}")
+        local name="${STEP_SHORT_NAMES[$i]:0:10}"
+
+        if [ $col -eq 0 ]; then
+            line="  "
+        fi
+
+        line+=$(printf "%s %-10s  " "$icon" "$name")
+        col=$((col + 1))
+
+        if [ $col -eq 4 ] || [ $i -eq 12 ]; then
+            printf "${BLUE}║${NC}%-66s${BLUE}║${NC}\n" "$line"
+            line=""
+            col=0
+        fi
+    done
+
+    echo -e "${BLUE}║${NC}                                                                  ${BLUE}║${NC}"
+    echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
+
+    # Estadísticas
+    local success_count=0
+    local error_count=0
+    local running_count=0
+    for status in "${STEP_STATUS_ARRAY[@]}"; do
+        [ "$status" = "success" ] && ((success_count++))
+        [ "$status" = "error" ] && ((error_count++))
+        [ "$status" = "running" ] && ((running_count++))
+    done
+
+    printf "${BLUE}║${NC}  ${GREEN}✓ %d completados${NC}  ${RED}✗ %d errores${NC}  ${CYAN}● %d en progreso${NC}            ${BLUE}║${NC}\n" \
+        "$success_count" "$error_count" "$running_count"
+
+    echo -e "${BLUE}╚══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+# ------------------------------------------------------------------------------
+# Print step mejorado con dashboard
+# ------------------------------------------------------------------------------
+print_step_enterprise() {
+    local step_index=$1
+    local step_name=$2
+    local step_detail=${3:-""}
+
+    [ "$QUIET" = true ] && return
+
+    # Actualizar estado a running
+    update_step_status "$step_index" "running"
+
+    # Mostrar dashboard actualizado
+    show_dashboard "$step_index" "$step_name" "$step_detail"
+
+    # Log
+    ((CURRENT_STEP++))
+    log "INFO" "PASO [$CURRENT_STEP/$TOTAL_STEPS]: $step_name"
+}
+
+# ------------------------------------------------------------------------------
+# Ejecutar comando con spinner
+# ------------------------------------------------------------------------------
+run_with_spinner() {
+    local message="$1"
+    local cmd="$2"
+    local success_msg="${3:-$message completado}"
+    local error_msg="${4:-Error en $message}"
+
+    start_spinner "$message"
+
+    if [ "$DRY_RUN" = true ]; then
+        sleep 0.5  # Simular trabajo
+        stop_spinner 0 "[DRY-RUN] $message"
+        return 0
+    fi
+
+    if eval "$cmd" >> "$LOG_FILE" 2>&1; then
+        stop_spinner 0 "$success_msg"
+        return 0
+    else
+        stop_spinner 1 "$error_msg"
+        return 1
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# Resumen final enterprise
+# ------------------------------------------------------------------------------
+show_final_summary_enterprise() {
+    [ "$QUIET" = true ] && return
+
+    local end_time=$(date +%s)
+    local execution_time=$((end_time - START_TIME))
+    local minutes=$((execution_time / 60))
+    local seconds=$((execution_time % 60))
+
+    # Calcular espacio liberado
+    local space_after_root=$(df / --output=used | tail -1 | awk '{print $1}')
+    local space_freed_root=$(( (SPACE_BEFORE_ROOT - space_after_root) / 1024 ))
+    [ $space_freed_root -lt 0 ] && space_freed_root=0
+
+    # Contar resultados
+    local success_count=0
+    local error_count=0
+    local skipped_count=0
+    local warning_count=0
+
+    for status in "${STEP_STATUS_ARRAY[@]}"; do
+        case $status in
+            "success") ((success_count++)) ;;
+            "error") ((error_count++)) ;;
+            "skipped") ((skipped_count++)) ;;
+            "warning") ((warning_count++)) ;;
+        esac
+    done
+
+    # Determinar estado general (íconos ASCII de ancho fijo)
+    local overall_status="COMPLETED"
+    local overall_color="${GREEN}"
+    local overall_icon="[OK]"
+
+    if [ $error_count -gt 0 ]; then
+        overall_status="COMPLETED WITH ERRORS"
+        overall_color="${RED}"
+        overall_icon="[XX]"
+    elif [ $warning_count -gt 0 ]; then
+        overall_status="COMPLETED WITH WARNINGS"
+        overall_color="${YELLOW}"
+        overall_icon="[!!]"
+    fi
+
+    clear
+    echo ""
+    echo -e "${BLUE}╔══════════════════════════════════════════════════════════════════╗${NC}"
+    print_box_line "                   ${BOLD}EXECUTION SUMMARY${NC}"
+    echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
+    print_box_line "Status: ${overall_color}${overall_icon} ${overall_status}${NC}"
+    print_box_line "Duration: $(printf '%02d:%02d' $minutes $seconds)"
+    echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
+    print_box_line "${BOLD}METRICS${NC}"
+    print_box_line " - Steps completed:    ${GREEN}${success_count}${NC}"
+    print_box_line " - Steps with errors:  ${RED}${error_count}${NC}"
+    print_box_line " - Steps skipped:      ${YELLOW}${skipped_count}${NC}"
+    print_box_line " - Space freed:        ${CYAN}${space_freed_root} MB${NC}"
+    echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
+    print_box_line "${BOLD}STEP DETAILS${NC}"
+
+    # Mostrar cada paso con su resultado (íconos de ancho fijo)
+    for i in {0..12}; do
+        local icon=$(get_step_icon_summary "${STEP_STATUS_ARRAY[$i]}")
+        local name="${STEP_SHORT_NAMES[$i]}"
+        local time_taken=""
+
+        if [ "${STEP_TIME_END[$i]}" -gt 0 ] && [ "${STEP_TIME_START[$i]}" -gt 0 ]; then
+            local step_time=$((STEP_TIME_END[$i] - STEP_TIME_START[$i]))
+            time_taken="${step_time}s"
+        fi
+
+        # Formatear línea: icono + nombre (20 chars) + tiempo
+        local line_content
+        line_content=$(printf "%b %-18s %s" "$icon" "$name" "$time_taken")
+        print_box_line "$line_content"
+    done
+
+    echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
+
+    # Reinicio requerido
+    if [ "$REBOOT_NEEDED" = true ]; then
+        print_box_line "${RED}${BOLD}[!!] REBOOT REQUIRED${NC}"
+    else
+        print_box_line "${GREEN}[OK] No reboot required${NC}"
+    fi
+
+    echo -e "${BLUE}╠══════════════════════════════════════════════════════════════════╣${NC}"
+    print_box_line "Log: ${LOG_FILE:0:55}"
+    echo -e "${BLUE}╚══════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
 
 # ============================================================================
 # FUNCIONES BASE Y UTILIDADES
@@ -808,9 +1331,10 @@ check_disk_space() {
 # ============================================================================
 
 step_check_connectivity() {
-    [ "$STEP_CHECK_CONNECTIVITY" = 0 ] && return
+    [ "$STEP_CHECK_CONNECTIVITY" = 0 ] && { update_step_status 0 "skipped"; return; }
 
-    print_step "Verificando conectividad..."
+    print_step_enterprise 0 "Verificando conectividad..."
+    update_step_status 0 "running"
 
     # Usar el mirror correspondiente a la distribución detectada
     local mirror_to_check="${DISTRO_MIRROR:-deb.debian.org}"
@@ -818,17 +1342,20 @@ step_check_connectivity() {
     echo "→ Verificando conexión a $mirror_to_check..."
 
     if ping -c 1 -W 3 "$mirror_to_check" >/dev/null 2>&1; then
-        echo "→ Conexión a internet: OK"
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Conexión a internet: OK"
         STAT_CONNECTIVITY="$ICON_OK"
         log "SUCCESS" "Conectividad verificada con $mirror_to_check"
+        update_step_status 0 "success"
     else
         # Intentar con un servidor de respaldo genérico
         if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
-            echo -e "${YELLOW}→ Mirror específico no alcanzable, pero hay conexión a internet${NC}"
+            echo -e "  ${BRIGHT_YELLOW}⚠${NC} Mirror específico no alcanzable, pero hay conexión a internet"
             STAT_CONNECTIVITY="$ICON_WARN"
             log "WARN" "Mirror $mirror_to_check no alcanzable, pero hay conectividad general"
+            update_step_status 0 "warning"
         else
             STAT_CONNECTIVITY="$ICON_FAIL"
+            update_step_status 0 "error"
             die "Sin conexión a internet. Verifica tu red."
         fi
     fi
@@ -839,10 +1366,11 @@ step_check_connectivity() {
 # ============================================================================
 
 step_check_dependencies() {
-    [ "$STEP_CHECK_DEPENDENCIES" = 0 ] && return
-    
-    print_step "Verificando herramientas recomendadas..."
-    
+    [ "$STEP_CHECK_DEPENDENCIES" = 0 ] && { update_step_status 1 "skipped"; return; }
+
+    print_step_enterprise 1 "Verificando herramientas recomendadas..."
+    update_step_status 1 "running"
+
     declare -A TOOLS
     declare -A TOOL_STEPS
     
@@ -913,22 +1441,27 @@ step_check_dependencies() {
                 if safe_run "apt update && apt install -y $packages_to_install" "Error instalando herramientas"; then
                     log "SUCCESS" "Herramientas instaladas correctamente"
                     STAT_DEPENDENCIES="$ICON_OK (instaladas)"
+                    update_step_status 1 "success"
                 else
                     log "WARN" "Error al instalar algunas herramientas"
                     STAT_DEPENDENCIES="${YELLOW}$ICON_WARN Parcial${NC}"
+                    update_step_status 1 "warning"
                 fi
             else
                 log "WARN" "Usuario decidió continuar sin instalar herramientas"
                 STAT_DEPENDENCIES="${YELLOW}$ICON_WARN Incompleto${NC}"
+                update_step_status 1 "warning"
             fi
         else
             log "WARN" "Herramientas faltantes en modo desatendido/dry-run"
             STAT_DEPENDENCIES="${YELLOW}$ICON_WARN Incompleto${NC}"
+            update_step_status 1 "warning"
         fi
     else
-        echo "→ Todas las herramientas necesarias están instaladas"
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Todas las herramientas necesarias están instaladas"
         STAT_DEPENDENCIES="$ICON_OK"
         log "SUCCESS" "Todas las herramientas necesarias disponibles"
+        update_step_status 1 "success"
     fi
 }
 
@@ -937,32 +1470,35 @@ step_check_dependencies() {
 # ============================================================================
 
 step_backup_tar() {
-    [ "$STEP_BACKUP_TAR" = 0 ] && return
-    
-    print_step "Creando backup de configuraciones (Tar)..."
-    
+    [ "$STEP_BACKUP_TAR" = 0 ] && { update_step_status 2 "skipped"; return; }
+
+    print_step_enterprise 2 "Creando backup de configuraciones (Tar)..."
+    update_step_status 2 "running"
+
     mkdir -p "$BACKUP_DIR"
     local backup_date=$(date +%Y%m%d_%H%M%S)
     local backup_file="$BACKUP_DIR/backup_${backup_date}.tar.gz"
-    
+
     # Crear tarball de configuraciones APT
     if tar czf "$backup_file" \
         /etc/apt/sources.list* \
         /etc/apt/sources.list.d/ \
         /etc/apt/trusted.gpg.d/ 2>/dev/null; then
-        
+
         # Lista de paquetes instalados
         dpkg --get-selections > "$BACKUP_DIR/packages_${backup_date}.list" 2>/dev/null
-        
-        echo "→ Backup creado: $backup_file"
+
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Backup creado: $backup_file"
         STAT_BACKUP_TAR="$ICON_OK"
         log "SUCCESS" "Backup Tar creado"
-        
+        update_step_status 2 "success"
+
         # Limpiar backups antiguos (mantener últimos 5)
         ls -t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
     else
         STAT_BACKUP_TAR="$ICON_FAIL"
         log "ERROR" "Error creando backup Tar"
+        update_step_status 2 "error"
     fi
 }
 
@@ -993,14 +1529,16 @@ check_timeshift_configured() {
 }
 
 step_snapshot_timeshift() {
-    [ "$STEP_SNAPSHOT_TIMESHIFT" = 0 ] && return
-    
-    print_step "${ICON_SHIELD} Creando Snapshot de Sistema (Timeshift)..."
-    
+    [ "$STEP_SNAPSHOT_TIMESHIFT" = 0 ] && { update_step_status 3 "skipped"; return; }
+
+    print_step_enterprise 3 "Creando Snapshot de Sistema (Timeshift)..."
+    update_step_status 3 "running"
+
     if ! command -v timeshift &>/dev/null; then
-        echo -e "${YELLOW}→ Timeshift no está instalado${NC}"
+        echo -e "  ${BRIGHT_YELLOW}⚠${NC} Timeshift no está instalado"
         STAT_SNAPSHOT="${YELLOW}$ICON_SKIP No disponible${NC}"
         log "WARN" "Timeshift no disponible"
+        update_step_status 3 "warning"
         return
     fi
 
@@ -1023,6 +1561,7 @@ step_snapshot_timeshift() {
         echo ""
         log "WARN" "Timeshift instalado pero no configurado - saltando paso"
         STAT_SNAPSHOT="${YELLOW}$ICON_WARN No configurado${NC}"
+        update_step_status 3 "warning"
 
         if [ "$UNATTENDED" = false ]; then
             echo -e "${YELLOW}Presiona cualquier tecla para continuar sin snapshot...${NC}"
@@ -1041,25 +1580,29 @@ step_snapshot_timeshift() {
         if [[ $REPLY =~ ^[Ss]$ ]]; then
             log "WARN" "Usuario omitió snapshot de Timeshift"
             STAT_SNAPSHOT="${YELLOW}$ICON_SKIP Omitido por usuario${NC}"
+            update_step_status 3 "skipped"
             return
         fi
     fi
-    
+
     if [ "$DRY_RUN" = true ]; then
         STAT_SNAPSHOT="${YELLOW}Simulado${NC}"
+        update_step_status 3 "skipped"
         return
     fi
-    
+
     # Crear snapshot
     local ts_comment="Pre-Maintenance $(date +%Y-%m-%d_%H:%M:%S)"
     if timeshift --create --comments "$ts_comment" --tags O >> "$LOG_FILE" 2>&1; then
-        echo "→ Snapshot Timeshift creado exitosamente"
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Snapshot Timeshift creado exitosamente"
         STAT_SNAPSHOT="${GREEN}$ICON_OK Creado${NC}"
         log "SUCCESS" "Snapshot Timeshift creado"
+        update_step_status 3 "success"
     else
-        echo -e "${RED}→ Error al crear snapshot de Timeshift${NC}"
+        echo -e "  ${BRIGHT_RED}✗${NC} Error al crear snapshot de Timeshift"
         STAT_SNAPSHOT="${RED}$ICON_FAIL Error${NC}"
         log "ERROR" "Fallo al crear snapshot de Timeshift"
+        update_step_status 3 "error"
 
         if [ "$UNATTENDED" = false ]; then
             echo -e "${YELLOW}¿Deseas continuar SIN snapshot? Esto es RIESGOSO.${NC}"
@@ -1080,18 +1623,21 @@ step_snapshot_timeshift() {
 # ============================================================================
 
 step_update_repos() {
-    [ "$STEP_UPDATE_REPOS" = 0 ] && return
-    
-    print_step "Actualizando lista de repositorios..."
-    
+    [ "$STEP_UPDATE_REPOS" = 0 ] && { update_step_status 4 "skipped"; return; }
+
+    print_step_enterprise 4 "Actualizando lista de repositorios..."
+    update_step_status 4 "running"
+
     # Reparar dpkg antes de actualizar
     dpkg --configure -a >> "$LOG_FILE" 2>&1
-    
+
     if safe_run "apt update" "Error al actualizar repositorios"; then
-        echo "→ Repositorios actualizados"
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Repositorios actualizados"
         STAT_REPO="$ICON_OK"
+        update_step_status 4 "success"
     else
         STAT_REPO="$ICON_FAIL"
+        update_step_status 4 "error"
         die "Error crítico al actualizar repositorios"
     fi
 }
@@ -1101,53 +1647,59 @@ step_update_repos() {
 # ============================================================================
 
 step_upgrade_system() {
-    [ "$STEP_UPGRADE_SYSTEM" = 0 ] && return
-    
-    print_step "Analizando y aplicando actualizaciones del sistema..."
-    
+    [ "$STEP_UPGRADE_SYSTEM" = 0 ] && { update_step_status 5 "skipped"; return; }
+
+    print_step_enterprise 5 "Analizando y aplicando actualizaciones del sistema..."
+    update_step_status 5 "running"
+
     # Contar actualizaciones disponibles
     local updates_output=$(apt list --upgradable 2>/dev/null)
     local updates=$(echo "$updates_output" | grep -c '\[upgradable' || echo 0)
     updates=${updates//[^0-9]/}
     updates=${updates:-0}
     updates=$((updates + 0))
-    
+
     if [ "$updates" -gt 0 ]; then
-        echo "→ $updates paquetes para actualizar"
-        
+        echo -e "  ${BRIGHT_CYAN}📦${NC} $updates paquetes para actualizar"
+
         # Análisis heurístico de riesgo (borrados masivos)
         log "INFO" "Simulando actualización para detectar borrados..."
         local simulation=$(apt full-upgrade -s 2>/dev/null)
         local remove_count=$(echo "$simulation" | grep "^Remv" | wc -l)
-        
+
         if [ "$remove_count" -gt "$MAX_REMOVALS_ALLOWED" ]; then
             echo -e "\n${RED}${BOLD}⚠️  ALERTA DE SEGURIDAD: APT propone eliminar $remove_count paquetes${NC}"
             echo "$simulation" | grep "^Remv" | head -n 5 | sed 's/^Remv/ - Eliminando:/'
-            
+
             if [ "$UNATTENDED" = true ]; then
+                update_step_status 5 "error"
                 die "Abortado automáticamente por riesgo de eliminación masiva en modo desatendido."
             fi
-            
+
             echo -e "\n${YELLOW}¿Tienes un snapshot válido? ¿Quieres proceder?${NC}"
             read -p "Escribe 'SI' (mayúsculas) para continuar: " -r CONFIRM
             if [ "$CONFIRM" != "SI" ]; then
+                update_step_status 5 "error"
                 die "Cancelado por el usuario."
             fi
         fi
-        
+
         # Ejecutar actualización
         if safe_run "apt full-upgrade -y" "Error aplicando actualizaciones"; then
-            echo "→ $updates paquetes actualizados exitosamente"
+            echo -e "  ${BRIGHT_GREEN}✓${NC} $updates paquetes actualizados exitosamente"
             STAT_UPGRADE="$ICON_OK ($updates instalados)"
             log "SUCCESS" "$updates paquetes actualizados"
+            update_step_status 5 "success"
         else
             STAT_UPGRADE="$ICON_FAIL"
             log "ERROR" "Error actualizando paquetes"
+            update_step_status 5 "error"
         fi
     else
-        echo "→ Sistema ya actualizado"
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Sistema ya actualizado"
         STAT_UPGRADE="$ICON_OK (sin cambios)"
         log "INFO" "No hay actualizaciones disponibles"
+        update_step_status 5 "success"
     fi
 }
 
@@ -1156,28 +1708,32 @@ step_upgrade_system() {
 # ============================================================================
 
 step_update_flatpak() {
-    [ "$STEP_UPDATE_FLATPAK" = 0 ] && return
-    
-    print_step "Actualizando aplicaciones Flatpak..."
-    
+    [ "$STEP_UPDATE_FLATPAK" = 0 ] && { update_step_status 6 "skipped"; return; }
+
+    print_step_enterprise 6 "Actualizando aplicaciones Flatpak..."
+    update_step_status 6 "running"
+
     if ! command -v flatpak &>/dev/null; then
-        echo "→ Flatpak no está instalado"
+        echo -e "  ${BRIGHT_YELLOW}⚠${NC} Flatpak no está instalado"
         STAT_FLATPAK="$ICON_SKIP (no instalado)"
+        update_step_status 6 "skipped"
         return
     fi
-    
+
     if safe_run "flatpak update -y" "Error actualizando Flatpak"; then
         # Limpiar referencias huérfanas
         safe_run "flatpak uninstall --unused -y" "Error limpiando Flatpak huérfanos"
-        
+
         # Reparar instalación
         safe_run "flatpak repair" "Error reparando Flatpak"
-        
-        echo "→ Flatpak actualizado y limpiado"
+
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Flatpak actualizado y limpiado"
         STAT_FLATPAK="$ICON_OK"
         log "SUCCESS" "Flatpak actualizado"
+        update_step_status 6 "success"
     else
         STAT_FLATPAK="$ICON_FAIL"
+        update_step_status 6 "error"
     fi
 }
 
@@ -1186,22 +1742,26 @@ step_update_flatpak() {
 # ============================================================================
 
 step_update_snap() {
-    [ "$STEP_UPDATE_SNAP" = 0 ] && return
-    
-    print_step "Actualizando aplicaciones Snap..."
-    
+    [ "$STEP_UPDATE_SNAP" = 0 ] && { update_step_status 7 "skipped"; return; }
+
+    print_step_enterprise 7 "Actualizando aplicaciones Snap..."
+    update_step_status 7 "running"
+
     if ! command -v snap &>/dev/null; then
-        echo "→ Snap no está instalado"
+        echo -e "  ${BRIGHT_YELLOW}⚠${NC} Snap no está instalado"
         STAT_SNAP="$ICON_SKIP (no instalado)"
+        update_step_status 7 "skipped"
         return
     fi
-    
+
     if safe_run "snap refresh" "Error actualizando Snap"; then
-        echo "→ Snap actualizado"
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Snap actualizado"
         STAT_SNAP="$ICON_OK"
         log "SUCCESS" "Snap actualizado"
+        update_step_status 7 "success"
     else
         STAT_SNAP="$ICON_FAIL"
+        update_step_status 7 "error"
     fi
 }
 
@@ -1210,36 +1770,40 @@ step_update_snap() {
 # ============================================================================
 
 step_check_firmware() {
-    [ "$STEP_CHECK_FIRMWARE" = 0 ] && return
-    
-    print_step "Verificando actualizaciones de firmware..."
-    
+    [ "$STEP_CHECK_FIRMWARE" = 0 ] && { update_step_status 8 "skipped"; return; }
+
+    print_step_enterprise 8 "Verificando actualizaciones de firmware..."
+    update_step_status 8 "running"
+
     if ! command -v fwupdmgr &>/dev/null; then
-        echo "→ fwupd no está instalado"
+        echo -e "  ${BRIGHT_YELLOW}⚠${NC} fwupd no está instalado"
         STAT_FIRMWARE="$ICON_SKIP (no instalado)"
+        update_step_status 8 "skipped"
         return
     fi
-    
+
     # Verificar si necesita refresh (más de 7 días)
     local last_refresh=$(stat -c %Y /var/lib/fwupd/metadata.xml 2>/dev/null || echo 0)
     local current_time=$(date +%s)
     local days_old=$(( (current_time - last_refresh) / 86400 ))
-    
+
     if [ "$days_old" -gt 7 ]; then
         safe_run "fwupdmgr refresh --force" "Error actualizando metadata de firmware"
-        echo "→ Metadata de firmware actualizada"
+        echo -e "  ${BRIGHT_CYAN}↻${NC} Metadata de firmware actualizada"
     else
-        echo "→ Metadata actualizada hace $days_old días"
+        echo -e "  ${DIM}→ Metadata actualizada hace $days_old días${NC}"
     fi
-    
+
     # Verificar si hay actualizaciones disponibles
     if fwupdmgr get-updates >/dev/null 2>&1; then
-        echo -e "${YELLOW}→ ¡Hay actualizaciones de Firmware disponibles!${NC}"
+        echo -e "  ${BRIGHT_YELLOW}⚠${NC} ¡Hay actualizaciones de Firmware disponibles!"
         STAT_FIRMWARE="${YELLOW}$ICON_WARN DISPONIBLE${NC}"
         log "WARN" "Actualizaciones de firmware disponibles"
+        update_step_status 8 "warning"
     else
-        echo "→ Firmware actualizado"
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Firmware actualizado"
         STAT_FIRMWARE="$ICON_OK"
+        update_step_status 8 "success"
     fi
 }
 
@@ -1248,41 +1812,45 @@ step_check_firmware() {
 # ============================================================================
 
 step_cleanup_apt() {
-    [ "$STEP_CLEANUP_APT" = 0 ] && return
-    
-    print_step "Limpieza de paquetes huérfanos y residuales..."
-    
+    [ "$STEP_CLEANUP_APT" = 0 ] && { update_step_status 9 "skipped"; return; }
+
+    print_step_enterprise 9 "Limpieza de paquetes huérfanos y residuales..."
+    update_step_status 9 "running"
+
     # Autoremove (paquetes huérfanos)
     if safe_run "apt autoremove -y" "Error en autoremove"; then
-        echo "→ Paquetes huérfanos eliminados"
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Paquetes huérfanos eliminados"
     else
         STAT_CLEAN_APT="$ICON_FAIL"
+        update_step_status 9 "error"
         return
     fi
-    
+
     # Purge (paquetes con config residual)
     local pkgs_rc=$(dpkg -l 2>/dev/null | grep "^rc" | awk '{print $2}')
     if [ -n "$pkgs_rc" ]; then
         local rc_count=$(echo "$pkgs_rc" | wc -l)
         if echo "$pkgs_rc" | xargs apt purge -y >/dev/null 2>&1; then
-            echo "→ $rc_count archivos residuales purgados"
+            echo -e "  ${BRIGHT_GREEN}✓${NC} $rc_count archivos residuales purgados"
             log "INFO" "$rc_count paquetes residuales purgados"
         else
             STAT_CLEAN_APT="$ICON_FAIL"
             log "ERROR" "Error purgando residuales"
+            update_step_status 9 "error"
             return
         fi
     else
-        echo "→ No hay archivos residuales"
+        echo -e "  ${DIM}→ No hay archivos residuales${NC}"
     fi
-    
+
     # Autoclean o clean
     if safe_run "apt $APT_CLEAN_MODE" "Error limpiando caché APT"; then
-        echo "→ Caché de APT limpiado"
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Caché de APT limpiado"
     fi
-    
+
     STAT_CLEAN_APT="$ICON_OK"
     log "SUCCESS" "Limpieza APT completada"
+    update_step_status 9 "success"
 }
 
 # ============================================================================
@@ -1290,23 +1858,25 @@ step_cleanup_apt() {
 # ============================================================================
 
 step_cleanup_kernels() {
-    [ "$STEP_CLEANUP_KERNELS" = 0 ] && return
-    
-    print_step "Limpieza segura de Kernels antiguos..."
-    
+    [ "$STEP_CLEANUP_KERNELS" = 0 ] && { update_step_status 10 "skipped"; return; }
+
+    print_step_enterprise 10 "Limpieza segura de Kernels antiguos..."
+    update_step_status 10 "running"
+
     # Obtener kernel actual
     local current_kernel=$(uname -r)
     local current_kernel_pkg="linux-image-${current_kernel}"
-    
+
     log "INFO" "Kernel actual: $current_kernel"
-    echo "→ Kernel en uso: $current_kernel"
+    echo -e "  ${BRIGHT_CYAN}🐧${NC} Kernel en uso: $current_kernel"
     
     # Obtener todos los kernels instalados
     local installed_kernels=$(dpkg -l 2>/dev/null | awk '/^ii.*linux-image-[0-9]/ {print $2}' | grep -v "meta")
     
     if [ -z "$installed_kernels" ]; then
-        echo "→ No se encontraron kernels para gestionar"
+        echo -e "  ${DIM}→ No se encontraron kernels para gestionar${NC}"
         STAT_CLEAN_KERNEL="$ICON_OK (Ninguno encontrado)"
+        update_step_status 10 "success"
         return
     fi
     
@@ -1345,29 +1915,33 @@ step_cleanup_kernels() {
             if [[ ! $REPLY =~ ^[Ss]$ ]]; then
                 log "INFO" "Usuario canceló limpieza de kernels"
                 STAT_CLEAN_KERNEL="$ICON_SKIP (Cancelado)"
-                echo "→ Limpieza de kernels cancelada"
+                echo -e "  ${BRIGHT_YELLOW}⚠${NC} Limpieza de kernels cancelada"
+                update_step_status 10 "skipped"
                 return
             fi
         fi
-        
+
         # Eliminar kernels
         if echo "$kernels_to_remove" | xargs apt purge -y >> "$LOG_FILE" 2>&1; then
-            echo "→ Kernels antiguos eliminados"
+            echo -e "  ${BRIGHT_GREEN}✓${NC} Kernels antiguos eliminados"
             STAT_CLEAN_KERNEL="$ICON_OK"
             log "SUCCESS" "Kernels antiguos eliminados"
-            
+
             # Regenerar GRUB
             if command -v update-grub &>/dev/null; then
                 safe_run "update-grub" "Error actualizando GRUB"
-                echo "→ GRUB actualizado"
+                echo -e "  ${BRIGHT_GREEN}✓${NC} GRUB actualizado"
             fi
+            update_step_status 10 "success"
         else
             STAT_CLEAN_KERNEL="$ICON_FAIL"
             log "ERROR" "Error eliminando kernels"
+            update_step_status 10 "error"
         fi
     else
-        echo "→ No hay kernels antiguos para limpiar"
+        echo -e "  ${BRIGHT_GREEN}✓${NC} No hay kernels antiguos para limpiar"
         STAT_CLEAN_KERNEL="$ICON_OK (Nada que limpiar)"
+        update_step_status 10 "success"
     fi
 }
 
@@ -1376,21 +1950,22 @@ step_cleanup_kernels() {
 # ============================================================================
 
 step_cleanup_disk() {
-    [ "$STEP_CLEANUP_DISK" = 0 ] && return
-    
-    print_step "Limpieza de logs y caché del sistema..."
-    
+    [ "$STEP_CLEANUP_DISK" = 0 ] && { update_step_status 11 "skipped"; return; }
+
+    print_step_enterprise 11 "Limpieza de logs y caché del sistema..."
+    update_step_status 11 "running"
+
     # Journalctl
     if command -v journalctl &>/dev/null; then
         if safe_run "journalctl --vacuum-time=${DIAS_LOGS}d --vacuum-size=500M" "Error limpiando journalctl"; then
-            echo "→ Logs de journalctl reducidos"
+            echo -e "  ${BRIGHT_GREEN}✓${NC} Logs de journalctl reducidos"
         fi
     fi
-    
+
     # Archivos temporales antiguos
     find /var/tmp -type f -atime +30 -delete 2>/dev/null && \
-        echo "→ Archivos temporales antiguos eliminados" || true
-    
+        echo -e "  ${BRIGHT_GREEN}✓${NC} Archivos temporales antiguos eliminados" || true
+
     # Thumbnails
     local cleaned_homes=0
     for user_home in /home/* /root; do
@@ -1398,10 +1973,11 @@ step_cleanup_disk() {
             rm -rf "$user_home/.cache/thumbnails/"* 2>/dev/null && ((cleaned_homes++))
         fi
     done
-    [ "$cleaned_homes" -gt 0 ] && echo "→ Caché de miniaturas limpiado ($cleaned_homes usuarios)"
-    
+    [ "$cleaned_homes" -gt 0 ] && echo -e "  ${BRIGHT_GREEN}✓${NC} Caché de miniaturas limpiado ($cleaned_homes usuarios)"
+
     STAT_CLEAN_DISK="$ICON_OK"
     log "SUCCESS" "Limpieza de disco completada"
+    update_step_status 11 "success"
 }
 
 # ============================================================================
@@ -1409,15 +1985,16 @@ step_cleanup_disk() {
 # ============================================================================
 
 step_check_reboot() {
-    [ "$STEP_CHECK_REBOOT" = 0 ] && return
-    
-    print_step "Verificando necesidad de reinicio..."
-    
+    [ "$STEP_CHECK_REBOOT" = 0 ] && { update_step_status 12 "skipped"; return; }
+
+    print_step_enterprise 12 "Verificando necesidad de reinicio..."
+    update_step_status 12 "running"
+
     # Verificar archivo de reinicio requerido
     if [ -f /var/run/reboot-required ]; then
         REBOOT_NEEDED=true
         log "WARN" "Archivo /var/run/reboot-required presente"
-        echo "→ Detectado archivo /var/run/reboot-required"
+        echo -e "  ${BRIGHT_YELLOW}⚠${NC} Detectado archivo /var/run/reboot-required"
     fi
     
     # Verificar servicios fallidos
@@ -1528,9 +2105,11 @@ step_check_reboot() {
     if [ "$REBOOT_NEEDED" = true ]; then
         STAT_REBOOT="${RED}$ICON_WARN REQUERIDO${NC}"
         log "WARN" "REINICIO REQUERIDO"
+        update_step_status 12 "warning"
     else
         STAT_REBOOT="${GREEN}$ICON_OK No necesario${NC}"
         log "INFO" "No se requiere reinicio"
+        update_step_status 12 "success"
     fi
 }
 
@@ -1762,7 +2341,7 @@ step_cleanup_kernels
 step_cleanup_disk
 step_check_reboot
 
-# Mostrar resumen final
-show_final_summary
+# Mostrar resumen final (Enterprise Edition)
+show_final_summary_enterprise
 
 exit 0
