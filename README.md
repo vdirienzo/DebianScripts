@@ -26,7 +26,7 @@ Coleccion de scripts de mantenimiento y actualizacion para distribuciones basada
 **Ultima revision:** Diciembre 2025
 **Autor:** Homero Thompson del Lago del Terror
 
-Script de mantenimiento integral y paranoico para distribuciones basadas en Debian/Ubuntu con enfasis en seguridad, control granular, **deteccion automatica de distribucion** y **menu interactivo de configuracion**.
+Script de mantenimiento integral para distribuciones basadas en Debian/Ubuntu con enfasis en seguridad, control granular, **deteccion automatica de distribucion** y **menu interactivo de configuracion**.
 
 ---
 
@@ -53,6 +53,13 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 ---
 
 ## Caracteristicas Principales
+
+### Nuevas en v2025.9
+
+- **Verificacion inteligente de Timeshift**: Detecta si Timeshift esta instalado pero no configurado
+- **Mensajes informativos**: Si Timeshift no esta configurado, muestra instrucciones claras de como hacerlo
+- **Comportamiento seguro mejorado**: En lugar de abortar todo el script, permite continuar tras confirmacion del usuario
+- **Manejo de errores mejorado**: Si falla la creacion del snapshot, pregunta si continuar (modo interactivo) o aborta (modo desatendido)
 
 ### Nuevas en v2025.8
 
@@ -356,14 +363,39 @@ sudo rm /var/run/debian-maintenance.lock
 **Causa:** Otro gestor de paquetes esta en ejecucion (Synaptic, Discover, Software Center)
 **Solucion:** Cierra todos los gestores de paquetes y vuelve a intentar
 
-### Error al crear snapshot de Timeshift
+### Timeshift no esta configurado
 
-**Solucion 1:** Configura Timeshift primero:
-```bash
-sudo timeshift --setup
+El script detecta automaticamente si Timeshift esta instalado pero no configurado y muestra:
+
+```
+╔═══════════════════════════════════════════════════════════════╗
+║  ⚠️  TIMESHIFT NO ESTÁ CONFIGURADO                            ║
+╚═══════════════════════════════════════════════════════════════╝
+
+  Para configurarlo, ejecuta:
+    sudo timeshift-gtk  (interfaz gráfica)
+    sudo timeshift --wizard  (terminal)
 ```
 
-**Solucion 2:** Omite el paso de Timeshift:
+**Solucion:** Configura Timeshift antes de ejecutar el script:
+```bash
+# Interfaz grafica (recomendado)
+sudo timeshift-gtk
+
+# O por terminal
+sudo timeshift --wizard
+```
+
+El script continuara sin snapshot si presionas cualquier tecla.
+
+### Error al crear snapshot de Timeshift
+
+Si Timeshift esta configurado pero falla al crear el snapshot:
+
+- **Modo interactivo**: El script pregunta si deseas continuar sin snapshot (debes escribir "SI")
+- **Modo desatendido (-y)**: El script aborta por seguridad
+
+**Solucion alternativa:** Omite el paso de Timeshift:
 ```bash
 # Editar autoclean.sh
 STEP_SNAPSHOT_TIMESHIFT=0
@@ -464,8 +496,8 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 
 - **Scripts totales:** 1
 - **Script principal:** autoclean.sh
-- **Version actual:** 2025
-- **Lineas de codigo:** ~1700+
+- **Version actual:** 2025.9
+- **Lineas de codigo:** ~1750+
 - **Pasos modulares:** 13
 - **Distribuciones soportadas:** 7+ (auto-deteccion)
 - **Compatible con:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas

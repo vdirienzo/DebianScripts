@@ -18,7 +18,7 @@
 #   • Cualquier distribución basada en Debian/Ubuntu (detección automática)
 #
 # ====================== FILOSOFÍA DE EJECUCIÓN ======================
-# Este script implementa un sistema de mantenimiento PARANOICO diseñado
+# Este script implementa un sistema de mantenimiento diseñado
 # para distribuciones basadas en Debian/Ubuntu, con énfasis en:
 #   1. Seguridad ante todo: Snapshot antes de cambios críticos
 #   2. Control granular: Cada paso puede activarse/desactivarse
@@ -138,7 +138,7 @@ CONFIG_FILE="${SCRIPT_DIR}/autoclean.conf"
 BACKUP_DIR="/var/backups/debian-maintenance"
 LOCK_FILE="/var/run/debian-maintenance.lock"
 LOG_DIR="/var/log/debian-maintenance"
-SCRIPT_VERSION="2025.8-paranoid-multidistro"
+SCRIPT_VERSION="2025.9-paranoid-multidistro"
 
 # Parámetros de sistema
 DIAS_LOGS=7
@@ -297,7 +297,14 @@ STEP_CLEANUP_KERNELS=$STEP_CLEANUP_KERNELS
 STEP_CLEANUP_DISK=$STEP_CLEANUP_DISK
 STEP_CHECK_REBOOT=$STEP_CHECK_REBOOT
 EOF
-    return $?
+    local result=$?
+
+    # Cambiar ownership al usuario que ejecutó sudo (no root)
+    if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+        chown "$SUDO_USER:$SUDO_USER" "$CONFIG_FILE" 2>/dev/null
+    fi
+
+    return $result
 }
 
 load_config() {
@@ -495,7 +502,19 @@ detect_distro() {
 
 check_root() {
     if [ "$EUID" -ne 0 ]; then
-        echo -e "${RED}❌ Este script requiere permisos de root (sudo)${NC}"
+        echo ""
+        echo -e "${RED}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${RED}║  ❌ ERROR: Este script requiere permisos de root              ║${NC}"
+        echo -e "${RED}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "  ${YELLOW}Uso correcto:${NC}"
+        echo -e "    ${GREEN}sudo ./autoclean.sh${NC}"
+        echo ""
+        echo -e "  ${CYAN}Opciones disponibles:${NC}"
+        echo -e "    ${GREEN}sudo ./autoclean.sh --help${NC}      Ver ayuda completa"
+        echo -e "    ${GREEN}sudo ./autoclean.sh --dry-run${NC}   Simular sin cambios"
+        echo -e "    ${GREEN}sudo ./autoclean.sh -y${NC}          Modo desatendido"
+        echo ""
         exit 1
     fi
 }
@@ -951,6 +970,28 @@ step_backup_tar() {
 # PASO 4: SNAPSHOT TIMESHIFT
 # ============================================================================
 
+# Verificar si Timeshift está configurado correctamente
+check_timeshift_configured() {
+    local config_file="/etc/timeshift/timeshift.json"
+
+    # Verificar que existe el archivo de configuración
+    if [ ! -f "$config_file" ]; then
+        return 1
+    fi
+
+    # Verificar que tiene un dispositivo configurado (no vacío)
+    if grep -q '"backup_device_uuid" *: *""' "$config_file" 2>/dev/null; then
+        return 1
+    fi
+
+    # Verificar que el dispositivo no sea "none" o similar
+    if grep -q '"backup_device_uuid" *: *"none"' "$config_file" 2>/dev/null; then
+        return 1
+    fi
+
+    return 0
+}
+
 step_snapshot_timeshift() {
     [ "$STEP_SNAPSHOT_TIMESHIFT" = 0 ] && return
     
@@ -962,7 +1003,36 @@ step_snapshot_timeshift() {
         log "WARN" "Timeshift no disponible"
         return
     fi
-    
+
+    # Verificar si Timeshift está CONFIGURADO
+    if ! check_timeshift_configured; then
+        echo ""
+        echo -e "${YELLOW}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${YELLOW}║  ⚠️  TIMESHIFT NO ESTÁ CONFIGURADO                            ║${NC}"
+        echo -e "${YELLOW}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        echo ""
+        echo -e "  Timeshift está instalado pero necesita configuración inicial."
+        echo ""
+        echo -e "  ${CYAN}Para configurarlo, ejecuta:${NC}"
+        echo -e "    ${GREEN}sudo timeshift-gtk${NC}  (interfaz gráfica)"
+        echo -e "    ${GREEN}sudo timeshift --wizard${NC}  (terminal)"
+        echo ""
+        echo -e "  ${CYAN}Debes configurar:${NC}"
+        echo -e "    • Tipo de snapshot (RSYNC recomendado para ext4/xfs)"
+        echo -e "    • Dispositivo/partición donde guardar los backups"
+        echo ""
+        log "WARN" "Timeshift instalado pero no configurado - saltando paso"
+        STAT_SNAPSHOT="${YELLOW}$ICON_WARN No configurado${NC}"
+
+        if [ "$UNATTENDED" = false ]; then
+            echo -e "${YELLOW}Presiona cualquier tecla para continuar sin snapshot...${NC}"
+            read -n 1 -s -r
+            echo ""
+        fi
+
+        return
+    fi
+
     # Preguntar si desea omitir (solo en modo interactivo)
     if [ "$ASK_TIMESHIFT_RUN" = true ] && [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
         echo -e "${YELLOW}¿Deseas OMITIR la creación del Snapshot de Timeshift?${NC}"
@@ -987,8 +1057,21 @@ step_snapshot_timeshift() {
         STAT_SNAPSHOT="${GREEN}$ICON_OK Creado${NC}"
         log "SUCCESS" "Snapshot Timeshift creado"
     else
-        STAT_SNAPSHOT="${RED}$ICON_FAIL${NC}"
-        die "No se pudo crear el snapshot de Timeshift. Abortando por seguridad."
+        echo -e "${RED}→ Error al crear snapshot de Timeshift${NC}"
+        STAT_SNAPSHOT="${RED}$ICON_FAIL Error${NC}"
+        log "ERROR" "Fallo al crear snapshot de Timeshift"
+
+        if [ "$UNATTENDED" = false ]; then
+            echo -e "${YELLOW}¿Deseas continuar SIN snapshot? Esto es RIESGOSO.${NC}"
+            read -p "Escribe 'SI' (mayúsculas) para continuar sin backup: " -r CONFIRM
+            if [ "$CONFIRM" != "SI" ]; then
+                die "Abortado por el usuario - sin snapshot de seguridad"
+            fi
+            log "WARN" "Usuario decidió continuar sin snapshot"
+        else
+            # En modo desatendido, abortar por seguridad
+            die "No se pudo crear el snapshot de Timeshift. Abortando por seguridad."
+        fi
     fi
 }
 
@@ -1622,14 +1705,16 @@ done
 # EJECUCIÓN MAESTRA
 # ============================================================================
 
+# Verificar permisos de root ANTES de cualquier operación
+check_root
+
 # Inicialización
 init_log
 log "INFO" "=========================================="
-log "INFO" "Iniciando Mantenimiento Paranoid v${SCRIPT_VERSION}"
+log "INFO" "Iniciando Mantenimiento v${SCRIPT_VERSION}"
 log "INFO" "=========================================="
 
 # Chequeos previos obligatorios
-check_root
 check_lock
 
 # Detectar distribución (debe ejecutarse antes de print_header)
