@@ -415,38 +415,101 @@ STEP_SHORT_NAMES=(
 # FUNCIONES UI ENTERPRISE
 # ============================================================================
 
-# Calcular longitud de display (sin emojis en lineas criticas)
-display_width() {
+# Remover códigos ANSI de un texto - múltiples métodos para robustez
+strip_ansi() {
     local text="$1"
-    # Remover códigos ANSI y contar caracteres
-    local clean=$(printf '%b' "$text" | sed 's/\x1b\[[0-9;]*m//g')
-    echo ${#clean}
+    # Usar printf %b para expandir y sed para limpiar
+    # Esta combinación es más robusta que echo -e
+    printf '%b' "$text" | sed 's/\x1b\[[0-9;]*m//g; s/\x1b\[[0-9;]*[A-Za-z]//g'
 }
 
-# Imprimir línea con bordes alineados automáticamente (78 cols)
+# Calcular longitud visible - método ultra-robusto
+# Usa wc -L que calcula el ancho de columna real
+visible_length() {
+    local text="$1"
+    local clean
+    clean=$(strip_ansi "$text")
+    # wc -L devuelve el ancho de la línea más larga (considera Unicode correctamente)
+    local len
+    len=$(printf '%s' "$clean" | wc -L)
+    # Fallback a ${#} si wc -L falla
+    [ -z "$len" ] || [ "$len" -eq 0 ] && len=${#clean}
+    echo "$len"
+}
+
+# Generar N espacios
+make_spaces() {
+    local n="$1"
+    [ "$n" -le 0 ] && echo "" && return
+    printf '%*s' "$n" ''
+}
+
+# Imprimir línea con bordes - MÉTODO ULTRA-ROBUSTO
+# Usa posicionamiento absoluto de cursor para garantizar alineación
 print_box_line() {
     local content="$1"
-    local visible_len=$(display_width "$content")
-    local padding=$((BOX_INNER - visible_len - 1))
-    [ $padding -lt 0 ] && padding=0
-    printf "${BLUE}║${NC} %b%*s${BLUE}║${NC}\n" "$content" "$padding" ""
+
+    # Imprimir borde izquierdo + espacio
+    printf '%b' "${BLUE}║${NC} "
+
+    # Imprimir contenido
+    printf '%b' "$content"
+
+    # Mover cursor a columna BOX_WIDTH-1 (posición fija del borde derecho)
+    # y luego imprimir espacio + borde derecho
+    printf '\033[%dG' "$BOX_WIDTH"
+    printf '%b\n' "${BLUE}║${NC}"
 }
 
-# Imprimir línea centrada
+# Imprimir línea centrada - MÉTODO ULTRA-ROBUSTO
+# Usa posicionamiento absoluto para borde derecho
 print_box_center() {
     local content="$1"
-    local visible_len=$(display_width "$content")
-    local total_pad=$((BOX_INNER - visible_len))
+
+    # Calcular longitud visible para centrado
+    local content_len
+    content_len=$(visible_length "$content")
+
+    # Calcular padding izquierdo para centrar
+    local total_pad=$((BOX_INNER - content_len))
+    [ "$total_pad" -lt 0 ] && total_pad=0
     local left_pad=$((total_pad / 2))
-    local right_pad=$((total_pad - left_pad))
-    [ $left_pad -lt 0 ] && left_pad=0
-    [ $right_pad -lt 0 ] && right_pad=0
-    printf "${BLUE}║${NC}%*s%b%*s${BLUE}║${NC}\n" "$left_pad" "" "$content" "$right_pad" ""
+
+    # Generar espacios izquierdos
+    local left_spaces
+    left_spaces=$(make_spaces "$left_pad")
+
+    # Imprimir: borde + espacios izquierdos + contenido
+    printf '%b' "${BLUE}║${NC}"
+    printf '%s' "$left_spaces"
+    printf '%b' "$content"
+
+    # Posicionar cursor en columna fija y imprimir borde derecho
+    printf '\033[%dG' "$BOX_WIDTH"
+    printf '%b\n' "${BLUE}║${NC}"
 }
 
 # Imprimir separador horizontal
 print_box_sep() {
-    echo -e "${BLUE}╠$(printf '═%.0s' $(seq 1 $BOX_INNER))╣${NC}"
+    printf '%b' "${BLUE}╠"
+    printf '═%.0s' $(seq 1 $BOX_INNER)
+    printf '%b\n' "╣${NC}"
+}
+
+# Imprimir marco superior
+print_box_top() {
+    local color="${1:-$BLUE}"
+    printf '%b' "${color}╔"
+    printf '═%.0s' $(seq 1 $BOX_INNER)
+    printf '%b\n' "╗${NC}"
+}
+
+# Imprimir marco inferior
+print_box_bottom() {
+    local color="${1:-$BLUE}"
+    printf '%b' "${color}╚"
+    printf '═%.0s' $(seq 1 $BOX_INNER)
+    printf '%b\n' "╝${NC}"
 }
 
 # Obtener ícono ASCII por estado
@@ -586,9 +649,9 @@ print_step() {
 print_header() {
     [ "$QUIET" = true ] && return
     clear
-    echo -e "${BLUE}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+    print_box_top
     print_box_center "${BOLD}MANTENIMIENTO DE SISTEMA${NC} - v${SCRIPT_VERSION}"
-    echo -e "${BLUE}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
+    print_box_bottom
     echo ""
     echo -e "  ${CYAN}Distribucion:${NC} ${BOLD}${DISTRO_NAME}${NC}"
     echo -e "  ${CYAN}Familia:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
@@ -679,9 +742,9 @@ detect_distro() {
 check_root() {
     if [ "$EUID" -ne 0 ]; then
         echo ""
-        echo -e "${RED}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
-        echo -e "${RED}║  [XX] ERROR: Este script requiere permisos de root$(printf ' %.0s' $(seq 1 23))║${NC}"
-        echo -e "${RED}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
+        print_box_top "$RED"
+        print_box_line "${RED}[XX] ERROR: Este script requiere permisos de root${NC}"
+        print_box_bottom "$RED"
         echo ""
         echo -e "  ${YELLOW}Uso correcto:${NC}"
         echo -e "    ${GREEN}sudo ./autoclean.sh${NC}"
@@ -761,14 +824,14 @@ show_step_summary() {
                      "STEP_UPDATE_FLATPAK" "STEP_UPDATE_SNAP" "STEP_CHECK_FIRMWARE"
                      "STEP_CLEANUP_APT" "STEP_CLEANUP_KERNELS" "STEP_CLEANUP_DISK" "STEP_CHECK_REBOOT")
 
-    echo -e "${BLUE}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+    print_box_top
     print_box_center "${BOLD}CONFIGURACIÓN DE PASOS - RESUMEN${NC}"
     print_box_sep
     print_box_center "${DISTRO_NAME} | ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
     print_box_sep
     print_box_line "${BOLD}PASOS A EJECUTAR${NC}"
 
-    # Mostrar en 3 columnas (5 filas)
+    # Mostrar en 3 columnas (5 filas) - formato fijo 15 chars por celda
     for row in {0..4}; do
         local line=""
         for col in {0..2}; do
@@ -776,15 +839,18 @@ show_step_summary() {
             if [ $idx -lt 13 ]; then
                 local var_name="${step_vars[$idx]}"
                 local var_value="${!var_name}"
-                local name="${STEP_SHORT_NAMES[$idx]:0:10}"
-                local icon
+                # Nombre con ancho fijo de 10 chars
+                local name
+                name=$(printf "%-10.10s" "${STEP_SHORT_NAMES[$idx]}")
 
                 if [ "$var_value" = "1" ]; then
-                    icon="${GREEN}[x]${NC}"
+                    line+=" ${GREEN}[x]${NC} ${name}"
                 else
-                    icon="${DIM}[--]${NC}"
+                    line+=" ${DIM}[--]${NC}${name}"
                 fi
-                line+=$(printf " %b %-10s " "$icon" "$name")
+            else
+                # Celda vacía: 15 espacios
+                line+="               "
             fi
         done
         print_box_line "$line"
@@ -792,7 +858,7 @@ show_step_summary() {
 
     print_box_sep
     print_box_line "Total: ${GREEN}${TOTAL_STEPS}${NC}/13 pasos    Tiempo estimado: ${CYAN}~$((TOTAL_STEPS / 2 + 1)) min${NC}"
-    echo -e "${BLUE}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
+    print_box_bottom
     echo ""
 
     if [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
@@ -828,7 +894,7 @@ show_interactive_menu() {
 
         # Limpiar pantalla y mostrar interfaz enterprise
         clear
-        echo -e "${BLUE}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+        print_box_top
         print_box_center "${BOLD}CONFIGURACIÓN DE MANTENIMIENTO${NC}"
         print_box_sep
         print_box_center "${DISTRO_NAME} | ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
@@ -836,6 +902,7 @@ show_interactive_menu() {
         print_box_line "${BOLD}PASOS${NC} ${DIM}(←/→ columnas, ↑/↓ filas, ESPACIO toggle, ENTER ejecutar)${NC}"
 
         # Mostrar pasos en 3 columnas (5 filas)
+        # Cada celda: 15 chars fijos (prefix[1] + bracket[1] + check[1] + bracket[1] + name[11])
         for row in {0..4}; do
             local line=""
             for col in {0..2}; do
@@ -843,27 +910,30 @@ show_interactive_menu() {
                 if [ $idx -lt $total_items ]; then
                     local var_name="${MENU_STEP_VARS[$idx]}"
                     local var_value="${!var_name}"
-                    local name="${STEP_SHORT_NAMES[$idx]:0:11}"
+                    # Truncar/pad nombre a exactamente 11 chars
+                    local name
+                    name=$(printf "%-11.11s" "${STEP_SHORT_NAMES[$idx]}")
 
-                    # Construir celda con ancho fijo (16 chars: 1+3+1+11)
+                    # Determinar prefijo y estado
                     local prefix=" "
                     local check=" "
                     [ "$var_value" = "1" ] && check="x"
                     [ $idx -eq $current_index ] && prefix=">"
 
-                    # Formatear SIN colores para ancho fijo
-                    local cell=$(printf "%s[%s]%-11s" "$prefix" "$check" "$name")
-
-                    # Aplicar colores DESPUÉS
+                    # Construir celda con formato CONSISTENTE (15 chars fijos)
                     if [ $idx -eq $current_index ]; then
-                        line+="${BRIGHT_CYAN}${cell}${NC}"
+                        # Seleccionado: todo en cyan brillante
+                        line+="${BRIGHT_CYAN}${prefix}[${check}]${name}${NC}"
                     elif [ "$var_value" = "1" ]; then
-                        line+=$(printf " ${GREEN}[x]${NC}%-11s" "$name")
+                        # Activo: [x] en verde
+                        line+=" ${GREEN}[x]${NC}${name}"
                     else
-                        line+=$(printf " ${DIM}[ ]${NC}%-11s" "$name")
+                        # Inactivo: [ ] en dim
+                        line+=" ${DIM}[ ]${NC}${name}"
                     fi
                 else
-                    line+=$(printf "%16s" "")
+                    # Celda vacía: 15 espacios
+                    line+="               "
                 fi
             done
             print_box_line "$line"
@@ -875,7 +945,7 @@ show_interactive_menu() {
         print_box_line "Seleccionados: ${GREEN}${active_count}${NC}/${total_items}    Perfil: $(config_exists && echo "${GREEN}Guardado${NC}" || echo "${DIM}Sin guardar${NC}")"
         print_box_sep
         print_box_center "${CYAN}[ENTER]${NC} Ejecutar ${CYAN}[A]${NC} Todos ${CYAN}[N]${NC} Ninguno ${CYAN}[G]${NC} Guardar ${CYAN}[Q]${NC} Salir"
-        echo -e "${BLUE}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
+        print_box_bottom
 
         # Leer tecla
         local key=""
@@ -1171,9 +1241,9 @@ step_snapshot_timeshift() {
     # Verificar si Timeshift está CONFIGURADO
     if ! check_timeshift_configured; then
         echo ""
-        echo -e "${YELLOW}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
-        echo -e "${YELLOW}║  [!!] TIMESHIFT NO ESTA CONFIGURADO$(printf ' %.0s' $(seq 1 38))║${NC}"
-        echo -e "${YELLOW}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
+        print_box_top "$YELLOW"
+        print_box_line "${YELLOW}[!!] TIMESHIFT NO ESTA CONFIGURADO${NC}"
+        print_box_bottom "$YELLOW"
         echo ""
         echo -e "  Timeshift está instalado pero necesita configuración inicial."
         echo ""
@@ -1790,7 +1860,7 @@ show_final_summary() {
 
     # === RESUMEN ENTERPRISE 3 COLUMNAS (78 chars) ===
     echo ""
-    echo -e "${BLUE}╔$(printf '═%.0s' $(seq 1 $BOX_INNER))╗${NC}"
+    print_box_top
     print_box_center "${BOLD}RESUMEN DE EJECUCIÓN${NC}"
     print_box_sep
     print_box_line "Estado: ${overall_color}${overall_icon} ${overall_status}${NC}                          Duración: ${CYAN}${duration_str}${NC}"
@@ -1801,16 +1871,20 @@ show_final_summary() {
     print_box_line "${BOLD}DETALLE DE PASOS${NC}"
 
     # Generar líneas de 3 columnas (5 filas x 3 cols = 15 slots, usamos 13)
-    # Fila 0: 0,1,2 | Fila 1: 3,4,5 | Fila 2: 6,7,8 | Fila 3: 9,10,11 | Fila 4: 12
+    # Formato fijo: icono[4] + espacio[1] + nombre[10] = 15 chars por celda
     for row in {0..4}; do
         local line=""
         for col in {0..2}; do
             local idx=$((row * 3 + col))
             if [ $idx -le 12 ]; then
                 local icon=$(get_step_icon_summary "${STEP_STATUS_ARRAY[$idx]}")
-                local name="${STEP_SHORT_NAMES[$idx]:0:10}"
-                local col_content=$(printf "%b %-10s" "$icon" "$name")
-                line+="$col_content  "
+                # Nombre con ancho fijo de 10 chars
+                local name
+                name=$(printf "%-10.10s" "${STEP_SHORT_NAMES[$idx]}")
+                line+="${icon} ${name} "
+            else
+                # Celda vacía: 16 espacios
+                line+="                "
             fi
         done
         print_box_line "$line"
@@ -1828,7 +1902,7 @@ show_final_summary() {
     print_box_sep
     print_box_line "Log: ${DIM}${LOG_FILE}${NC}"
     [ "$STEP_BACKUP_TAR" = 1 ] && print_box_line "Backups: ${DIM}${BACKUP_DIR}${NC}"
-    echo -e "${BLUE}╚$(printf '═%.0s' $(seq 1 $BOX_INNER))╝${NC}"
+    print_box_bottom
     echo ""
 
     # Advertencias fuera del box
