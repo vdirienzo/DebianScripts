@@ -56,54 +56,44 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 
 ## Caracteristicas Principales
 
-### Nuevas en v2025.11
+### Interfaz de Usuario
 
 - **Interfaz Enterprise 100% ASCII**: UI sin emojis para compatibilidad total con cualquier terminal
-- **Alineacion robusta con cursor absoluto**: Usa `\033[78G` para garantizar bordes perfectos (PR #3)
-- **Menu en 3 columnas**: Visualizacion compacta de los 13 pasos en grid 5x3
-- **Resumen en 3 columnas**: El reporte final muestra todos los pasos de forma compacta
-- **Navegacion mejorada**: Flechas ←/→ para columnas, ↑/↓ para filas
+- **Menu interactivo en 3 columnas**: Grid 5x3 con los 13 pasos, navegacion con flechas ←/→/↑/↓
+- **Resumen de ejecucion en 3 columnas**: Reporte final compacto con estado de cada paso
+- **Alineacion robusta con cursor absoluto**: Usa secuencias ANSI `\033[78G` para bordes perfectos
 - **Iconos ASCII puros**: `[OK]`, `[XX]`, `[--]`, `[!!]`, `[..]` para alineacion perfecta
-- **Sin emojis**: Eliminados todos los emojis para evitar problemas de alineacion
-- **Funciones UI modulares**: `print_box_line()`, `print_box_center()`, `print_box_top()`, `print_box_bottom()`
-- **Contribucion de Dreadblitz**: Mejoras UX/UI (PR #2) y alineacion robusta (PR #3)
+- **Configuracion persistente**: Guarda tu configuracion preferida en `autoclean.conf`
+- **Descripcion en tiempo real**: Ayuda contextual de cada paso mientras navegas
 
-### Nuevas en v2025.10
+### Deteccion y Compatibilidad
 
-- **Rotacion automatica de logs**: Mantiene solo las ultimas 5 ejecuciones en `/var/log/debian-maintenance/`
-- **Rotacion automatica de backups**: Mantiene solo los ultimos 5 backups y listas de paquetes en `/var/backups/debian-maintenance/`
-- **Limpieza de archivos packages_*.list**: Ahora tambien se rotan los archivos de lista de paquetes
-
-### Nuevas en v2025.9
-
-- **Verificacion inteligente de Timeshift**: Detecta si Timeshift esta instalado pero no configurado
-- **Mensajes informativos**: Si Timeshift no esta configurado, muestra instrucciones claras de como hacerlo
-- **Comportamiento seguro mejorado**: En lugar de abortar todo el script, permite continuar tras confirmacion del usuario
-- **Manejo de errores mejorado**: Si falla la creacion del snapshot, pregunta si continuar (modo interactivo) o aborta (modo desatendido)
-
-### Nuevas en v2025.8
-
-- **Menu interactivo de configuracion**: Interfaz TUI con navegacion por flechas para seleccionar que pasos ejecutar
-- **Configuracion persistente**: Guarda tu configuracion preferida y se carga automaticamente en cada ejecucion
-- **Controles intuitivos**: Usa flechas ↑/↓, ESPACIO para toggle, ENTER para ejecutar
-- **Descripcion en tiempo real**: Muestra ayuda contextual de cada paso mientras navegas
-
-### Nuevas en v2025.7
-
-- **Deteccion automatica de distribucion**: Identifica automaticamente Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y cualquier derivada
+- **Deteccion automatica de distribucion**: Identifica Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
 - **Adaptacion dinamica**: El script adapta su comportamiento segun la distribucion detectada
 - **Mirror inteligente**: Verifica conectividad usando el servidor correspondiente a cada distribucion
 
-### Caracteristicas Core
+### Seguridad
 
-- **Control Modular**: 13 pasos independientes que pueden activarse/desactivarse individualmente
-- **Seguridad Paranoica**: Snapshot automatico con Timeshift antes de operaciones criticas
-- **Deteccion Inteligente de Riesgos**: Analiza antes de ejecutar (eliminaciones masivas, espacio en disco)
-- **Resumen Detallado**: Estadisticas de espacio liberado y tiempo de ejecucion
-- **Verificacion de Reinicio Avanzada**: Detecta kernel obsoleto y librerias criticas actualizadas
-- **Logging Completo**: Registro detallado de todas las operaciones
+- **Snapshot automatico con Timeshift**: Crea punto de restauracion antes de operaciones criticas
+- **Verificacion inteligente de Timeshift**: Detecta si esta instalado pero no configurado
+- **Deteccion de riesgos**: Alerta si APT propone eliminar muchos paquetes
+- **Validacion de espacio en disco**: Verifica espacio libre antes de actualizar
+- **Lock file**: Evita ejecuciones simultaneas
+- **Reparacion automatica**: Ejecuta `dpkg --configure -a` antes de actualizar
+
+### Control y Modularidad
+
+- **13 pasos independientes**: Cada uno puede activarse/desactivarse individualmente
+- **Rotacion automatica de logs**: Mantiene solo las ultimas 5 ejecuciones
+- **Rotacion automatica de backups**: Mantiene solo los ultimos 5 backups
 - **Modo Dry-Run**: Simula cambios sin ejecutarlos realmente
 - **Modo Desatendido**: Perfecto para automatizacion con cron
+
+### Monitoreo y Reportes
+
+- **Resumen detallado**: Estadisticas de espacio liberado y tiempo de ejecucion
+- **Verificacion de reinicio avanzada**: Detecta kernel obsoleto y librerias criticas actualizadas
+- **Logging completo**: Registro detallado de todas las operaciones en `/var/log/debian-maintenance/`
 
 ---
 
