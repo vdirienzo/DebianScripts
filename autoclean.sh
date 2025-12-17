@@ -773,18 +773,18 @@ print_header() {
     [ "$QUIET" = true ] && return
     clear
     print_box_top
-    print_box_center "${BOLD}MANTENIMIENTO DE SISTEMA${NC} - v${SCRIPT_VERSION}"
+    print_box_center "${BOLD}${MENU_SYSTEM_TITLE}${NC} - v${SCRIPT_VERSION}"
     print_box_bottom
     echo ""
-    echo -e "  ${CYAN}Distribucion:${NC} ${BOLD}${DISTRO_NAME}${NC}"
-    echo -e "  ${CYAN}Familia:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
+    echo -e "  ${CYAN}${MSG_DISTRO_DETECTED}:${NC} ${BOLD}${DISTRO_NAME}${NC}"
+    echo -e "  ${CYAN}${MSG_DISTRO_FAMILY}:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
     echo ""
-    [ "$DRY_RUN" = true ] && echo -e "${YELLOW}[??] MODO DRY-RUN ACTIVADO${NC}\n"
+    [ "$DRY_RUN" = true ] && echo -e "${YELLOW}[??] DRY-RUN MODE${NC}\n"
 }
 
 cleanup() {
     rm -f "$LOCK_FILE" 2>/dev/null
-    log "INFO" "Lock file eliminado"
+    log "INFO" "Lock file removed"
 }
 
 trap cleanup EXIT INT TERM
@@ -1958,15 +1958,15 @@ show_final_summary() {
     done
 
     # Determinar estado general
-    local overall_status="COMPLETADO"
+    local overall_status="${MSG_SUMMARY_COMPLETED}"
     local overall_color="${GREEN}"
     local overall_icon="${ICON_SUM_OK}"
     if [ $error_count -gt 0 ]; then
-        overall_status="COMPLETADO CON ERRORES"
+        overall_status="${MSG_SUMMARY_COMPLETED_ERRORS}"
         overall_color="${RED}"
         overall_icon="${ICON_SUM_FAIL}"
     elif [ $warning_count -gt 0 ]; then
-        overall_status="COMPLETADO CON AVISOS"
+        overall_status="${MSG_SUMMARY_COMPLETED_WARNINGS}"
         overall_color="${YELLOW}"
         overall_icon="${ICON_SUM_WARN}"
     fi
