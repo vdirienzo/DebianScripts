@@ -138,7 +138,7 @@ CONFIG_FILE="${SCRIPT_DIR}/autoclean.conf"
 BACKUP_DIR="/var/backups/debian-maintenance"
 LOCK_FILE="/var/run/debian-maintenance.lock"
 LOG_DIR="/var/log/debian-maintenance"
-SCRIPT_VERSION="2025.9-paranoid-multidistro"
+SCRIPT_VERSION="2025.10"
 
 # Parámetros de sistema
 DIAS_LOGS=7
@@ -354,6 +354,9 @@ init_log() {
     LOG_FILE="$LOG_DIR/sys-update-$(date +%Y%m%d_%H%M%S).log"
     touch "$LOG_FILE"
     chmod 600 "$LOG_FILE"
+
+    # Limpiar logs antiguos (mantener últimas 5 ejecuciones)
+    ls -t "$LOG_DIR"/sys-update-*.log 2>/dev/null | tail -n +6 | xargs -r rm -f
 }
 
 log() {
@@ -642,9 +645,9 @@ show_interactive_menu() {
     while [ "$menu_running" = true ]; do
         # Limpiar pantalla y mostrar header
         clear
-        echo -e "${MAGENTA}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
-        echo -e "${MAGENTA}${BOLD}║           CONFIGURACIÓN DE PASOS - MENÚ INTERACTIVO           ║${NC}"
-        echo -e "${MAGENTA}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
+        echo -e "${CYAN}${BOLD}╔═══════════════════════════════════════════════════════════════╗${NC}"
+        echo -e "${CYAN}${BOLD}║           CONFIGURACIÓN DE PASOS - MENÚ INTERACTIVO           ║${NC}"
+        echo -e "${CYAN}${BOLD}╚═══════════════════════════════════════════════════════════════╝${NC}"
         echo ""
         echo -e "  ${CYAN}🐧 Distribución:${NC} ${BOLD}${DISTRO_NAME}${NC}"
         echo -e "  ${CYAN}📦 Familia:${NC}      ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
@@ -957,9 +960,10 @@ step_backup_tar() {
         echo "→ Backup creado: $backup_file"
         STAT_BACKUP_TAR="$ICON_OK"
         log "SUCCESS" "Backup Tar creado"
-        
-        # Limpiar backups antiguos (mantener últimos 5)
+
+        # Limpiar backups antiguos (mantener últimas 5 ejecuciones)
         ls -t "$BACKUP_DIR"/backup_*.tar.gz 2>/dev/null | tail -n +6 | xargs -r rm -f
+        ls -t "$BACKUP_DIR"/packages_*.list 2>/dev/null | tail -n +6 | xargs -r rm -f
     else
         STAT_BACKUP_TAR="$ICON_FAIL"
         log "ERROR" "Error creando backup Tar"
