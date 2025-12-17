@@ -54,6 +54,12 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 
 ## Caracteristicas Principales
 
+### Nuevas en v2025.10
+
+- **Rotacion automatica de logs**: Mantiene solo las ultimas 5 ejecuciones en `/var/log/debian-maintenance/`
+- **Rotacion automatica de backups**: Mantiene solo los ultimos 5 backups y listas de paquetes en `/var/backups/debian-maintenance/`
+- **Limpieza de archivos packages_*.list**: Ahora tambien se rotan los archivos de lista de paquetes
+
 ### Nuevas en v2025.9
 
 - **Verificacion inteligente de Timeshift**: Detecta si Timeshift esta instalado pero no configurado
@@ -284,11 +290,11 @@ sudo ./autoclean.sh --dry-run
 
 ```
 /var/log/debian-maintenance/
-  sys-update-YYYYMMDD_HHMMSS.log    # Logs de cada ejecucion
+  sys-update-YYYYMMDD_HHMMSS.log    # Logs de cada ejecucion (ultimas 5)
 
 /var/backups/debian-maintenance/
-  backup_YYYYMMDD_HHMMSS.tar.gz     # Backup configuraciones APT
-  packages_YYYYMMDD_HHMMSS.list     # Lista de paquetes instalados
+  backup_YYYYMMDD_HHMMSS.tar.gz     # Backup configuraciones APT (ultimos 5)
+  packages_YYYYMMDD_HHMMSS.list     # Lista de paquetes instalados (ultimos 5)
 
 /var/run/
   debian-maintenance.lock            # Lock file para evitar ejecuciones simultaneas
@@ -496,7 +502,7 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 
 - **Scripts totales:** 1
 - **Script principal:** autoclean.sh
-- **Version actual:** 2025.9
+- **Version actual:** 2025.10
 - **Lineas de codigo:** ~1750+
 - **Pasos modulares:** 13
 - **Distribuciones soportadas:** 7+ (auto-deteccion)
