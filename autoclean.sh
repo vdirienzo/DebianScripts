@@ -429,22 +429,22 @@ show_language_selector() {
     while true; do
         clear
         print_box_top
-        print_box_center "${BOLD}SELECT LANGUAGE / SELECCIONAR IDIOMA${NC}"
+        print_box_center "${BOLD}SELECT LANGUAGE / SELECCIONAR IDIOMA${BOX_NC}"
         print_box_sep
         print_box_line ""
 
         # Mostrar idiomas con el seleccionado resaltado
         for i in "${!AVAILABLE_LANGS[@]}"; do
             if [[ $i -eq $selected ]]; then
-                print_box_line "   ${TEXT_SELECTED}>${NC} ${TEXT_ACTIVE}[x]${NC} ${LANG_NAMES[$i]}"
+                print_box_line "   ${TEXT_SELECTED}>${BOX_NC} ${TEXT_ACTIVE}[x]${BOX_NC} ${LANG_NAMES[$i]}"
             else
-                print_box_line "     ${TEXT_INACTIVE}[ ] ${LANG_NAMES[$i]}${NC}"
+                print_box_line "     ${TEXT_INACTIVE}[ ] ${LANG_NAMES[$i]}${BOX_NC}"
             fi
         done
 
         print_box_line ""
         print_box_sep
-        print_box_center "${STATUS_INFO}[ENTER]${NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${NC} ${MENU_BACK:-Back}"
+        print_box_center "${STATUS_INFO}[ENTER]${BOX_NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${BOX_NC} ${MENU_BACK:-Back}"
         print_box_bottom
 
         # Leer tecla
@@ -500,6 +500,14 @@ load_theme() {
 
     # Cargar archivo de tema
     if [ -f "$theme_file" ]; then
+        # Limpiar variables de tema anterior (especialmente las opcionales)
+        unset T_BOX_BG T_BOX_NC
+        unset T_RED T_GREEN T_YELLOW T_BLUE T_CYAN T_MAGENTA
+        unset T_BRIGHT_GREEN T_BRIGHT_YELLOW T_BRIGHT_CYAN T_DIM
+        unset T_BOX_BORDER T_BOX_TITLE T_TEXT_NORMAL T_TEXT_SELECTED
+        unset T_TEXT_ACTIVE T_TEXT_INACTIVE T_STATUS_OK T_STATUS_ERROR
+        unset T_STATUS_WARN T_STATUS_INFO T_STEP_HEADER
+
         source "$theme_file"
         CURRENT_THEME="$theme_to_load"
         apply_theme
@@ -520,6 +528,8 @@ apply_theme() {
     DIM="${T_DIM:-\033[2m}"
 
     # Variables semanticas adicionales (usadas por funciones UI)
+    BOX_BG="${T_BOX_BG:-}"             # Fondo de caja (vacio por defecto, azul para norton)
+    BOX_NC="${T_BOX_NC:-$NC}"          # Reset dentro de cajas (preserva fondo en norton)
     BOX_BORDER="${T_BOX_BORDER:-$BLUE}"
     BOX_TITLE="${T_BOX_TITLE:-$BOLD}"
     TEXT_SELECTED="${T_TEXT_SELECTED:-$BRIGHT_CYAN}"
@@ -549,22 +559,22 @@ show_theme_selector() {
     while true; do
         clear
         print_box_top
-        print_box_center "${BOLD}${MENU_THEME_TITLE:-SELECT THEME / SELECCIONAR TEMA}${NC}"
+        print_box_center "${BOLD}${MENU_THEME_TITLE:-SELECT THEME / SELECCIONAR TEMA}${BOX_NC}"
         print_box_sep
         print_box_line ""
 
         # Mostrar temas con el seleccionado resaltado
         for i in "${!AVAILABLE_THEMES[@]}"; do
             if [[ $i -eq $selected ]]; then
-                print_box_line "   ${TEXT_SELECTED}>${NC} ${TEXT_ACTIVE}[x]${NC} ${THEME_NAMES[$i]}"
+                print_box_line "   ${TEXT_SELECTED}>${BOX_NC} ${TEXT_ACTIVE}[x]${BOX_NC} ${THEME_NAMES[$i]}"
             else
-                print_box_line "     ${TEXT_INACTIVE}[ ] ${THEME_NAMES[$i]}${NC}"
+                print_box_line "     ${TEXT_INACTIVE}[ ] ${THEME_NAMES[$i]}${BOX_NC}"
             fi
         done
 
         print_box_line ""
         print_box_sep
-        print_box_center "${STATUS_INFO}[ENTER]${NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${NC} ${MENU_BACK:-Back}"
+        print_box_center "${STATUS_INFO}[ENTER]${BOX_NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${BOX_NC} ${MENU_BACK:-Back}"
         print_box_bottom
 
         # Leer tecla
@@ -720,15 +730,19 @@ make_spaces() {
 print_box_line() {
     local content="$1"
 
-    # Imprimir borde izquierdo + espacio
-    printf '%b' "${BOX_BORDER:-$BLUE}║${NC} "
+    # Imprimir borde izquierdo + espacio (con fondo si está definido)
+    printf '%b' "${BOX_BORDER:-$BLUE}║${NC}${BOX_BG} "
 
     # Imprimir contenido
     printf '%b' "$content"
 
-    # Mover cursor a columna BOX_WIDTH-1 (posición fija del borde derecho)
-    # y luego imprimir espacio + borde derecho
-    printf '\033[%dG' "$BOX_WIDTH"
+    # Calcular espacios restantes para llenar con fondo
+    local content_len
+    content_len=$(visible_length "$content")
+    local padding=$((BOX_INNER - content_len - 1))  # -1 por el espacio inicial
+    [ "$padding" -gt 0 ] && printf '%*s' "$padding" ''
+
+    # Imprimir borde derecho
     printf '%b\n' "${BOX_BORDER:-$BLUE}║${NC}"
 }
 
@@ -745,18 +759,17 @@ print_box_center() {
     local total_pad=$((BOX_INNER - content_len))
     [ "$total_pad" -lt 0 ] && total_pad=0
     local left_pad=$((total_pad / 2))
+    local right_pad=$((total_pad - left_pad))
 
-    # Generar espacios izquierdos
+    # Generar espacios
     local left_spaces
     left_spaces=$(make_spaces "$left_pad")
 
-    # Imprimir: borde + espacios izquierdos + contenido
-    printf '%b' "${BOX_BORDER:-$BLUE}║${NC}"
+    # Imprimir: borde + espacios izquierdos + contenido + espacios derechos + borde
+    printf '%b' "${BOX_BORDER:-$BLUE}║${NC}${BOX_BG}"
     printf '%s' "$left_spaces"
     printf '%b' "$content"
-
-    # Posicionar cursor en columna fija y imprimir borde derecho
-    printf '\033[%dG' "$BOX_WIDTH"
+    [ "$right_pad" -gt 0 ] && printf '%*s' "$right_pad" ''
     printf '%b\n' "${BOX_BORDER:-$BLUE}║${NC}"
 }
 
@@ -787,12 +800,12 @@ print_box_bottom() {
 get_step_icon_summary() {
     local status=$1
     case $status in
-        "success")  echo "${GREEN}${ICON_SUM_OK}${NC}" ;;
-        "error")    echo "${RED}${ICON_SUM_FAIL}${NC}" ;;
-        "warning")  echo "${YELLOW}${ICON_SUM_WARN}${NC}" ;;
-        "skipped")  echo "${YELLOW}${ICON_SUM_SKIP}${NC}" ;;
-        "running")  echo "${CYAN}${ICON_SUM_RUN}${NC}" ;;
-        *)          echo "${DIM}${ICON_SUM_PEND}${NC}" ;;
+        "success")  echo "${GREEN}${ICON_SUM_OK}${BOX_NC}" ;;
+        "error")    echo "${RED}${ICON_SUM_FAIL}${BOX_NC}" ;;
+        "warning")  echo "${YELLOW}${ICON_SUM_WARN}${BOX_NC}" ;;
+        "skipped")  echo "${YELLOW}${ICON_SUM_SKIP}${BOX_NC}" ;;
+        "running")  echo "${CYAN}${ICON_SUM_RUN}${BOX_NC}" ;;
+        *)          echo "${DIM}${ICON_SUM_PEND}${BOX_NC}" ;;
     esac
 }
 
@@ -1166,11 +1179,11 @@ show_interactive_menu() {
         # Limpiar pantalla y mostrar interfaz enterprise
         clear
         print_box_top
-        print_box_center "${BOLD}${MENU_TITLE}${NC}"
+        print_box_center "${BOLD}${MENU_TITLE}${BOX_NC}"
         print_box_sep
         print_box_center "${DISTRO_NAME} | ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
         print_box_sep
-        print_box_line "${BOLD}${MENU_STEPS_TITLE}${NC} ${DIM}${MENU_STEPS_HELP}${NC}"
+        print_box_line "${BOLD}${MENU_STEPS_TITLE}${BOX_NC} ${DIM}${MENU_STEPS_HELP}${BOX_NC}"
 
         # Mostrar pasos en 3 columnas (5 filas)
         # Cada celda: 15 chars fijos (prefix[1] + bracket[1] + check[1] + bracket[1] + name[11])
@@ -1194,13 +1207,13 @@ show_interactive_menu() {
                     # Construir celda con formato CONSISTENTE (15 chars fijos)
                     if [ $idx -eq $current_index ]; then
                         # Seleccionado: todo en cyan brillante
-                        line+="${BRIGHT_CYAN}${prefix}[${check}]${name}${NC}"
+                        line+="${BRIGHT_CYAN}${prefix}[${check}]${name}${BOX_NC}"
                     elif [ "$var_value" = "1" ]; then
                         # Activo: [x] en verde
-                        line+=" ${GREEN}[x]${NC}${name}"
+                        line+=" ${GREEN}[x]${BOX_NC}${name}"
                     else
                         # Inactivo: [ ] en dim
-                        line+=" ${DIM}[ ]${NC}${name}"
+                        line+=" ${DIM}[ ]${BOX_NC}${name}"
                     fi
                 else
                     # Celda vacía: 15 espacios
@@ -1211,11 +1224,11 @@ show_interactive_menu() {
         done
 
         print_box_sep
-        print_box_line "${CYAN}>${NC} ${MENU_STEP_DESCRIPTIONS[$current_index]:0:68}"
+        print_box_line "${CYAN}>${BOX_NC} ${MENU_STEP_DESCRIPTIONS[$current_index]:0:68}"
         print_box_sep
-        print_box_line "${MENU_SELECTED}: ${GREEN}${active_count}${NC}/${total_items}    ${MENU_PROFILE}: $(config_exists && echo "${GREEN}${MENU_PROFILE_SAVED}${NC}" || echo "${DIM}${MENU_PROFILE_UNSAVED}${NC}")"
+        print_box_line "${MENU_SELECTED}: ${GREEN}${active_count}${BOX_NC}/${total_items}    ${MENU_PROFILE}: $(config_exists && echo "${GREEN}${MENU_PROFILE_SAVED}${BOX_NC}" || echo "${DIM}${MENU_PROFILE_UNSAVED}${BOX_NC}")"
         print_box_sep
-        print_box_center "${CYAN}[ENTER]${NC} ${MENU_CTRL_ENTER} ${CYAN}[A]${NC} ${MENU_CTRL_ALL} ${CYAN}[N]${NC} ${MENU_CTRL_NONE} ${CYAN}[G]${NC} ${MENU_CTRL_SAVE} ${CYAN}[L]${NC} ${MENU_CTRL_LANG} ${CYAN}[T]${NC} ${MENU_CTRL_THEME:-Theme} ${CYAN}[Q]${NC} ${MENU_CTRL_QUIT}"
+        print_box_center "${CYAN}[ENTER]${BOX_NC} ${MENU_CTRL_ENTER} ${CYAN}[A]${BOX_NC} ${MENU_CTRL_ALL} ${CYAN}[N]${BOX_NC} ${MENU_CTRL_NONE} ${CYAN}[G]${BOX_NC} ${MENU_CTRL_SAVE} ${CYAN}[L]${BOX_NC} ${MENU_CTRL_LANG} ${CYAN}[T]${BOX_NC} ${MENU_CTRL_THEME:-Theme} ${CYAN}[Q]${BOX_NC} ${MENU_CTRL_QUIT}"
         print_box_bottom
 
         # Leer tecla
@@ -2131,14 +2144,14 @@ show_final_summary() {
     # === RESUMEN ENTERPRISE 3 COLUMNAS (78 chars) ===
     echo ""
     print_box_top
-    print_box_center "${BOLD}${MENU_SUMMARY_TITLE}${NC}"
+    print_box_center "${BOLD}${MENU_SUMMARY_TITLE}${BOX_NC}"
     print_box_sep
-    print_box_line "${MSG_SUMMARY_STATUS}: ${overall_color}${overall_icon} ${overall_status}${NC}                          ${MSG_SUMMARY_DURATION}: ${FIXED_CYAN}${duration_str}${NC}"
+    print_box_line "${MSG_SUMMARY_STATUS}: ${overall_color}${overall_icon} ${overall_status}${BOX_NC}                          ${MSG_SUMMARY_DURATION}: ${CYAN}${duration_str}${BOX_NC}"
     print_box_sep
-    print_box_line "${BOLD}${MSG_SUMMARY_METRICS}${NC}"
-    print_box_line "${MSG_SUMMARY_COMPLETED_COUNT}: ${FIXED_GREEN}${success_count}${NC}    ${MSG_SUMMARY_ERRORS}: ${FIXED_RED}${error_count}${NC}    ${MSG_SUMMARY_SKIPPED}: ${FIXED_YELLOW}${skipped_count}${NC}    ${MSG_SUMMARY_SPACE}: ${FIXED_CYAN}${total_freed} MB${NC}"
+    print_box_line "${BOLD}${MSG_SUMMARY_METRICS}${BOX_NC}"
+    print_box_line "${MSG_SUMMARY_COMPLETED_COUNT}: ${GREEN}${success_count}${BOX_NC}    ${MSG_SUMMARY_ERRORS}: ${RED}${error_count}${BOX_NC}    ${MSG_SUMMARY_SKIPPED}: ${YELLOW}${skipped_count}${BOX_NC}    ${MSG_SUMMARY_SPACE}: ${CYAN}${total_freed} MB${BOX_NC}"
     print_box_sep
-    print_box_line "${BOLD}${MSG_SUMMARY_STEP_DETAIL}${NC}"
+    print_box_line "${BOLD}${MSG_SUMMARY_STEP_DETAIL}${BOX_NC}"
 
     # Generar líneas de 3 columnas (5 filas x 3 cols = 15 slots, usamos 13)
     # Formato fijo: icono[4] + espacio[1] + nombre[10] = 15 chars por celda
@@ -2164,14 +2177,14 @@ show_final_summary() {
 
     # Estado de reinicio
     if [ "$REBOOT_NEEDED" = true ]; then
-        print_box_line "${RED}${ICON_SUM_WARN} ${MSG_REBOOT_REQUIRED}${NC}"
+        print_box_line "${RED}${ICON_SUM_WARN} ${MSG_REBOOT_REQUIRED}${BOX_NC}"
     else
-        print_box_line "${GREEN}${ICON_SUM_OK} ${MSG_REBOOT_NOT_REQUIRED}${NC}"
+        print_box_line "${GREEN}${ICON_SUM_OK} ${MSG_REBOOT_NOT_REQUIRED}${BOX_NC}"
     fi
 
     print_box_sep
-    print_box_line "${MSG_SUMMARY_LOG}: ${DIM}${LOG_FILE}${NC}"
-    [ "$STEP_BACKUP_TAR" = 1 ] && print_box_line "${MSG_SUMMARY_BACKUPS}: ${DIM}${BACKUP_DIR}${NC}"
+    print_box_line "${MSG_SUMMARY_LOG}: ${DIM}${LOG_FILE}${BOX_NC}"
+    [ "$STEP_BACKUP_TAR" = 1 ] && print_box_line "${MSG_SUMMARY_BACKUPS}: ${DIM}${BACKUP_DIR}${BOX_NC}"
     print_box_bottom
     echo ""
 
