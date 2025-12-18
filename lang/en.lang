@@ -302,6 +302,9 @@ MSG_CANCELLED_BY_USER="Cancelled by user"
 MSG_CONFIG_LOADED="Configuration loaded from"
 MSG_CONFIG_SAVED="Configuration saved"
 MSG_CONFIG_DELETED="Configuration deleted"
+MSG_CONFIG_GENERATING="Generating default configuration file..."
+MSG_CONFIG_GENERATED="Default configuration file generated"
+MSG_CONFIG_NOT_FOUND="Configuration file not found, using defaults"
 
 # === MESSAGES - DISTRO ===
 MSG_DISTRO_DETECTED="Distribution detected"
@@ -387,11 +390,13 @@ MSG_SCHEDULE_NEXT_RUN="Next scheduled run"
 # === MESSAGES - PROFILES ===
 MSG_PROFILE_APPLIED="Profile applied"
 MSG_PROFILE_UNKNOWN="Unknown profile"
-MSG_PROFILE_AVAILABLE="Available profiles: server, desktop, developer, minimal"
+MSG_PROFILE_AVAILABLE="Available profiles: server, desktop, developer, minimal, custom"
 MSG_PROFILE_SERVER_DESC="Server: No UI, Docker ON, SMART ON, no Flatpak/Snap"
 MSG_PROFILE_DESKTOP_DESC="Desktop: UI ON, Flatpak ON, Timeshift ON, no Docker"
 MSG_PROFILE_DEVELOPER_DESC="Developer: UI ON, Docker ON, Snap ON, no SMART/Firmware"
 MSG_PROFILE_MINIMAL_DESC="Minimal: No UI, only APT update/upgrade and cleanup"
+MSG_PROFILE_CUSTOM_DESC="Custom: No UI, reads all settings from autoclean.conf"
+MSG_PROFILE_CUSTOM_LOADED="Custom profile loaded from configuration file"
 
 # === ICONS (ASCII) ===
 ICON_OK="[OK]"

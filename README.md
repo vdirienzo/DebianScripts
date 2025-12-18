@@ -220,7 +220,7 @@ STEP_UPDATE_SNAP=0
 
 ## Perfiles Predefinidos
 
-El script incluye 4 perfiles predefinidos que configuran automaticamente los pasos segun el tipo de sistema:
+El script incluye 5 perfiles predefinidos que configuran automaticamente los pasos segun el tipo de sistema:
 
 ```bash
 sudo ./autoclean.sh --profile PERFIL
@@ -232,6 +232,7 @@ sudo ./autoclean.sh --profile PERFIL
 | `desktop` | Estaciones de trabajo (interactivo) | Flatpak ON, Timeshift ON, SMART ON, sin Docker |
 | `developer` | Entornos de desarrollo (interactivo) | Docker ON, Snap ON, Flatpak ON, sin SMART/Firmware |
 | `minimal` | Actualizacion minima (desatendido) | Solo apt update/upgrade y limpieza APT, **automatico** |
+| `custom` | Configuracion personalizada (desatendido) | Lee toda la configuracion desde `autoclean.conf`, **automatico** |
 
 ### Uso de Perfiles
 
@@ -247,6 +248,9 @@ sudo ./autoclean.sh --profile developer
 
 # Actualizacion minima sin limpieza agresiva
 sudo ./autoclean.sh --profile minimal
+
+# Ejecutar con configuracion personalizada desde autoclean.conf
+sudo ./autoclean.sh --profile custom
 ```
 
 ### Detalle de Cada Perfil
@@ -278,6 +282,13 @@ sudo ./autoclean.sh --profile minimal
 - Sin interfaz grafica (NO_MENU=true)
 - Solo: conectividad, repos, upgrade, limpieza APT, reinicio
 - Sin backups, sin snapshots, sin Docker, sin SMART
+
+**custom** - Configuracion personalizada:
+- Modo desatendido (UNATTENDED=true) - acepta todo automaticamente
+- Sin interfaz grafica (NO_MENU=true)
+- Lee TODA la configuracion desde `autoclean.conf`
+- Permite personalizar idioma, tema y todos los pasos individualmente
+- Si el archivo no existe, se genera automaticamente con valores por defecto
 
 ---
 
@@ -348,6 +359,30 @@ La configuracion se guarda en `autoclean.conf` en el mismo directorio del script
 - Al presionar **G**, se guarda el estado actual de todos los pasos
 - Al iniciar el script, se carga automaticamente la configuracion guardada
 - Al presionar **D**, se elimina el archivo de configuracion (vuelve a valores por defecto)
+- **Si el archivo no existe, se genera automaticamente con valores por defecto**
+
+El archivo `autoclean.conf` tiene el siguiente formato:
+```bash
+# Perfil guardado (server, desktop, developer, minimal, custom)
+SAVED_PROFILE=custom
+
+# Idioma (en, es, pt, fr, de, it)
+SAVED_LANG=es
+
+# Tema (default, norton, turbo, green, amber)
+SAVED_THEME=default
+
+# Pasos (1=activo, 0=inactivo) - Solo aplica cuando SAVED_PROFILE=custom
+STEP_CHECK_CONNECTIVITY=1
+STEP_CHECK_DEPENDENCIES=1
+STEP_BACKUP_TAR=1
+# ... (15 pasos configurables)
+```
+
+Para ejecutar el script usando esta configuracion personalizada:
+```bash
+sudo ./autoclean.sh --profile custom
+```
 
 ---
 
@@ -439,7 +474,7 @@ Opciones:
   --no-menu            Omitir menu interactivo (usar config guardada o por defecto)
   --quiet              Modo silencioso (solo logs)
   --lang CODIGO        Forzar idioma (en, es, pt, fr, de, it)
-  --profile PERFIL     Usar perfil predefinido (server, desktop, developer, minimal)
+  --profile PERFIL     Usar perfil predefinido (server, desktop, developer, minimal, custom)
   --schedule MODO      Crear timer systemd (daily, weekly, monthly)
   --unschedule         Eliminar timer systemd programado
   --schedule-status    Mostrar estado del timer programado
@@ -651,12 +686,15 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 ## Changelog v2025.12
 
 ### Nuevas Funcionalidades
-- **Perfiles Predefinidos** - Nuevo argumento `--profile` con 4 perfiles: server, desktop, developer, minimal
+- **Perfiles Predefinidos** - Nuevo argumento `--profile` con 5 perfiles: server, desktop, developer, minimal, **custom**
+- **Perfil Custom** - Nuevo perfil que lee toda la configuracion desde `autoclean.conf` (idioma, tema y pasos)
+- **Auto-generacion de configuracion** - Si `autoclean.conf` no existe, se genera automaticamente con valores por defecto
 - **Limpieza Docker/Podman** - Nuevo paso para limpiar imagenes, contenedores y volumenes sin usar
 - **Verificacion SMART** - Diagnostico de salud de discos duros antes de realizar cambios
 - **Programacion Systemd Timer** - Opciones `--schedule`, `--unschedule`, `--schedule-status` para automatizar ejecucion
 
 ### Mejoras
+- **Archivo de configuracion mejorado** - Ahora incluye SAVED_PROFILE, idioma, tema y todos los pasos
 - **Orden logico de pasos** - Reorganizado en 5 fases: Verificaciones, Backups, Actualizaciones, Limpieza, Final
 - **SMART en posicion temprana** - Verifica salud de discos ANTES de hacer cambios al sistema
 - **Instalacion interactiva de herramientas** - Ofrece instalar smartmontools si no esta disponible
