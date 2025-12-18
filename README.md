@@ -69,12 +69,12 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 
 ### Multi-Idioma (i18n)
 
-- **7 idiomas soportados**: Ingles (en), Espanol (es), Portugues (pt), Frances (fr), Aleman (de), Italiano (it), Ruso (ru)
+- **6 idiomas soportados**: Ingles (en), Espanol (es), Portugues (pt), Frances (fr), Aleman (de), Italiano (it)
 - **Deteccion dinamica de idiomas**: Los idiomas se detectan automaticamente desde la carpeta `lang/`
 - **Selector en grid 4 columnas**: Tecla `[L]` en el menu, navegacion con flechas ←/→/↑/↓
 - **Crea tu propio idioma**: Tutorial incluido en `lang/TUTORIAL.md`
 - **Deteccion automatica del sistema**: Detecta el idioma del sistema y lo aplica automaticamente
-- **Patrones de confirmacion localizados**: S/N, Y/N, O/N, J/N, Д/Н segun el idioma
+- **Patrones de confirmacion localizados**: S/N, Y/N, O/N, J/N segun el idioma
 - **Parametro --lang**: Fuerza un idioma especifico desde linea de comandos
 - **Configuracion persistente**: El idioma seleccionado se guarda en `autoclean.conf`
 
@@ -375,7 +375,7 @@ El archivo `autoclean.conf` tiene el siguiente formato:
 # Perfil guardado (server, desktop, developer, minimal, custom)
 SAVED_PROFILE=custom
 
-# Idioma (en, es, pt, fr, de, it, ru)
+# Idioma (en, es, pt, fr, de, it)
 SAVED_LANG=es
 
 # Tema (default, norton, turbo, green, amber, dracula, matrix, synthwave, monokai)
@@ -482,7 +482,7 @@ Opciones:
   --no-backup          No crear backup de configuraciones
   --no-menu            Omitir menu interactivo (usar config guardada o por defecto)
   --quiet              Modo silencioso (solo logs)
-  --lang CODIGO        Forzar idioma (en, es, pt, fr, de, it, ru)
+  --lang CODIGO        Forzar idioma (en, es, pt, fr, de, it)
   --profile PERFIL     Usar perfil predefinido (server, desktop, developer, minimal, custom)
   --schedule MODO      Crear timer systemd (daily, weekly, monthly)
   --unschedule         Eliminar timer systemd programado
@@ -684,7 +684,7 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 - **Version actual:** 2025.12
 - **Lineas de codigo:** ~2700+
 - **Pasos modulares:** 15
-- **Idiomas soportados:** 7 (en, es, pt, fr, de, it, ru) - deteccion dinamica
+- **Idiomas soportados:** 6 (en, es, pt, fr, de, it) - deteccion dinamica
 - **Temas de colores:** 9 (Default, Norton, Turbo, Green, Amber, Dracula, Matrix, Synthwave, Monokai) - deteccion dinamica
 - **Distribuciones soportadas:** 7+ (auto-deteccion)
 - **Compatible con:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
@@ -702,7 +702,6 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 - **Verificacion SMART** - Diagnostico de salud de discos duros antes de realizar cambios
 - **Programacion Systemd Timer** - Opciones `--schedule`, `--unschedule`, `--schedule-status` para automatizar ejecucion
 - **Deteccion dinamica de idiomas** - Los idiomas se detectan automaticamente desde `lang/`, selector en grid 4 columnas
-- **Idioma Ruso (ru)** - Nuevo idioma agregado con traduccion completa
 - **Tutorial de idiomas** - Documentacion en `lang/TUTORIAL.md` para crear idiomas personalizados
 - **Deteccion dinamica de temas** - Los temas se detectan automaticamente desde `themes/`
 - **4 nuevos temas** - Dracula, Matrix (fondo negro), Synthwave (fondo purpura), Monokai
