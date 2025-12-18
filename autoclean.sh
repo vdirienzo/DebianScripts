@@ -151,7 +151,8 @@ AVAILABLE_LANGS=("en" "es" "pt" "fr" "de" "it")
 THEME_DIR="${SCRIPT_DIR}/themes"
 DEFAULT_THEME="default"
 CURRENT_THEME=""
-AVAILABLE_THEMES=("default" "norton" "turbo" "green" "amber")
+AVAILABLE_THEMES=()   # Se llena dinámicamente con detect_themes()
+THEME_NAMES=()        # Nombres para mostrar (de THEME_NAME en cada archivo)
 
 # Parámetros de sistema
 DIAS_LOGS=7
@@ -720,6 +721,38 @@ show_language_selector() {
 # SISTEMA DE TEMAS
 # ============================================================================
 
+# Detectar temas disponibles dinámicamente desde la carpeta themes/
+detect_themes() {
+    AVAILABLE_THEMES=()
+    THEME_NAMES=()
+
+    # Buscar todos los archivos .theme
+    local theme_file
+    for theme_file in "$THEME_DIR"/*.theme; do
+        [ -f "$theme_file" ] || continue
+
+        # Extraer código del tema (nombre del archivo sin extensión)
+        local code
+        code=$(basename "$theme_file" .theme)
+
+        # Extraer nombre del tema del archivo (THEME_NAME="...")
+        local name
+        name=$(grep -m1 '^THEME_NAME=' "$theme_file" 2>/dev/null | cut -d'"' -f2)
+
+        # Si no tiene THEME_NAME, usar el código con primera letra mayúscula
+        [ -z "$name" ] && name="${code^}"
+
+        AVAILABLE_THEMES+=("$code")
+        THEME_NAMES+=("$name")
+    done
+
+    # Si no hay temas, usar default como fallback
+    if [ ${#AVAILABLE_THEMES[@]} -eq 0 ]; then
+        AVAILABLE_THEMES=("default")
+        THEME_NAMES=("Default")
+    fi
+}
+
 load_theme() {
     local theme_to_load="$1"
 
@@ -788,12 +821,14 @@ apply_theme() {
 }
 
 show_theme_selector() {
-    # Nombres de temas para mostrar
-    local -a THEME_NAMES=("Default" "Norton Commander" "Bloody Red" "Green Terminal" "Amber Terminal")
+    # Detectar temas disponibles dinámicamente
+    detect_themes
+
     local selected=0
     local total=${#AVAILABLE_THEMES[@]}
+    local cols=4  # Número de columnas en el grid
 
-    # Encontrar indice del tema actual
+    # Encontrar índice del tema actual
     for i in "${!AVAILABLE_THEMES[@]}"; do
         if [[ "${AVAILABLE_THEMES[$i]}" == "$CURRENT_THEME" ]]; then
             selected=$i
@@ -801,50 +836,121 @@ show_theme_selector() {
         fi
     done
 
+    # Ocultar cursor
+    tput civis 2>/dev/null
+    trap 'tput cnorm 2>/dev/null' RETURN
+
     while true; do
+        # Calcular fila y columna actual
+        local cur_row=$((selected / cols))
+        local cur_col=$((selected % cols))
+        local total_rows=$(( (total + cols - 1) / cols ))
+
         clear
         print_box_top
         print_box_center "${BOLD}${MENU_THEME_TITLE:-SELECT THEME / SELECCIONAR TEMA}${BOX_NC}"
         print_box_sep
         print_box_line ""
 
-        # Mostrar temas con el seleccionado resaltado
-        for i in "${!AVAILABLE_THEMES[@]}"; do
-            if [[ $i -eq $selected ]]; then
-                print_box_line "   ${TEXT_SELECTED}>${BOX_NC} ${TEXT_ACTIVE}[x]${BOX_NC} ${THEME_NAMES[$i]}"
-            else
-                print_box_line "     ${TEXT_INACTIVE}[ ] ${THEME_NAMES[$i]}${BOX_NC}"
-            fi
+        # Mostrar temas en grid de 4 columnas
+        # Cada celda: 18 chars (prefix[1] + bracket[1] + check[1] + bracket[1] + space[1] + name[13])
+        for row in $(seq 0 $((total_rows - 1))); do
+            local line=""
+            for col in $(seq 0 $((cols - 1))); do
+                local idx=$((row * cols + col))
+                if [ $idx -lt $total ]; then
+                    # Truncar/pad nombre a exactamente 13 chars
+                    local name
+                    name=$(printf "%-13.13s" "${THEME_NAMES[$idx]}")
+
+                    # Determinar prefijo y estado
+                    local prefix=" "
+                    local check=" "
+                    [ "${AVAILABLE_THEMES[$idx]}" = "$CURRENT_THEME" ] && check="x"
+                    [ $idx -eq $selected ] && prefix=">"
+
+                    # Construir celda con formato consistente (18 chars)
+                    if [ $idx -eq $selected ]; then
+                        # Seleccionado: todo en cyan brillante
+                        line+="${BRIGHT_CYAN}${prefix}[${check}]${BOX_NC} ${BRIGHT_CYAN}${name}${BOX_NC}"
+                    elif [ "${AVAILABLE_THEMES[$idx]}" = "$CURRENT_THEME" ]; then
+                        # Tema activo: [x] en verde
+                        line+=" ${GREEN}[x]${BOX_NC} ${name}"
+                    else
+                        # Inactivo: [ ] en dim
+                        line+=" ${DIM}[ ]${BOX_NC} ${name}"
+                    fi
+                else
+                    # Celda vacía: 18 espacios
+                    line+="                  "
+                fi
+            done
+            print_box_line "$line"
         done
 
         print_box_line ""
+        print_box_sep
+        print_box_center "${DIM}${MENU_THEME_HINT:-Add .theme files to themes/ folder}${BOX_NC}"
         print_box_sep
         print_box_center "${STATUS_INFO}[ENTER]${BOX_NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${BOX_NC} ${MENU_BACK:-Back}"
         print_box_bottom
 
         # Leer tecla
         local key=""
-        read -rsn1 key
+        IFS= read -rsn1 key
 
         # Detectar secuencias de escape (flechas o ESC solo)
         if [[ "$key" == $'\x1b' ]]; then
             read -rsn2 -t 0.1 key
             case "$key" in
-                '[A') # Flecha arriba
-                    ((selected--))
-                    [[ $selected -lt 0 ]] && selected=$((total - 1))
+                '[A') # Arriba: misma columna, fila anterior
+                    if [ $cur_row -gt 0 ]; then
+                        ((selected-=cols))
+                    else
+                        # Ir a la última fila de la columna
+                        local last_row=$(( (total - 1) / cols ))
+                        local new_idx=$((last_row * cols + cur_col))
+                        [ $new_idx -ge $total ] && new_idx=$((new_idx - cols))
+                        [ $new_idx -ge 0 ] && selected=$new_idx
+                    fi
                     ;;
-                '[B') # Flecha abajo
-                    ((selected++))
-                    [[ $selected -ge $total ]] && selected=0
+                '[B') # Abajo: misma columna, fila siguiente
+                    local new_idx=$((selected + cols))
+                    if [ $new_idx -lt $total ]; then
+                        selected=$new_idx
+                    else
+                        # Volver a la primera fila de la columna
+                        selected=$cur_col
+                    fi
+                    ;;
+                '[C') # Derecha: columna siguiente
+                    if [ $cur_col -lt $((cols - 1)) ]; then
+                        local new_idx=$((selected + 1))
+                        [ $new_idx -lt $total ] && selected=$new_idx
+                    else
+                        # Ir al inicio de la fila
+                        selected=$((cur_row * cols))
+                    fi
+                    ;;
+                '[D') # Izquierda: columna anterior
+                    if [ $cur_col -gt 0 ]; then
+                        ((selected--))
+                    else
+                        # Ir al final de la fila
+                        local new_idx=$((cur_row * cols + cols - 1))
+                        [ $new_idx -ge $total ] && new_idx=$((total - 1))
+                        selected=$new_idx
+                    fi
                     ;;
                 '') # ESC solo
+                    tput cnorm 2>/dev/null
                     return
                     ;;
             esac
         elif [[ "$key" == "" ]]; then
             # ENTER - seleccionar tema
             load_theme "${AVAILABLE_THEMES[$selected]}"
+            tput cnorm 2>/dev/null
             return
         fi
     done

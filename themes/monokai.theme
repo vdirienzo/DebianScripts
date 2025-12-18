@@ -1,0 +1,32 @@
+# Autoclean Theme: Monokai
+# El clasico tema de Sublime Text
+# Naranjas vibrantes, verdes lima, rosas y amarillos
+
+THEME_NAME="Monokai"
+THEME_CODE="monokai"
+
+# Colores Monokai clasicos
+# Naranja: 208, Verde: 148, Rosa: 197, Amarillo: 186, Purpura: 141
+T_RED='\033[38;5;197m'              # Rosa Monokai - errores
+T_GREEN='\033[38;5;148m'            # Verde lima - exito
+T_YELLOW='\033[38;5;186m'           # Amarillo crema - advertencias
+T_BLUE='\033[38;5;81m'              # Azul claro - info
+T_CYAN='\033[38;5;81m'              # Cyan Monokai
+T_MAGENTA='\033[38;5;141m'          # Purpura - destacados
+T_BRIGHT_GREEN='\033[38;5;118m'     # Verde brillante
+T_BRIGHT_YELLOW='\033[38;5;228m'    # Amarillo brillante
+T_BRIGHT_CYAN='\033[38;5;87m'       # Cyan brillante
+T_DIM='\033[38;5;242m'              # Gris Monokai
+
+# Colores semanticos - Monokai style
+T_BOX_BORDER='\033[38;5;208m'       # Naranja vibrante - bordes
+T_BOX_TITLE='\033[38;5;231m'        # Blanco puro - titulos
+T_TEXT_NORMAL='\033[38;5;252m'      # Gris claro - texto
+T_TEXT_SELECTED='\033[38;5;208m'    # Naranja vibrante - cursor
+T_TEXT_ACTIVE='\033[38;5;148m'      # Verde lima - items activos
+T_TEXT_INACTIVE='\033[38;5;242m'    # Gris - inactivos
+T_STATUS_OK='\033[38;5;148m'        # Verde lima - exito
+T_STATUS_ERROR='\033[38;5;197m'     # Rosa Monokai - error
+T_STATUS_WARN='\033[38;5;208m'      # Naranja - advertencia
+T_STATUS_INFO='\033[38;5;81m'       # Azul claro - info
+T_STEP_HEADER='\033[38;5;141m'      # Purpura - encabezado

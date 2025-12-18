@@ -1,0 +1,32 @@
+# Autoclean Theme: Dracula
+# El famoso tema oscuro con purpuras, rosas y cyans
+# Inspirado en draculatheme.com - uno de los mas populares
+
+THEME_NAME="Dracula"
+THEME_CODE="dracula"
+
+# Colores Dracula autenticos
+# Purpura: 135 (morado claro), Rosa: 212, Cyan: 117, Verde: 84
+T_RED='\033[38;5;210m'              # Rosa salmon - errores
+T_GREEN='\033[38;5;84m'             # Verde menta - exito
+T_YELLOW='\033[38;5;228m'           # Amarillo palido - advertencias
+T_BLUE='\033[38;5;141m'             # Purpura Dracula - info
+T_CYAN='\033[38;5;117m'             # Cyan brillante - secundario
+T_MAGENTA='\033[38;5;212m'          # Rosa pink - destacados
+T_BRIGHT_GREEN='\033[38;5;84m'      # Verde menta brillante
+T_BRIGHT_YELLOW='\033[38;5;228m'    # Amarillo Dracula
+T_BRIGHT_CYAN='\033[38;5;159m'      # Cyan muy brillante
+T_DIM='\033[38;5;60m'               # Gris purpura atenuado
+
+# Colores semanticos - Dracula style
+T_BOX_BORDER='\033[38;5;141m'       # Purpura - bordes
+T_BOX_TITLE='\033[38;5;212m'        # Rosa pink - titulos
+T_TEXT_NORMAL='\033[38;5;253m'      # Blanco grisaceo - texto
+T_TEXT_SELECTED='\033[38;5;212m'    # Rosa pink - cursor
+T_TEXT_ACTIVE='\033[38;5;84m'       # Verde menta - items activos
+T_TEXT_INACTIVE='\033[38;5;60m'     # Gris purpura - inactivos
+T_STATUS_OK='\033[38;5;84m'         # Verde menta - exito
+T_STATUS_ERROR='\033[38;5;210m'     # Rosa salmon - error
+T_STATUS_WARN='\033[38;5;228m'      # Amarillo - advertencia
+T_STATUS_INFO='\033[38;5;117m'      # Cyan - info
+T_STEP_HEADER='\033[38;5;141m'      # Purpura - encabezado

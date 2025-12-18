@@ -1,0 +1,35 @@
+# Autoclean Theme: Matrix
+# Verde neon brillante sobre fondo negro puro
+# El estilo iconico de la pelicula Matrix
+
+THEME_NAME="Matrix"
+THEME_CODE="matrix"
+
+# Colores Matrix - verde neon sobre negro
+T_RED='\033[1;32;40m'               # Verde sobre negro
+T_GREEN='\033[1;32;40m'             # Verde brillante sobre negro
+T_YELLOW='\033[38;5;82;48;5;0m'     # Verde lima sobre negro
+T_BLUE='\033[0;32;40m'              # Verde oscuro sobre negro
+T_CYAN='\033[38;5;46;48;5;0m'       # Verde neon sobre negro
+T_MAGENTA='\033[38;5;48;48;5;0m'    # Verde agua sobre negro
+T_BRIGHT_GREEN='\033[38;5;46;48;5;0m'  # Verde neon maximo
+T_BRIGHT_YELLOW='\033[38;5;118;48;5;0m' # Verde amarillento
+T_BRIGHT_CYAN='\033[38;5;82;48;5;0m'   # Verde lima brillante
+T_DIM='\033[2;32;40m'               # Verde atenuado
+
+# Fondo negro para efecto Matrix
+T_BOX_BG='\033[40m'                 # Fondo negro solido
+T_BOX_NC='\033[0m\033[40m'          # Reset + fondo negro
+
+# Colores semanticos - Matrix rain style
+T_BOX_BORDER='\033[38;5;34;48;5;0m'    # Verde medio - bordes
+T_BOX_TITLE='\033[38;5;46;48;5;0m'     # Verde neon - titulos
+T_TEXT_NORMAL='\033[38;5;40;48;5;0m'   # Verde - texto normal
+T_TEXT_SELECTED='\033[38;5;16;48;5;46m' # Negro sobre verde neon - cursor
+T_TEXT_ACTIVE='\033[38;5;46;48;5;0m'   # Verde neon - activos
+T_TEXT_INACTIVE='\033[38;5;22;48;5;0m' # Verde muy oscuro - inactivos
+T_STATUS_OK='\033[38;5;46;48;5;0m'     # Verde neon - exito
+T_STATUS_ERROR='\033[38;5;196;48;5;0m' # Rojo sobre negro - error
+T_STATUS_WARN='\033[38;5;226;48;5;0m'  # Amarillo sobre negro - warn
+T_STATUS_INFO='\033[38;5;82;48;5;0m'   # Verde lima - info
+T_STEP_HEADER='\033[38;5;46;48;5;0m'   # Verde neon - encabezado
