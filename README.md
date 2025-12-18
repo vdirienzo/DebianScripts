@@ -69,12 +69,14 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 
 ### Multi-Idioma (i18n)
 
-- **6 idiomas soportados**: Ingles (en), Espanol (es), Portugues (pt), Frances (fr), Aleman (de), Italiano (it)
-- **Deteccion automatica de idioma**: Detecta el idioma del sistema y lo aplica automaticamente
-- **Selector de idioma integrado**: Tecla `[L]` en el menu principal para cambiar idioma en tiempo real
-- **Archivos de idioma externos**: Facil de agregar nuevos idiomas sin modificar el script principal
-- **Patrones de confirmacion localizados**: S/N, Y/N, O/N, J/N segun el idioma
+- **7 idiomas soportados**: Ingles (en), Espanol (es), Portugues (pt), Frances (fr), Aleman (de), Italiano (it), Ruso (ru)
+- **Deteccion dinamica de idiomas**: Los idiomas se detectan automaticamente desde la carpeta `lang/`
+- **Selector en grid 4 columnas**: Tecla `[L]` en el menu, navegacion con flechas ←/→/↑/↓
+- **Crea tu propio idioma**: Tutorial incluido en `lang/TUTORIAL.md`
+- **Deteccion automatica del sistema**: Detecta el idioma del sistema y lo aplica automaticamente
+- **Patrones de confirmacion localizados**: S/N, Y/N, O/N, J/N, Д/Н segun el idioma
 - **Parametro --lang**: Fuerza un idioma especifico desde linea de comandos
+- **Configuracion persistente**: El idioma seleccionado se guarda en `autoclean.conf`
 
 ### Temas de Colores
 
@@ -374,10 +376,10 @@ El archivo `autoclean.conf` tiene el siguiente formato:
 # Perfil guardado (server, desktop, developer, minimal, custom)
 SAVED_PROFILE=custom
 
-# Idioma (en, es, pt, fr, de, it)
+# Idioma (en, es, pt, fr, de, it, ru)
 SAVED_LANG=es
 
-# Tema (default, norton, turbo, green, amber)
+# Tema (default, norton, turbo, green, amber, dracula, matrix, synthwave, monokai)
 SAVED_THEME=default
 
 # Pasos (1=activo, 0=inactivo) - Solo aplica cuando SAVED_PROFILE=custom
@@ -481,7 +483,7 @@ Opciones:
   --no-backup          No crear backup de configuraciones
   --no-menu            Omitir menu interactivo (usar config guardada o por defecto)
   --quiet              Modo silencioso (solo logs)
-  --lang CODIGO        Forzar idioma (en, es, pt, fr, de, it)
+  --lang CODIGO        Forzar idioma (en, es, pt, fr, de, it, ru)
   --profile PERFIL     Usar perfil predefinido (server, desktop, developer, minimal, custom)
   --schedule MODO      Crear timer systemd (daily, weekly, monthly)
   --unschedule         Eliminar timer systemd programado
@@ -683,8 +685,8 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 - **Version actual:** 2025.12
 - **Lineas de codigo:** ~2700+
 - **Pasos modulares:** 15
-- **Idiomas soportados:** 6 (en, es, pt, fr, de, it)
-- **Temas de colores:** 5 (Default, Norton Commander, Bloody Red, Green Terminal, Amber Terminal)
+- **Idiomas soportados:** 7 (en, es, pt, fr, de, it, ru) - deteccion dinamica
+- **Temas de colores:** 9 (Default, Norton, Turbo, Green, Amber, Dracula, Matrix, Synthwave, Monokai) - deteccion dinamica
 - **Distribuciones soportadas:** 7+ (auto-deteccion)
 - **Compatible con:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
 - **Interfaz:** Enterprise UI con grid 5x3, navegacion bidimensional, selector de idioma y temas
@@ -700,6 +702,12 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 - **Limpieza Docker/Podman** - Nuevo paso para limpiar imagenes, contenedores y volumenes sin usar
 - **Verificacion SMART** - Diagnostico de salud de discos duros antes de realizar cambios
 - **Programacion Systemd Timer** - Opciones `--schedule`, `--unschedule`, `--schedule-status` para automatizar ejecucion
+- **Deteccion dinamica de idiomas** - Los idiomas se detectan automaticamente desde `lang/`, selector en grid 4 columnas
+- **Idioma Ruso (ru)** - Nuevo idioma agregado con traduccion completa
+- **Tutorial de idiomas** - Documentacion en `lang/TUTORIAL.md` para crear idiomas personalizados
+- **Deteccion dinamica de temas** - Los temas se detectan automaticamente desde `themes/`
+- **4 nuevos temas** - Dracula, Matrix (fondo negro), Synthwave (fondo purpura), Monokai
+- **Tutorial de temas** - Documentacion en `themes/TUTORIAL.md` para crear temas personalizados
 
 ### Mejoras
 - **Archivo de configuracion mejorado** - Ahora incluye SAVED_PROFILE, idioma, tema y todos los pasos
@@ -707,6 +715,13 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 - **SMART en posicion temprana** - Verifica salud de discos ANTES de hacer cambios al sistema
 - **Instalacion interactiva de herramientas** - Ofrece instalar smartmontools si no esta disponible
 - **EXECUTION SUMMARY completo** - Ahora muestra los 15 pasos correctamente
+- **Selectores en grid 4 columnas** - Tanto idiomas como temas usan navegacion con flechas
+- **Validacion de archivos de configuracion** - Los archivos `.conf`, `.lang` y `.theme` se validan antes de cargar
+
+### Seguridad
+- **Funcion validate_source_file()** - Valida archivos antes de `source` para prevenir inyeccion de codigo
+- **Variables seguras con declare -n** - Usa nameref en lugar de eval para manipulacion de variables en el menu
+- **Limpieza segura con find** - Usa find con delimitadores seguros en lugar de ls | xargs rm
 
 ### Correcciones
 - **Fix Norton Commander theme** - Corregido overflow de fondo azul fuera de los margenes
