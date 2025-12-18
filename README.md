@@ -78,19 +78,23 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 
 ### Temas de Colores
 
-- **5 temas incluidos**: Default, Norton Commander, Bloody Red, Green Terminal, Amber Terminal
-- **Selector de tema integrado**: Tecla `[T]` en el menu principal para cambiar tema en tiempo real
-- **Archivos de tema externos**: Facil de agregar nuevos temas en la carpeta `themes/`
+- **9 temas incluidos**: Gran variedad de estilos visuales
+- **Deteccion dinamica**: Los temas se detectan automaticamente desde la carpeta `themes/`
+- **Selector en grid 4 columnas**: Tecla `[T]` en el menu, navegacion con flechas
+- **Crea tu propio tema**: Tutorial incluido en `themes/TUTORIAL.md`
 - **Configuracion persistente**: El tema seleccionado se guarda en `autoclean.conf`
-- **Colores informativos fijos**: Los colores de metricas (Completed/Errors/Skipped) siempre usan verde/rojo/amarillo para consistencia
 
-| Tema | Descripcion |
-|------|-------------|
-| Default | Azul/Cyan/Verde - tema original |
-| Norton Commander | Cyan/Amarillo - estilo clasico NC |
-| Bloody Red | Tonos rojos intensos |
-| Green Terminal | Monocromo verde retro |
-| Amber Terminal | Monocromo ambar vintage |
+| Tema | Descripcion | Fondo |
+|------|-------------|-------|
+| Default | Azul/Cyan/Verde - tema original | - |
+| Norton Commander | Cyan/Amarillo - estilo clasico NC | Azul |
+| Bloody Red | Tonos rojos intensos | - |
+| Green Terminal | Monocromo verde retro | - |
+| Amber Terminal | Monocromo ambar vintage | - |
+| Dracula | Purpura/Rosa/Cyan - tema popular | - |
+| Matrix | Verde neon brillante estilo pelicula | Negro |
+| Synthwave | Rosa/Cyan neon retro 80s | Purpura |
+| Monokai | Naranja/Verde lima - clasico Sublime | - |
 
 ### Deteccion y Compatibilidad
 - **Deteccion automatica de distribucion**: Identifica Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
