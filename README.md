@@ -228,10 +228,10 @@ sudo ./autoclean.sh --profile PERFIL
 
 | Perfil | Descripcion | Pasos Activos |
 |--------|-------------|---------------|
-| `server` | Servidores sin interfaz grafica | Docker ON, SMART ON, sin Flatpak/Snap/Timeshift, **sin menu** |
-| `desktop` | Estaciones de trabajo | Flatpak ON, Timeshift ON, SMART ON, sin Docker |
-| `developer` | Entornos de desarrollo | Docker ON, Snap ON, Flatpak ON, sin SMART/Firmware |
-| `minimal` | Actualizacion minima | Solo apt update/upgrade y limpieza APT, **sin menu** |
+| `server` | Servidores (desatendido) | Docker ON, SMART ON, sin Flatpak/Snap/Timeshift, **automatico** |
+| `desktop` | Estaciones de trabajo (interactivo) | Flatpak ON, Timeshift ON, SMART ON, sin Docker |
+| `developer` | Entornos de desarrollo (interactivo) | Docker ON, Snap ON, Flatpak ON, sin SMART/Firmware |
+| `minimal` | Actualizacion minima (desatendido) | Solo apt update/upgrade y limpieza APT, **automatico** |
 
 ### Uso de Perfiles
 
@@ -252,6 +252,7 @@ sudo ./autoclean.sh --profile minimal
 ### Detalle de Cada Perfil
 
 **server** - Optimizado para servidores:
+- Modo desatendido (UNATTENDED=true) - acepta todo automaticamente
 - Sin interfaz grafica (NO_MENU=true)
 - Docker/Podman habilitado
 - SMART habilitado (salud de discos)
@@ -273,6 +274,7 @@ sudo ./autoclean.sh --profile minimal
 - Sin SMART/Firmware (evita interrupciones)
 
 **minimal** - Actualizacion esencial:
+- Modo desatendido (UNATTENDED=true) - acepta todo automaticamente
 - Sin interfaz grafica (NO_MENU=true)
 - Solo: conectividad, repos, upgrade, limpieza APT, reinicio
 - Sin backups, sin snapshots, sin Docker, sin SMART

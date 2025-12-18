@@ -416,6 +416,7 @@ apply_profile() {
             STEP_CLEANUP_DOCKER=1        # Docker habilitado
             STEP_CHECK_REBOOT=1
             NO_MENU=true                 # Sin UI interactiva
+            UNATTENDED=true              # Modo desatendido (acepta todo)
             ;;
         desktop)
             # Desktop: UI activa, sin Docker, SMART activo, Flatpak habilitado
@@ -471,6 +472,7 @@ apply_profile() {
             STEP_CLEANUP_DOCKER=0
             STEP_CHECK_REBOOT=1
             NO_MENU=true                 # Sin UI interactiva
+            UNATTENDED=true              # Modo desatendido (acepta todo)
             ;;
         *)
             echo "Error: ${MSG_PROFILE_UNKNOWN:-Unknown profile}: $profile"
@@ -2667,10 +2669,10 @@ Opciones:
   --help                 Mostrar esta ayuda
 
 Perfiles predefinidos (--profile):
-  server      Sin UI, Docker ON, SMART ON, sin Flatpak/Snap
-  desktop     Con UI, Docker OFF, SMART ON, Flatpak ON, Timeshift ON
-  developer   Con UI, Docker ON, Snap ON, sin SMART/Firmware
-  minimal     Sin UI, solo apt update/upgrade y limpieza APT
+  server      Desatendido, Docker ON, SMART ON, sin Flatpak/Snap
+  desktop     Interactivo, Docker OFF, SMART ON, Flatpak ON, Timeshift ON
+  developer   Interactivo, Docker ON, Snap ON, sin SMART/Firmware
+  minimal     Desatendido, solo apt update/upgrade y limpieza APT
 
 Ejemplos:
   sudo ./autoclean.sh                    # Ejecución normal (interactivo)
