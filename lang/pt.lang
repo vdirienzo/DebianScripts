@@ -63,7 +63,7 @@ STEP_DESC_12="Limpar logs antigos e cache do sistema"
 STEP_DESC_13="Detectar se o sistema precisa reiniciar"
 
 # === MENU CONTROLS ===
-MENU_CTRL_ENTER="Executar"
+MENU_CTRL_ENTER="Executa"
 MENU_CTRL_ALL="Todos"
 MENU_CTRL_NONE="Nenhum"
 MENU_CTRL_SAVE="Salvar"

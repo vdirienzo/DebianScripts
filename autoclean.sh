@@ -726,7 +726,7 @@ make_spaces() {
 }
 
 # Imprimir línea con bordes - MÉTODO ULTRA-ROBUSTO
-# Usa posicionamiento absoluto de cursor para garantizar alineación
+# Usa ESC[K (clear to EOL) + posicionamiento absoluto para garantizar alineación
 print_box_line() {
     local content="$1"
 
@@ -736,22 +736,20 @@ print_box_line() {
     # Imprimir contenido
     printf '%b' "$content"
 
-    # Calcular espacios restantes para llenar con fondo
-    local content_len
-    content_len=$(visible_length "$content")
-    local padding=$((BOX_INNER - content_len - 1))  # -1 por el espacio inicial
-    [ "$padding" -gt 0 ] && printf '%*s' "$padding" ''
+    # Limpiar hasta el final de línea (respeta color de fondo actual para Norton)
+    printf '\033[K'
 
-    # Imprimir borde derecho
+    # Posicionar cursor en columna fija para borde derecho (independiente de Unicode)
+    printf '\033[%dG' "$BOX_WIDTH"
     printf '%b\n' "${BOX_BORDER:-$BLUE}║${NC}"
 }
 
 # Imprimir línea centrada - MÉTODO ULTRA-ROBUSTO
-# Usa posicionamiento absoluto para borde derecho
+# Usa ESC[K (clear to EOL) + posicionamiento absoluto para garantizar alineación
 print_box_center() {
     local content="$1"
 
-    # Calcular longitud visible para centrado
+    # Calcular longitud visible para centrado (solo para padding izquierdo)
     local content_len
     content_len=$(visible_length "$content")
 
@@ -759,17 +757,21 @@ print_box_center() {
     local total_pad=$((BOX_INNER - content_len))
     [ "$total_pad" -lt 0 ] && total_pad=0
     local left_pad=$((total_pad / 2))
-    local right_pad=$((total_pad - left_pad))
 
-    # Generar espacios
+    # Generar espacios izquierdos
     local left_spaces
     left_spaces=$(make_spaces "$left_pad")
 
-    # Imprimir: borde + espacios izquierdos + contenido + espacios derechos + borde
+    # Imprimir: borde + espacios izquierdos + contenido
     printf '%b' "${BOX_BORDER:-$BLUE}║${NC}${BOX_BG}"
     printf '%s' "$left_spaces"
     printf '%b' "$content"
-    [ "$right_pad" -gt 0 ] && printf '%*s' "$right_pad" ''
+
+    # Limpiar hasta el final de línea (respeta color de fondo actual)
+    printf '\033[K'
+
+    # Posicionar cursor en columna fija para borde derecho
+    printf '\033[%dG' "$BOX_WIDTH"
     printf '%b\n' "${BOX_BORDER:-$BLUE}║${NC}"
 }
 

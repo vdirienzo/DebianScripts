@@ -63,14 +63,14 @@ STEP_DESC_12="Nettoyer les anciens logs et le cache systeme"
 STEP_DESC_13="Detecter si le systeme doit redemarrer"
 
 # === MENU CONTROLS ===
-MENU_CTRL_ENTER="Executer"
+MENU_CTRL_ENTER="Execut"
 MENU_CTRL_ALL="Tous"
 MENU_CTRL_NONE="Aucun"
 MENU_CTRL_SAVE="Enreg."
 MENU_CTRL_DELETE="Suppr."
 MENU_CTRL_LANG="Langue"
 MENU_CTRL_THEME="Theme"
-MENU_CTRL_QUIT="Quitter"
+MENU_CTRL_QUIT="Quit"
 
 # === THEME SELECTOR ===
 MENU_THEME_TITLE="SELECTIONNER THEME"

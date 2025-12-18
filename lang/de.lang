@@ -63,12 +63,12 @@ STEP_DESC_12="Alte Logs und System-Cache bereinigen"
 STEP_DESC_13="Erkennen ob System neu gestartet werden muss"
 
 # === MENU CONTROLS ===
-MENU_CTRL_ENTER="Ausfuehren"
+MENU_CTRL_ENTER="Ausf."
 MENU_CTRL_ALL="Alle"
 MENU_CTRL_NONE="Keine"
-MENU_CTRL_SAVE="Speichern"
+MENU_CTRL_SAVE="Speich."
 MENU_CTRL_DELETE="Loeschen"
-MENU_CTRL_LANG="Sprache"
+MENU_CTRL_LANG="Spr."
 MENU_CTRL_THEME="Thema"
 MENU_CTRL_QUIT="Beenden"
 
