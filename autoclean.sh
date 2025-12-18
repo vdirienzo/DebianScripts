@@ -2711,11 +2711,6 @@ load_language
 # Cargar tema (usa SAVED_THEME si existe, o usa default)
 load_theme
 
-# Aplicar perfil si se especificó via CLI (--profile)
-if [ -n "$PROFILE" ]; then
-    apply_profile "$PROFILE"
-fi
-
 # Manejar operaciones de schedule (antes de ejecución principal)
 if [ "$SCHEDULE_STATUS" = true ]; then
     show_schedule_status
@@ -2742,6 +2737,12 @@ init_log
 log "INFO" "=========================================="
 log "INFO" "Iniciando Mantenimiento v${SCRIPT_VERSION}"
 log "INFO" "=========================================="
+
+# Aplicar perfil si se especificó via CLI (--profile)
+# Debe ejecutarse después de init_log para que log() funcione correctamente
+if [ -n "$PROFILE" ]; then
+    apply_profile "$PROFILE"
+fi
 
 # Chequeos previos obligatorios
 check_lock
