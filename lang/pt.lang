@@ -301,6 +301,9 @@ MSG_CANCELLED_BY_USER="Cancelado pelo usuario"
 MSG_CONFIG_LOADED="Configuracao carregada de"
 MSG_CONFIG_SAVED="Configuracao salva"
 MSG_CONFIG_DELETED="Configuracao excluida"
+MSG_CONFIG_GENERATING="Gerando arquivo de configuracao padrao..."
+MSG_CONFIG_GENERATED="Arquivo de configuracao padrao gerado"
+MSG_CONFIG_NOT_FOUND="Arquivo de configuracao nao encontrado, usando valores padrao"
 
 # === MESSAGES - DISTRO ===
 MSG_DISTRO_DETECTED="Distribuicao detectada"
@@ -386,11 +389,13 @@ MSG_SCHEDULE_NEXT_RUN="Proxima execucao agendada"
 # === MESSAGES - PROFILES ===
 MSG_PROFILE_APPLIED="Perfil aplicado"
 MSG_PROFILE_UNKNOWN="Perfil desconhecido"
-MSG_PROFILE_AVAILABLE="Perfis disponiveis: server, desktop, developer, minimal"
+MSG_PROFILE_AVAILABLE="Perfis disponiveis: server, desktop, developer, minimal, custom"
 MSG_PROFILE_SERVER_DESC="Server: Sem UI, Docker ON, SMART ON, sem Flatpak/Snap"
 MSG_PROFILE_DESKTOP_DESC="Desktop: UI ON, Flatpak ON, Timeshift ON, sem Docker"
 MSG_PROFILE_DEVELOPER_DESC="Developer: UI ON, Docker ON, Snap ON, sem SMART/Firmware"
 MSG_PROFILE_MINIMAL_DESC="Minimal: Sem UI, apenas apt update/upgrade e limpeza"
+MSG_PROFILE_CUSTOM_DESC="Custom: Sem UI, le todas as configuracoes de autoclean.conf"
+MSG_PROFILE_CUSTOM_LOADED="Perfil custom carregado do arquivo de configuracao"
 
 # === ICONS (ASCII) ===
 ICON_OK="[OK]"

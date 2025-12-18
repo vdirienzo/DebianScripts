@@ -338,15 +338,27 @@ save_config() {
     cat > "$CONFIG_FILE" << EOF
 # Configuración de autoclean - Generado automáticamente
 # Fecha: $(date '+%Y-%m-%d %H:%M:%S')
-# No editar manualmente (usar el menú interactivo)
 
-# Idioma / Language
+# ============================================================================
+# PERFIL / PROFILE
+# ============================================================================
+# Valores: server, desktop, developer, minimal, custom
+SAVED_PROFILE=${PROFILE:-custom}
+
+# ============================================================================
+# IDIOMA / LANGUAGE
+# ============================================================================
 SAVED_LANG=$CURRENT_LANG
 
-# Tema / Theme
+# ============================================================================
+# TEMA / THEME
+# ============================================================================
 SAVED_THEME=$CURRENT_THEME
 
-# Pasos / Steps
+# ============================================================================
+# CONFIGURACION DE PASOS / STEPS CONFIGURATION
+# ============================================================================
+# (Solo aplica cuando SAVED_PROFILE=custom)
 STEP_CHECK_CONNECTIVITY=$STEP_CHECK_CONNECTIVITY
 STEP_CHECK_DEPENDENCIES=$STEP_CHECK_DEPENDENCIES
 STEP_BACKUP_TAR=$STEP_BACKUP_TAR
@@ -388,6 +400,69 @@ config_exists() {
 
 delete_config() {
     rm -f "$CONFIG_FILE" 2>/dev/null
+}
+
+generate_default_config() {
+    # Genera autoclean.conf con valores predeterminados del script
+    # Esta funcion se llama automaticamente si el archivo no existe
+    log "INFO" "${MSG_CONFIG_GENERATING:-Generating default configuration file...}"
+
+    cat > "$CONFIG_FILE" << EOF
+# Configuracion de autoclean - Generado automaticamente
+# Fecha: $(date '+%Y-%m-%d %H:%M:%S')
+
+# ============================================================================
+# PERFIL / PROFILE
+# ============================================================================
+# Valores: server, desktop, developer, minimal, custom
+# custom = usa los valores STEP_* definidos abajo
+SAVED_PROFILE=custom
+
+# ============================================================================
+# IDIOMA / LANGUAGE
+# ============================================================================
+SAVED_LANG=$DEFAULT_LANG
+
+# ============================================================================
+# TEMA / THEME
+# ============================================================================
+SAVED_THEME=$DEFAULT_THEME
+
+# ============================================================================
+# CONFIGURACION DE PASOS / STEPS CONFIGURATION
+# ============================================================================
+# (Solo aplica cuando SAVED_PROFILE=custom)
+# Cambia a 0 para desactivar un paso, 1 para activarlo
+
+STEP_CHECK_CONNECTIVITY=1
+STEP_CHECK_DEPENDENCIES=1
+STEP_BACKUP_TAR=1
+STEP_SNAPSHOT_TIMESHIFT=1
+STEP_UPDATE_REPOS=1
+STEP_UPGRADE_SYSTEM=1
+STEP_UPDATE_FLATPAK=1
+STEP_UPDATE_SNAP=0
+STEP_CHECK_FIRMWARE=1
+STEP_CLEANUP_APT=1
+STEP_CLEANUP_KERNELS=1
+STEP_CLEANUP_DISK=1
+STEP_CLEANUP_DOCKER=0
+STEP_CHECK_SMART=1
+STEP_CHECK_REBOOT=1
+EOF
+
+    local result=$?
+
+    # Cambiar ownership al usuario que ejecuto sudo (no root)
+    if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+        chown "$SUDO_USER:$SUDO_USER" "$CONFIG_FILE" 2>/dev/null
+    fi
+
+    if [ $result -eq 0 ]; then
+        log "INFO" "${MSG_CONFIG_GENERATED:-Default configuration file generated}: $CONFIG_FILE"
+    fi
+
+    return $result
 }
 
 # ============================================================================
@@ -474,9 +549,21 @@ apply_profile() {
             NO_MENU=true                 # Sin UI interactiva
             UNATTENDED=true              # Modo desatendido (acepta todo)
             ;;
+        custom)
+            # Custom: Lee configuracion desde autoclean.conf, sin UI
+            # NO modifica las variables STEP_* - usa exactamente lo que esta en el archivo
+            if config_exists; then
+                load_config
+                log "INFO" "${MSG_PROFILE_CUSTOM_LOADED:-Custom profile loaded from configuration file}"
+            else
+                log "WARN" "${MSG_CONFIG_NOT_FOUND:-Configuration file not found, using defaults}"
+            fi
+            NO_MENU=true                 # Sin UI interactiva
+            UNATTENDED=true              # Modo desatendido (acepta todo)
+            ;;
         *)
             echo "Error: ${MSG_PROFILE_UNKNOWN:-Unknown profile}: $profile"
-            echo "${MSG_PROFILE_AVAILABLE:-Available profiles}: server, desktop, developer, minimal"
+            echo "${MSG_PROFILE_AVAILABLE:-Available profiles}: server, desktop, developer, minimal, custom"
             exit 1
             ;;
     esac
@@ -2634,11 +2721,11 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         --profile)
-            if [ -n "$2" ] && [[ "$2" =~ ^(server|desktop|developer|minimal)$ ]]; then
+            if [ -n "$2" ] && [[ "$2" =~ ^(server|desktop|developer|minimal|custom)$ ]]; then
                 PROFILE="$2"
                 shift 2
             else
-                echo "Error: --profile requires: server, desktop, developer, or minimal"
+                echo "Error: --profile requires: server, desktop, developer, minimal, or custom"
                 exit 1
             fi
             ;;
@@ -2673,18 +2760,21 @@ Perfiles predefinidos (--profile):
   desktop     Interactivo, Docker OFF, SMART ON, Flatpak ON, Timeshift ON
   developer   Interactivo, Docker ON, Snap ON, sin SMART/Firmware
   minimal     Desatendido, solo apt update/upgrade y limpieza APT
+  custom      Desatendido, lee toda la configuracion desde autoclean.conf
 
 Ejemplos:
   sudo ./autoclean.sh                    # Ejecución normal (interactivo)
   sudo ./autoclean.sh --profile server   # Perfil servidor
   sudo ./autoclean.sh --profile desktop  # Perfil escritorio
+  sudo ./autoclean.sh --profile custom   # Perfil custom (lee autoclean.conf)
   sudo ./autoclean.sh --dry-run          # Simular cambios
   sudo ./autoclean.sh -y                 # Modo desatendido
   sudo ./autoclean.sh --schedule weekly  # Programar semanal
 
 Configuración:
-  Edita las variables STEP_* al inicio del script para
-  activar/desactivar pasos individuales, o usa --profile.
+  - Edita autoclean.conf para configurar idioma, tema y pasos
+  - Si el archivo no existe, se genera automaticamente con valores por defecto
+  - Usa --profile custom para ejecutar con la configuracion guardada
 
 Más información en los comentarios del script.
 EOF
@@ -2703,7 +2793,11 @@ done
 # ============================================================================
 
 # Cargar configuración guardada si existe (para obtener SAVED_LANG antes de cargar idioma)
+# Si no existe, generar archivo con valores predeterminados
 if config_exists; then
+    load_config
+else
+    generate_default_config
     load_config
 fi
 
