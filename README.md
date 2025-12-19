@@ -60,7 +60,7 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 ### Interfaz de Usuario
 
 - **Interfaz Enterprise 100% ASCII**: UI sin emojis para compatibilidad total con cualquier terminal
-- **Menu interactivo en 3 columnas**: Grid 5x3 con los 15 pasos, navegacion con flechas ←/→/↑/↓
+- **Menu interactivo en 4 columnas**: Grid 4x6 con los 23 pasos, navegacion con flechas ←/→/↑/↓
 - **Resumen de ejecucion en 3 columnas**: Reporte final compacto con estado de cada paso
 - **Alineacion robusta con cursor absoluto**: Usa secuencias ANSI `\033[78G` para bordes perfectos
 - **Iconos ASCII puros**: `[OK]`, `[XX]`, `[--]`, `[!!]`, `[..]` para alineacion perfecta
@@ -137,7 +137,7 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 
 ### Control y Modularidad
 
-- **15 pasos independientes**: Cada uno puede activarse/desactivarse individualmente
+- **23 pasos independientes**: Cada uno puede activarse/desactivarse individualmente
 - **Rotacion automatica de logs**: Mantiene solo las ultimas 5 ejecuciones
 - **Rotacion automatica de backups**: Mantiene solo los ultimos 5 backups
 - **Modo Dry-Run**: Simula cambios sin ejecutarlos realmente
@@ -225,6 +225,14 @@ El script incluye 15 pasos modulares que puedes activar/desactivar editando las 
 | `STEP_CLEANUP_DOCKER` | Limpiar Docker/Podman (images, containers, volumes) | OFF |
 | `STEP_CHECK_SMART` | Verificar salud de discos (SMART) | ON |
 | `STEP_CHECK_REBOOT` | Verificar necesidad de reinicio | ON |
+| `STEP_CHECK_REPOS` | Verificar repositorios APT (sources.list) | ON |
+| `STEP_CHECK_DEBSUMS` | Verificar integridad de paquetes (debsums) | ON |
+| `STEP_CHECK_SECURITY` | Auditoria de seguridad del sistema | ON |
+| `STEP_CHECK_PERMISSIONS` | Auditar permisos de archivos criticos | ON |
+| `STEP_AUDIT_SERVICES` | Auditar servicios activos del sistema | ON |
+| `STEP_CLEANUP_SESSIONS` | Limpiar sesiones y archivos temporales | ON |
+| `STEP_CHECK_LOGROTATE` | Verificar configuracion de logrotate | ON |
+| `STEP_CHECK_INODES` | Verificar uso de inodos del sistema | ON |
 
 **Ejemplo de configuracion personalizada:**
 
@@ -343,7 +351,7 @@ El script muestra un resumen detallado al finalizar con el estado de cada paso:
 
 ## Menu Interactivo
 
-Al ejecutar el script sin argumentos, se muestra un menu interactivo en formato grid 5x3 que permite seleccionar que pasos ejecutar:
+Al ejecutar el script sin argumentos, se muestra un menu interactivo en formato grid 4x6 que permite seleccionar que pasos ejecutar:
 
 ```
 ╔════════════════════════════════════════════════════════════════════════════╗
@@ -352,15 +360,16 @@ Al ejecutar el script sin argumentos, se muestra un menu interactivo en formato 
 ║                   Debian GNU/Linux | debian (forky)                        ║
 ╠════════════════════════════════════════════════════════════════════════════╣
 ║ PASOS (←/→ columnas, ↑/↓ filas, ESPACIO toggle, ENTER ejecutar)            ║
-║  [x]Conectivida  [x]Dependencia  [x]Backup                                 ║
-║  [x]Snapshot     [x]Repos       >[x]Upgrade                                ║
-║  [x]Flatpak      [ ]Snap         [x]Firmware                               ║
-║  [x]APT Clean    [x]Kernels      [x]Disco                                  ║
-║  [ ]Docker       [x]SMART        [x]Reinicio                               ║
+║  [x]Conectivida  [x]Dependencia  [x]Backup       [x]Snapshot               ║
+║  [x]Repos       >[x]Upgrade      [x]Flatpak      [ ]Snap                   ║
+║  [x]Firmware     [x]APT Clean    [x]Kernels      [x]Disco                  ║
+║  [ ]Docker       [x]SMART        [x]Reinicio     [x]Check Repos            ║
+║  [x]Debsums      [x]Security     [x]Permisos     [x]Servicios              ║
+║  [x]Sesiones     [x]Logrotate    [x]Inodes                                 ║
 ╠════════════════════════════════════════════════════════════════════════════╣
 ║ > Ejecuta apt full-upgrade para actualizar paquetes                        ║
 ╠════════════════════════════════════════════════════════════════════════════╣
-║ Seleccionados: 13/15    Perfil: Guardado                                   ║
+║ Seleccionados: 21/23    Perfil: Guardado                                   ║
 ╠════════════════════════════════════════════════════════════════════════════╣
 ║          [ENTER] Ejecutar [G] Guardar [L] Idioma [T] Tema [O] Notif [Q] Salir      ║
 ╚════════════════════════════════════════════════════════════════════════════╝
@@ -410,7 +419,7 @@ SAVED_THEME=default
 STEP_CHECK_CONNECTIVITY=1
 STEP_CHECK_DEPENDENCIES=1
 STEP_BACKUP_TAR=1
-# ... (15 pasos configurables)
+# ... (23 pasos configurables)
 ```
 
 Para ejecutar el script usando esta configuracion personalizada:
@@ -707,20 +716,32 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 - **Scripts totales:** 1
 - **Script principal:** autoclean.sh
 - **Version actual:** 2025.12
-- **Lineas de codigo:** ~3500+
-- **Pasos modulares:** 15
+- **Lineas de codigo:** ~4600+
+- **Pasos modulares:** 23
 - **Idiomas soportados:** 6 (en, es, pt, fr, de, it) - deteccion dinamica
 - **Temas de colores:** 9 (Default, Norton, Turbo, Green, Amber, Dracula, Matrix, Synthwave, Monokai) - deteccion dinamica
 - **Notificadores:** 5 (Desktop, Telegram, ntfy.sh, Webhook, Email) - arquitectura de plugins extensible
 - **Distribuciones soportadas:** 7+ (auto-deteccion)
 - **Compatible con:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
-- **Interfaz:** Enterprise UI con grid 5x3, navegacion bidimensional, selector de idioma, temas y notificaciones
+- **Interfaz:** Enterprise UI con grid 4x6, navegacion bidimensional, selector de idioma, temas y notificaciones
 
 ---
 
 ## Changelog v2025.12
 
-### Nuevas Funcionalidades
+### Nuevas Funcionalidades (Diciembre 2025 - Update)
+- **8 nuevos pasos de seguridad y mantenimiento** - Expansion de 15 a 23 pasos modulares
+- **Verificacion de repositorios APT** (`STEP_CHECK_REPOS`) - Analiza sources.list para detectar repos problematicos
+- **Verificacion de integridad debsums** (`STEP_CHECK_DEBSUMS`) - Verifica integridad de paquetes instalados
+- **Auditoria de seguridad** (`STEP_CHECK_SECURITY`) - Verifica UFW, SSH, unattended-upgrades, fail2ban
+- **Auditoria de permisos** (`STEP_CHECK_PERMISSIONS`) - Verifica permisos de archivos criticos y SUID/SGID
+- **Auditoria de servicios** (`STEP_AUDIT_SERVICES`) - Analiza servicios activos y detecta failed units
+- **Limpieza de sesiones** (`STEP_CLEANUP_SESSIONS`) - Limpia sesiones expiradas y archivos temporales
+- **Verificacion logrotate** (`STEP_CHECK_LOGROTATE`) - Valida configuracion de rotacion de logs
+- **Verificacion de inodos** (`STEP_CHECK_INODES`) - Monitorea uso de inodos para prevenir agotamiento
+- **Menu expandido a grid 4x6** - Interfaz actualizada para mostrar los 23 pasos
+
+### Nuevas Funcionalidades (Anteriores)
 - **Sistema de Notificaciones Multi-canal** - Arquitectura de plugins para notificaciones con menu dedicado `[O]`
 - **Notificador Desktop** - Notificaciones de escritorio via notify-send (funciona con sudo)
 - **Notificador Telegram** - Notificaciones via Telegram Bot API con configuracion guiada

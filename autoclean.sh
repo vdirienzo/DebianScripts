@@ -196,6 +196,18 @@ STEP_CLEANUP_DOCKER=0        # Limpiar Docker/Podman (deshabilitado por defecto)
 STEP_CHECK_SMART=1           # Verificar salud de discos (SMART)
 STEP_CHECK_REBOOT=1          # Verificar necesidad de reinicio
 
+# ============================================================================
+# NUEVOS PASOS DE SEGURIDAD Y MANTENIMIENTO (v2025.12)
+# ============================================================================
+STEP_CHECK_REPOS=1           # Verificar integridad de repositorios APT
+STEP_CHECK_DEBSUMS=0         # Verificar integridad de paquetes (debsums)
+STEP_CHECK_SECURITY=1        # Verificar actualizaciones de seguridad pendientes
+STEP_CHECK_PERMISSIONS=0     # Verificar permisos de archivos críticos
+STEP_AUDIT_SERVICES=0        # Auditar servicios innecesarios
+STEP_CLEANUP_SESSIONS=0      # Limpiar sesiones abandonadas
+STEP_CHECK_LOGROTATE=0       # Verificar/configurar logrotate
+STEP_CHECK_INODES=0          # Verificar espacio en inodes
+
 # Variables para programación Systemd Timer
 SCHEDULE_MODE=""             # Modo: daily, weekly, monthly
 UNSCHEDULE=false             # Flag para eliminar timer
@@ -240,6 +252,16 @@ STAT_DOCKER="[..]"
 STAT_SMART="[..]"
 STAT_REBOOT="[..]"
 
+# Nuevos estados (v2025.12)
+STAT_CHECK_REPOS="[..]"
+STAT_DEBSUMS="[..]"
+STAT_SECURITY="[..]"
+STAT_PERMISSIONS="[..]"
+STAT_AUDIT_SERVICES="[..]"
+STAT_SESSIONS="[..]"
+STAT_LOGROTATE="[..]"
+STAT_INODES="[..]"
+
 # Contadores y tiempo
 SPACE_BEFORE_ROOT=0
 SPACE_BEFORE_BOOT=0
@@ -266,41 +288,68 @@ declare -a MENU_STEP_DESCRIPTIONS
 declare -a STEP_SHORT_NAMES
 
 MENU_STEP_VARS=(
-    "STEP_CHECK_CONNECTIVITY"    # 1 - Verificar conectividad
-    "STEP_CHECK_DEPENDENCIES"    # 2 - Verificar dependencias
-    "STEP_CHECK_SMART"           # 3 - SMART (verificar disco antes de cambios)
-    "STEP_BACKUP_TAR"            # 4 - Backup TAR
-    "STEP_SNAPSHOT_TIMESHIFT"    # 5 - Snapshot Timeshift
-    "STEP_UPDATE_REPOS"          # 6 - Actualizar repos
-    "STEP_UPGRADE_SYSTEM"        # 7 - Actualizar sistema
-    "STEP_UPDATE_FLATPAK"        # 8 - Flatpak
-    "STEP_UPDATE_SNAP"           # 9 - Snap
-    "STEP_CHECK_FIRMWARE"        # 10 - Firmware
-    "STEP_CLEANUP_APT"           # 11 - Limpieza APT
-    "STEP_CLEANUP_KERNELS"       # 12 - Limpieza Kernels
-    "STEP_CLEANUP_DISK"          # 13 - Limpieza Disco
-    "STEP_CLEANUP_DOCKER"        # 14 - Limpieza Docker
-    "STEP_CHECK_REBOOT"          # 15 - Verificar reinicio
+    # FASE 1: Verificaciones previas (4 pasos)
+    "STEP_CHECK_CONNECTIVITY"    # 1  - Verificar conectividad
+    "STEP_CHECK_DEPENDENCIES"    # 2  - Verificar dependencias
+    "STEP_CHECK_REPOS"           # 3  - Verificar repos APT/GPG (NUEVO)
+    "STEP_CHECK_SMART"           # 4  - SMART (salud de discos)
+
+    # FASE 2: Auditoría de seguridad (4 pasos - NUEVOS)
+    "STEP_CHECK_DEBSUMS"         # 5  - Integridad paquetes (NUEVO)
+    "STEP_CHECK_SECURITY"        # 6  - Updates seguridad (NUEVO)
+    "STEP_CHECK_PERMISSIONS"     # 7  - Permisos críticos (NUEVO)
+    "STEP_AUDIT_SERVICES"        # 8  - Auditar servicios (NUEVO)
+
+    # FASE 3: Backups (2 pasos)
+    "STEP_BACKUP_TAR"            # 9  - Backup TAR
+    "STEP_SNAPSHOT_TIMESHIFT"    # 10 - Snapshot Timeshift
+
+    # FASE 4: Actualizaciones (5 pasos)
+    "STEP_UPDATE_REPOS"          # 11 - Actualizar repos
+    "STEP_UPGRADE_SYSTEM"        # 12 - Actualizar sistema
+    "STEP_UPDATE_FLATPAK"        # 13 - Flatpak
+    "STEP_UPDATE_SNAP"           # 14 - Snap
+    "STEP_CHECK_FIRMWARE"        # 15 - Firmware
+
+    # FASE 5: Limpieza (7 pasos)
+    "STEP_CLEANUP_APT"           # 16 - Limpieza APT
+    "STEP_CLEANUP_KERNELS"       # 17 - Limpieza Kernels
+    "STEP_CLEANUP_DISK"          # 18 - Limpieza Disco
+    "STEP_CLEANUP_DOCKER"        # 19 - Limpieza Docker
+    "STEP_CLEANUP_SESSIONS"      # 20 - Limpiar sesiones (NUEVO)
+    "STEP_CHECK_LOGROTATE"       # 21 - Logrotate (NUEVO)
+    "STEP_CHECK_INODES"          # 22 - Inodes (NUEVO)
+
+    # FASE 6: Verificación final (1 paso)
+    "STEP_CHECK_REBOOT"          # 23 - Verificar reinicio
 )
 
 # Función para actualizar arrays desde variables de idioma
 update_language_arrays() {
     MENU_STEP_NAMES=(
-        "$STEP_NAME_1"
-        "$STEP_NAME_2"
-        "$STEP_NAME_3"
-        "$STEP_NAME_4"
-        "$STEP_NAME_5"
-        "$STEP_NAME_6"
-        "$STEP_NAME_7"
-        "$STEP_NAME_8"
-        "$STEP_NAME_9"
-        "$STEP_NAME_10"
-        "$STEP_NAME_11"
-        "$STEP_NAME_12"
-        "$STEP_NAME_13"
-        "$STEP_NAME_14"
-        "$STEP_NAME_15"
+        "$STEP_NAME_1"   # Conectividad
+        "$STEP_NAME_2"   # Dependencias
+        "$STEP_NAME_3"   # Repos APT (NUEVO)
+        "$STEP_NAME_4"   # SMART
+        "$STEP_NAME_5"   # Debsums (NUEVO)
+        "$STEP_NAME_6"   # Seguridad (NUEVO)
+        "$STEP_NAME_7"   # Permisos (NUEVO)
+        "$STEP_NAME_8"   # Servicios (NUEVO)
+        "$STEP_NAME_9"   # Backup TAR
+        "$STEP_NAME_10"  # Timeshift
+        "$STEP_NAME_11"  # Update Repos
+        "$STEP_NAME_12"  # Upgrade
+        "$STEP_NAME_13"  # Flatpak
+        "$STEP_NAME_14"  # Snap
+        "$STEP_NAME_15"  # Firmware
+        "$STEP_NAME_16"  # Cleanup APT
+        "$STEP_NAME_17"  # Cleanup Kernels
+        "$STEP_NAME_18"  # Cleanup Disk
+        "$STEP_NAME_19"  # Docker
+        "$STEP_NAME_20"  # Sesiones (NUEVO)
+        "$STEP_NAME_21"  # Logrotate (NUEVO)
+        "$STEP_NAME_22"  # Inodes (NUEVO)
+        "$STEP_NAME_23"  # Reboot
     )
 
     MENU_STEP_DESCRIPTIONS=(
@@ -319,24 +368,40 @@ update_language_arrays() {
         "$STEP_DESC_13"
         "$STEP_DESC_14"
         "$STEP_DESC_15"
+        "$STEP_DESC_16"
+        "$STEP_DESC_17"
+        "$STEP_DESC_18"
+        "$STEP_DESC_19"
+        "$STEP_DESC_20"
+        "$STEP_DESC_21"
+        "$STEP_DESC_22"
+        "$STEP_DESC_23"
     )
 
     STEP_SHORT_NAMES=(
-        "$STEP_SHORT_1"
-        "$STEP_SHORT_2"
-        "$STEP_SHORT_3"
-        "$STEP_SHORT_4"
-        "$STEP_SHORT_5"
-        "$STEP_SHORT_6"
-        "$STEP_SHORT_7"
-        "$STEP_SHORT_8"
-        "$STEP_SHORT_9"
-        "$STEP_SHORT_10"
-        "$STEP_SHORT_11"
-        "$STEP_SHORT_12"
-        "$STEP_SHORT_13"
-        "$STEP_SHORT_14"
-        "$STEP_SHORT_15"
+        "$STEP_SHORT_1"   # Connect
+        "$STEP_SHORT_2"   # Deps
+        "$STEP_SHORT_3"   # APT Repos
+        "$STEP_SHORT_4"   # SMART
+        "$STEP_SHORT_5"   # Debsums
+        "$STEP_SHORT_6"   # Security
+        "$STEP_SHORT_7"   # Perms
+        "$STEP_SHORT_8"   # Services
+        "$STEP_SHORT_9"   # Backup
+        "$STEP_SHORT_10"  # Snapshot
+        "$STEP_SHORT_11"  # Repos
+        "$STEP_SHORT_12"  # Upgrade
+        "$STEP_SHORT_13"  # Flatpak
+        "$STEP_SHORT_14"  # Snap
+        "$STEP_SHORT_15"  # Firmware
+        "$STEP_SHORT_16"  # APT Clean
+        "$STEP_SHORT_17"  # Kernels
+        "$STEP_SHORT_18"  # Disk
+        "$STEP_SHORT_19"  # Docker
+        "$STEP_SHORT_20"  # Sessions
+        "$STEP_SHORT_21"  # Logrotate
+        "$STEP_SHORT_22"  # Inodes
+        "$STEP_SHORT_23"  # Reboot
     )
 }
 
@@ -609,20 +674,37 @@ SAVED_THEME=$DEFAULT_THEME
 # (Only applies when SAVED_PROFILE=custom)
 # Set to 0 to disable a step, 1 to enable it
 
+# Pre-checks and diagnostics
 STEP_CHECK_CONNECTIVITY=1
 STEP_CHECK_DEPENDENCIES=1
+STEP_CHECK_REPOS=1
+STEP_CHECK_SMART=1
+STEP_CHECK_DEBSUMS=0
+STEP_CHECK_SECURITY=1
+STEP_CHECK_PERMISSIONS=0
+STEP_AUDIT_SERVICES=0
+
+# Backup
 STEP_BACKUP_TAR=1
 STEP_SNAPSHOT_TIMESHIFT=1
+
+# System updates
 STEP_UPDATE_REPOS=1
 STEP_UPGRADE_SYSTEM=1
 STEP_UPDATE_FLATPAK=1
 STEP_UPDATE_SNAP=0
 STEP_CHECK_FIRMWARE=1
+
+# Cleanup
 STEP_CLEANUP_APT=1
 STEP_CLEANUP_KERNELS=1
 STEP_CLEANUP_DISK=1
 STEP_CLEANUP_DOCKER=0
-STEP_CHECK_SMART=1
+STEP_CLEANUP_SESSIONS=0
+STEP_CHECK_LOGROTATE=0
+STEP_CHECK_INODES=0
+
+# Final
 STEP_CHECK_REBOOT=1
 EOF
 
@@ -653,9 +735,15 @@ apply_profile() {
     case "$profile" in
         server)
             # Servidor: Sin UI, Docker habilitado, SMART activo, sin Flatpak/Snap
+            # Seguridad y auditoría maximizadas
             STEP_CHECK_CONNECTIVITY=1
             STEP_CHECK_DEPENDENCIES=1
+            STEP_CHECK_REPOS=1           # Verificar integridad de repos
             STEP_CHECK_SMART=1
+            STEP_CHECK_DEBSUMS=1         # Verificar integridad de paquetes
+            STEP_CHECK_SECURITY=1        # Actualizaciones de seguridad críticas
+            STEP_CHECK_PERMISSIONS=1     # Auditar permisos críticos
+            STEP_AUDIT_SERVICES=1        # Auditar servicios innecesarios
             STEP_BACKUP_TAR=1
             STEP_SNAPSHOT_TIMESHIFT=0    # Servidores no usan Timeshift
             STEP_UPDATE_REPOS=1
@@ -667,15 +755,24 @@ apply_profile() {
             STEP_CLEANUP_KERNELS=1
             STEP_CLEANUP_DISK=1
             STEP_CLEANUP_DOCKER=1        # Docker habilitado
+            STEP_CLEANUP_SESSIONS=1      # Limpiar sesiones SSH/tmux abandonadas
+            STEP_CHECK_LOGROTATE=1       # Logs crecen mucho en servidores
+            STEP_CHECK_INODES=1          # Crítico para servidores con muchos archivos
             STEP_CHECK_REBOOT=1
             NO_MENU=true                 # Sin UI interactiva
             UNATTENDED=true              # Modo desatendido (acepta todo)
             ;;
         desktop)
             # Desktop: UI activa, sin Docker, SMART activo, Flatpak habilitado
+            # Configuración balanceada para uso diario
             STEP_CHECK_CONNECTIVITY=1
             STEP_CHECK_DEPENDENCIES=1
+            STEP_CHECK_REPOS=1           # Verificar repos
             STEP_CHECK_SMART=1
+            STEP_CHECK_DEBSUMS=0         # Menos crítico para desktop
+            STEP_CHECK_SECURITY=1        # Actualizaciones de seguridad
+            STEP_CHECK_PERMISSIONS=0     # Menos crítico para desktop
+            STEP_AUDIT_SERVICES=0        # Desktop tiene más servicios legítimos
             STEP_BACKUP_TAR=1
             STEP_SNAPSHOT_TIMESHIFT=1    # Timeshift recomendado
             STEP_UPDATE_REPOS=1
@@ -687,13 +784,22 @@ apply_profile() {
             STEP_CLEANUP_KERNELS=1
             STEP_CLEANUP_DISK=1
             STEP_CLEANUP_DOCKER=0        # Sin Docker
+            STEP_CLEANUP_SESSIONS=0      # Menos relevante para desktop
+            STEP_CHECK_LOGROTATE=0       # Menos crítico
+            STEP_CHECK_INODES=0          # Raro problema en desktop
             STEP_CHECK_REBOOT=1
             ;;
         developer)
             # Desarrollador: UI activa, Docker habilitado, sin SMART, todo activo
+            # Optimizado para rapidez y entornos de desarrollo
             STEP_CHECK_CONNECTIVITY=1
             STEP_CHECK_DEPENDENCIES=1
+            STEP_CHECK_REPOS=1           # Evitar problemas de repos
             STEP_CHECK_SMART=0           # Sin SMART (puede ser lento)
+            STEP_CHECK_DEBSUMS=0         # Lento, desarrolladores prefieren rapidez
+            STEP_CHECK_SECURITY=1        # Actualizaciones de seguridad
+            STEP_CHECK_PERMISSIONS=0     # Menos crítico en desarrollo
+            STEP_AUDIT_SERVICES=0        # Desarrolladores tienen muchos servicios
             STEP_BACKUP_TAR=1
             STEP_SNAPSHOT_TIMESHIFT=1
             STEP_UPDATE_REPOS=1
@@ -705,13 +811,22 @@ apply_profile() {
             STEP_CLEANUP_KERNELS=1
             STEP_CLEANUP_DISK=1
             STEP_CLEANUP_DOCKER=1        # Docker habilitado
+            STEP_CLEANUP_SESSIONS=1      # Limpiar sesiones de desarrollo abandonadas
+            STEP_CHECK_LOGROTATE=0       # Menos crítico
+            STEP_CHECK_INODES=0          # Menos crítico
             STEP_CHECK_REBOOT=1
             ;;
         minimal)
             # Minimo: Solo actualizaciones esenciales, sin limpieza agresiva
+            # Todo deshabilitado excepto lo absolutamente necesario
             STEP_CHECK_CONNECTIVITY=1
             STEP_CHECK_DEPENDENCIES=0
+            STEP_CHECK_REPOS=0           # Mínimo
             STEP_CHECK_SMART=0
+            STEP_CHECK_DEBSUMS=0         # Mínimo
+            STEP_CHECK_SECURITY=0        # Mínimo
+            STEP_CHECK_PERMISSIONS=0     # Mínimo
+            STEP_AUDIT_SERVICES=0        # Mínimo
             STEP_BACKUP_TAR=0
             STEP_SNAPSHOT_TIMESHIFT=0
             STEP_UPDATE_REPOS=1
@@ -723,6 +838,9 @@ apply_profile() {
             STEP_CLEANUP_KERNELS=0
             STEP_CLEANUP_DISK=0
             STEP_CLEANUP_DOCKER=0
+            STEP_CLEANUP_SESSIONS=0      # Mínimo
+            STEP_CHECK_LOGROTATE=0       # Mínimo
+            STEP_CHECK_INODES=0          # Mínimo
             STEP_CHECK_REBOOT=1
             NO_MENU=true                 # Sin UI interactiva
             UNATTENDED=true              # Modo desatendido (acepta todo)
@@ -2005,6 +2123,7 @@ stop_spinner() {
 
 init_log() {
     mkdir -p "$LOG_DIR"
+    chmod 700 "$LOG_DIR"  # SECURITY: Restrict log directory access to root only
     LOG_FILE="$LOG_DIR/sys-update-$(date +%Y%m%d_%H%M%S).log"
     touch "$LOG_FILE"
     chmod 600 "$LOG_FILE"
@@ -2261,10 +2380,8 @@ validate_step_dependencies() {
 show_step_summary() {
     [ "$QUIET" = true ] && return
 
-    local step_vars=("STEP_CHECK_CONNECTIVITY" "STEP_CHECK_DEPENDENCIES" "STEP_BACKUP_TAR"
-                     "STEP_SNAPSHOT_TIMESHIFT" "STEP_UPDATE_REPOS" "STEP_UPGRADE_SYSTEM"
-                     "STEP_UPDATE_FLATPAK" "STEP_UPDATE_SNAP" "STEP_CHECK_FIRMWARE"
-                     "STEP_CLEANUP_APT" "STEP_CLEANUP_KERNELS" "STEP_CLEANUP_DISK" "STEP_CHECK_REBOOT")
+    local total_items=${#MENU_STEP_VARS[@]}
+    local cols=4
 
     print_box_top
     print_box_center "${BOLD}CONFIGURACIÓN DE PASOS - RESUMEN${NC}"
@@ -2273,17 +2390,17 @@ show_step_summary() {
     print_box_sep
     print_box_line "${BOLD}PASOS A EJECUTAR${NC}"
 
-    # Mostrar en 3 columnas (5 filas) - formato fijo 15 chars por celda
-    for row in {0..4}; do
+    # Mostrar en 4 columnas (6 filas) - formato fijo 18 chars por celda
+    for row in {0..5}; do
         local line=""
-        for col in {0..2}; do
-            local idx=$((row * 3 + col))
-            if [ $idx -lt 13 ]; then
-                local var_name="${step_vars[$idx]}"
+        for col in {0..3}; do
+            local idx=$((row * cols + col))
+            if [ $idx -lt $total_items ]; then
+                local var_name="${MENU_STEP_VARS[$idx]}"
                 local var_value="${!var_name}"
-                # Nombre con ancho fijo de 10 chars
+                # Nombre con ancho fijo de 13 chars
                 local name
-                name=$(printf "%-10.10s" "${STEP_SHORT_NAMES[$idx]}")
+                name=$(printf "%-13.13s" "${STEP_SHORT_NAMES[$idx]}")
 
                 if [ "$var_value" = "1" ]; then
                     line+=" ${GREEN}[x]${NC} ${name}"
@@ -2291,15 +2408,15 @@ show_step_summary() {
                     line+=" ${DIM}[--]${NC}${name}"
                 fi
             else
-                # Celda vacía: 15 espacios
-                line+="               "
+                # Celda vacía: 18 espacios
+                line+="                  "
             fi
         done
         print_box_line "$line"
     done
 
     print_box_sep
-    print_box_line "${MENU_TOTAL}: ${GREEN}${TOTAL_STEPS}${NC}/15 ${MENU_STEPS}    ${MENU_EST_TIME}: ${CYAN}~$((TOTAL_STEPS / 2 + 1)) ${MENU_MIN}${NC}"
+    print_box_line "${MENU_TOTAL}: ${GREEN}${TOTAL_STEPS}${NC}/${total_items} ${MENU_STEPS}    ${MENU_EST_TIME}: ${CYAN}~$((TOTAL_STEPS / 2 + 1)) ${MENU_MIN}${NC}"
     print_box_bottom
     echo ""
 
@@ -2330,9 +2447,10 @@ show_interactive_menu() {
             [ "${!var_name}" = "1" ] && ((active_count++))
         done
 
-        # Calcular fila y columna actual
-        local cur_row=$((current_index / 3))
-        local cur_col=$((current_index % 3))
+        # Calcular fila y columna actual (4 columnas × 6 filas)
+        local cols=4
+        local cur_row=$((current_index / cols))
+        local cur_col=$((current_index % cols))
 
         # Limpiar pantalla y mostrar interfaz enterprise
         clear
@@ -2343,18 +2461,18 @@ show_interactive_menu() {
         print_box_sep
         print_box_line "${BOLD}${MENU_STEPS_TITLE}${BOX_NC} ${DIM}${MENU_STEPS_HELP}${BOX_NC}"
 
-        # Mostrar pasos en 3 columnas (5 filas)
-        # Cada celda: 15 chars fijos (prefix[1] + bracket[1] + check[1] + bracket[1] + name[11])
-        for row in {0..4}; do
+        # Mostrar pasos en 4 columnas (6 filas) - 23 pasos total
+        # Cada celda: 18 chars fijos (prefix[1] + bracket[1] + check[1] + bracket[1] + space[1] + name[13])
+        for row in {0..5}; do
             local line=""
-            for col in {0..2}; do
-                local idx=$((row * 3 + col))
+            for col in {0..3}; do
+                local idx=$((row * cols + col))
                 if [ $idx -lt $total_items ]; then
                     local var_name="${MENU_STEP_VARS[$idx]}"
                     local var_value="${!var_name}"
-                    # Truncar/pad nombre a exactamente 11 chars
+                    # Truncar/pad nombre a exactamente 13 chars (ajustado para 4 columnas)
                     local name
-                    name=$(printf "%-11.11s" "${STEP_SHORT_NAMES[$idx]}")
+                    name=$(printf "%-13.13s" "${STEP_SHORT_NAMES[$idx]}")
 
                     # Determinar prefijo y estado
                     local prefix=" "
@@ -2362,20 +2480,20 @@ show_interactive_menu() {
                     [ "$var_value" = "1" ] && check="x"
                     [ $idx -eq $current_index ] && prefix=">"
 
-                    # Construir celda con formato CONSISTENTE (15 chars fijos)
+                    # Construir celda con formato CONSISTENTE (18 chars fijos)
                     if [ $idx -eq $current_index ]; then
                         # Seleccionado: todo en cyan brillante
-                        line+="${BRIGHT_CYAN}${prefix}[${check}]${name}${BOX_NC}"
+                        line+="${BRIGHT_CYAN}${prefix}[${check}]${BOX_NC} ${BRIGHT_CYAN}${name}${BOX_NC}"
                     elif [ "$var_value" = "1" ]; then
                         # Activo: [x] en verde
-                        line+=" ${GREEN}[x]${BOX_NC}${name}"
+                        line+=" ${GREEN}[x]${BOX_NC} ${name}"
                     else
                         # Inactivo: [ ] en dim
-                        line+=" ${DIM}[ ]${BOX_NC}${name}"
+                        line+=" ${DIM}[ ]${BOX_NC} ${name}"
                     fi
                 else
-                    # Celda vacía: 15 espacios
-                    line+="               "
+                    # Celda vacía: 18 espacios
+                    line+="                  "
                 fi
             done
             print_box_line "$line"
@@ -2393,23 +2511,23 @@ show_interactive_menu() {
         local key=""
         IFS= read -rsn1 key
 
-        # Detectar secuencias de escape (flechas)
+        # Detectar secuencias de escape (flechas) - navegación 4 columnas × 6 filas
         if [[ "$key" == $'\x1b' ]]; then
             read -rsn2 -t 0.1 key
             case "$key" in
                 '[A') # Arriba: misma columna, fila anterior
                     if [ $cur_row -gt 0 ]; then
-                        ((current_index-=3))
+                        ((current_index-=cols))
                     else
                         # Ir a la última fila de la columna
-                        local last_row=$(( (total_items - 1) / 3 ))
-                        local new_idx=$((last_row * 3 + cur_col))
-                        [ $new_idx -ge $total_items ] && new_idx=$((new_idx - 3))
-                        current_index=$new_idx
+                        local last_row=$(( (total_items - 1) / cols ))
+                        local new_idx=$((last_row * cols + cur_col))
+                        [ $new_idx -ge $total_items ] && new_idx=$((new_idx - cols))
+                        [ $new_idx -ge 0 ] && current_index=$new_idx
                     fi
                     ;;
                 '[B') # Abajo: misma columna, fila siguiente
-                    local new_idx=$((current_index + 3))
+                    local new_idx=$((current_index + cols))
                     if [ $new_idx -lt $total_items ]; then
                         current_index=$new_idx
                     else
@@ -2418,17 +2536,19 @@ show_interactive_menu() {
                     fi
                     ;;
                 '[C') # Derecha: columna siguiente
-                    if [ $cur_col -lt 2 ] && [ $((current_index + 1)) -lt $total_items ]; then
+                    if [ $cur_col -lt $((cols - 1)) ] && [ $((current_index + 1)) -lt $total_items ]; then
                         ((current_index++))
                     else
-                        current_index=$((cur_row * 3))
+                        # Ir al inicio de la fila
+                        current_index=$((cur_row * cols))
                     fi
                     ;;
                 '[D') # Izquierda: columna anterior
                     if [ $cur_col -gt 0 ]; then
                         ((current_index--))
                     else
-                        local new_idx=$((cur_row * 3 + 2))
+                        # Ir al final de la fila
+                        local new_idx=$((cur_row * cols + cols - 1))
                         [ $new_idx -ge $total_items ] && new_idx=$((total_items - 1))
                         current_index=$new_idx
                     fi
@@ -2617,7 +2737,80 @@ step_check_dependencies() {
 }
 
 # ============================================================================
-# PASO 3: BACKUP DE CONFIGURACIONES (TAR)
+# PASO 3: VERIFICAR INTEGRIDAD DE REPOSITORIOS APT
+# ============================================================================
+
+step_check_repos() {
+    [ "$STEP_CHECK_REPOS" = 0 ] && return
+
+    print_step "${MSG_CHECKING_REPOS:-Checking APT repositories integrity...}"
+
+    local has_error=false
+    local has_warning=false
+    local invalid_repos=()
+    local unreachable_repos=()
+
+    echo "→ ${MSG_VERIFYING_SOURCES_LIST:-Verifying sources.list files...}"
+
+    # Verificar sintaxis de archivos sources.list
+    if [ -f /etc/apt/sources.list ]; then
+        if ! apt-cache policy &>/dev/null; then
+            has_error=true
+            invalid_repos+=("/etc/apt/sources.list")
+            log "ERROR" "Invalid syntax in /etc/apt/sources.list"
+        fi
+    fi
+
+    # Verificar archivos en sources.list.d/
+    if [ -d /etc/apt/sources.list.d/ ]; then
+        shopt -s nullglob
+        for repo_file in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            [ -f "$repo_file" ] || continue
+            # Verificar que no tenga errores de sintaxis obvios
+            if grep -qE '^\s*deb\s+[^[:space:]]+\s*$' "$repo_file" 2>/dev/null; then
+                has_warning=true
+                invalid_repos+=("$repo_file (incomplete entry)")
+            fi
+        done
+        shopt -u nullglob
+    fi
+
+    # Verificar GPG keys expiradas o faltantes
+    echo "→ ${MSG_CHECKING_GPG_KEYS:-Checking GPG keys...}"
+    local expired_keys=$(apt-key list 2>/dev/null | grep -B1 "expired" | grep -oP '(?<=/)[\w]+(?=\s)' | head -5)
+    if [ -n "$expired_keys" ]; then
+        has_warning=true
+        log "WARN" "Expired GPG keys found: $expired_keys"
+        echo -e "${YELLOW}→ ${MSG_EXPIRED_KEYS:-Expired GPG keys found}${NC}"
+    fi
+
+    # Verificar conectividad a repositorios principales
+    echo "→ ${MSG_TESTING_REPO_CONNECTIVITY:-Testing repository connectivity...}"
+    if ! apt-get update -qq --print-uris 2>&1 | head -1 &>/dev/null; then
+        has_warning=true
+        log "WARN" "Some repositories may be unreachable"
+    fi
+
+    # Resultado final
+    if $has_error; then
+        STAT_CHECK_REPOS="$ICON_FAIL"
+        log "ERROR" "${MSG_REPOS_ERRORS:-Repository configuration errors found}"
+        if [ ${#invalid_repos[@]} -gt 0 ]; then
+            echo -e "${RED}→ ${MSG_INVALID_REPOS:-Invalid repository files}:${NC}"
+            printf '   • %s\n' "${invalid_repos[@]}"
+        fi
+    elif $has_warning; then
+        STAT_CHECK_REPOS="$ICON_WARN"
+        log "WARN" "${MSG_REPOS_WARNINGS:-Repository warnings found}"
+    else
+        STAT_CHECK_REPOS="$ICON_OK"
+        echo "→ ${MSG_REPOS_OK:-All repositories configured correctly}"
+        log "SUCCESS" "${MSG_REPOS_OK:-All repositories configured correctly}"
+    fi
+}
+
+# ============================================================================
+# PASO 4: BACKUP DE CONFIGURACIONES (TAR)
 # ============================================================================
 
 step_backup_tar() {
@@ -2974,7 +3167,8 @@ step_cleanup_apt() {
     local pkgs_rc=$(dpkg -l 2>/dev/null | grep "^rc" | awk '{print $2}')
     if [ -n "$pkgs_rc" ]; then
         local rc_count=$(echo "$pkgs_rc" | wc -l)
-        if echo "$pkgs_rc" | xargs apt purge -y >/dev/null 2>&1; then
+        # SECURITY: xargs -r prevents running with empty args
+        if echo "$pkgs_rc" | xargs -r apt purge -y >/dev/null 2>&1; then
             printf "→ ${MSG_RESIDUALS_PURGED}\n" "$rc_count"
             log "INFO" "$(printf "$MSG_RESIDUALS_PURGED" "$rc_count")"
         else
@@ -3061,7 +3255,8 @@ step_cleanup_kernels() {
         fi
 
         # Eliminar kernels
-        if echo "$kernels_to_remove" | xargs apt purge -y >> "$LOG_FILE" 2>&1; then
+        # SECURITY: xargs -r prevents running with empty args
+        if echo "$kernels_to_remove" | xargs -r apt purge -y >> "$LOG_FILE" 2>&1; then
             echo "→ ${MSG_KERNELS_REMOVED}"
             STAT_CLEAN_KERNEL="$ICON_OK"
             log "SUCCESS" "${MSG_KERNELS_REMOVED}"
@@ -3274,7 +3469,505 @@ step_check_smart() {
 }
 
 # ============================================================================
-# PASO 15: VERIFICAR NECESIDAD DE REINICIO
+# PASO 5: VERIFICAR INTEGRIDAD DE PAQUETES (DEBSUMS)
+# ============================================================================
+
+step_check_debsums() {
+    [ "$STEP_CHECK_DEBSUMS" = 0 ] && return
+
+    print_step "${MSG_CHECKING_DEBSUMS:-Verifying package integrity with debsums...}"
+
+    # Verificar si debsums está instalado
+    if ! command -v debsums &>/dev/null; then
+        echo -e "${YELLOW}→ ${MSG_DEBSUMS_NOT_INSTALLED:-debsums not installed, skipping integrity check}${NC}"
+        STAT_CHECK_DEBSUMS="$ICON_SKIP"
+        log "INFO" "debsums not installed, skipping"
+        return
+    fi
+
+    local has_error=false
+    local has_warning=false
+    local modified_files=()
+
+    echo "→ ${MSG_VERIFYING_PACKAGES:-Verifying installed packages...}"
+
+    # Ejecutar debsums y capturar archivos modificados
+    # Solo verificar configuración (-c) para ser más rápido
+    local debsums_output
+    debsums_output=$(debsums -s 2>/dev/null | head -50)
+
+    if [ -n "$debsums_output" ]; then
+        has_warning=true
+        while IFS= read -r line; do
+            modified_files+=("$line")
+        done <<< "$debsums_output"
+
+        log "WARN" "Modified packages detected: ${#modified_files[@]} files"
+        echo -e "${YELLOW}→ ${MSG_MODIFIED_PACKAGES:-Modified package files detected}: ${#modified_files[@]}${NC}"
+
+        # Mostrar primeros 5 archivos
+        if [ ${#modified_files[@]} -gt 0 ] && [ "$QUIET" = false ]; then
+            echo "   ${MSG_SAMPLE_FILES:-Sample files}:"
+            printf '   • %s\n' "${modified_files[@]:0:5}"
+            [ ${#modified_files[@]} -gt 5 ] && echo "   ... ${MSG_AND_MORE:-and} $((${#modified_files[@]} - 5)) ${MSG_MORE_FILES:-more files}"
+        fi
+    fi
+
+    # Resultado final
+    if $has_error; then
+        STAT_CHECK_DEBSUMS="$ICON_FAIL"
+        log "ERROR" "${MSG_DEBSUMS_ERRORS:-Package integrity errors found}"
+    elif $has_warning; then
+        STAT_CHECK_DEBSUMS="$ICON_WARN"
+        log "WARN" "${MSG_DEBSUMS_WARNINGS:-Package integrity warnings found}"
+    else
+        STAT_CHECK_DEBSUMS="$ICON_OK"
+        echo "→ ${MSG_DEBSUMS_OK:-All package files verified correctly}"
+        log "SUCCESS" "${MSG_DEBSUMS_OK:-All package files verified correctly}"
+    fi
+}
+
+# ============================================================================
+# PASO 6: VERIFICAR ACTUALIZACIONES DE SEGURIDAD
+# ============================================================================
+
+step_check_security() {
+    [ "$STEP_CHECK_SECURITY" = 0 ] && return
+
+    print_step "${MSG_CHECKING_SECURITY:-Checking for security updates...}"
+
+    local security_updates=0
+    local has_warning=false
+
+    echo "→ ${MSG_SCANNING_SECURITY:-Scanning for security updates...}"
+
+    # Método 1: Usar apt-get con grep para security
+    if command -v apt-get &>/dev/null; then
+        # Contar actualizaciones de seguridad pendientes
+        security_updates=$(apt-get -s upgrade 2>/dev/null | grep -i "^Inst" | grep -ci "security" || echo "0")
+        security_updates=${security_updates:-0}
+    fi
+
+    # Método 2: Si existe unattended-upgrades, verificar su estado
+    if [ -f /var/log/unattended-upgrades/unattended-upgrades.log ]; then
+        local last_update=$(stat -c %Y /var/log/unattended-upgrades/unattended-upgrades.log 2>/dev/null || echo "0")
+        local now=$(date +%s)
+        local days_since=$(( (now - last_update) / 86400 ))
+
+        if [ "$days_since" -gt 7 ]; then
+            has_warning=true
+            log "WARN" "Unattended upgrades have not run in $days_since days"
+            echo -e "${YELLOW}→ ${MSG_UNATTENDED_OLD:-Unattended upgrades have not run in $days_since days}${NC}"
+        fi
+    fi
+
+    # Verificar si hay actualizaciones de seguridad críticas
+    if [ "$security_updates" -gt 0 ]; then
+        has_warning=true
+        echo -e "${YELLOW}→ ${MSG_SECURITY_UPDATES_PENDING:-$security_updates security updates pending}${NC}"
+        log "WARN" "$security_updates security updates pending"
+
+        # Ofrecer instalar actualizaciones de seguridad
+        if [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
+            read -p "${PROMPT_INSTALL_SECURITY:-Install security updates now? [y/N]} " -n 1 -r
+            echo
+            if [[ $REPLY =~ $PROMPT_YES_PATTERN ]]; then
+                echo "→ ${MSG_INSTALLING_SECURITY:-Installing security updates...}"
+                apt-get -y upgrade -o Dir::Etc::SourceList=/etc/apt/sources.list.d/security.list 2>/dev/null || \
+                apt-get -y --only-upgrade install $(apt-get -s upgrade 2>/dev/null | grep -i "security" | grep "^Inst" | cut -d" " -f2) 2>/dev/null
+            fi
+        fi
+    else
+        echo "→ ${MSG_NO_SECURITY_UPDATES:-No pending security updates}"
+    fi
+
+    # Resultado final
+    if $has_warning; then
+        STAT_CHECK_SECURITY="$ICON_WARN"
+    else
+        STAT_CHECK_SECURITY="$ICON_OK"
+        log "SUCCESS" "${MSG_SECURITY_OK:-System security is up to date}"
+    fi
+}
+
+# ============================================================================
+# PASO 7: AUDITAR PERMISOS DE ARCHIVOS CRÍTICOS
+# ============================================================================
+
+step_check_permissions() {
+    [ "$STEP_CHECK_PERMISSIONS" = 0 ] && return
+
+    print_step "${MSG_CHECKING_PERMISSIONS:-Auditing critical file permissions...}"
+
+    local has_error=false
+    local has_warning=false
+    local issues=()
+
+    echo "→ ${MSG_CHECKING_SUID_SGID:-Checking SUID/SGID files...}"
+
+    # Modo informativo: contar archivos SUID/SGID sin juzgar
+    local suid_count
+    suid_count=$(find /usr/bin /usr/sbin /bin /sbin -perm /6000 -type f 2>/dev/null | wc -l)
+    suid_count=${suid_count:-0}
+
+    # Informar cantidad (normal: 15-40 en desktop, 10-25 en servidor)
+    echo "→ ${MSG_SUID_COUNT:-SUID/SGID files found}: $suid_count"
+    log "INFO" "SUID/SGID files count: $suid_count"
+
+    # Solo alertar si hay una cantidad inusualmente alta (posible problema)
+    if [ "$suid_count" -gt 50 ]; then
+        has_warning=true
+        echo -e "${YELLOW}→ ${MSG_SUID_HIGH_COUNT:-High number of SUID/SGID files, consider reviewing}${NC}"
+        echo "   → Run: find /usr -perm /6000 -type f"
+    fi
+
+    # Verificar permisos de archivos críticos
+    echo "→ ${MSG_CHECKING_CRITICAL_FILES:-Checking critical file permissions...}"
+
+    local critical_files=(
+        "/etc/passwd:644"
+        "/etc/shadow:640"
+        "/etc/group:644"
+        "/etc/gshadow:640"
+        "/etc/sudoers:440"
+    )
+
+    for entry in "${critical_files[@]}"; do
+        local file="${entry%%:*}"
+        local expected_perm="${entry##*:}"
+
+        if [ -f "$file" ]; then
+            local actual_perm=$(stat -c "%a" "$file" 2>/dev/null)
+            if [ "$actual_perm" != "$expected_perm" ]; then
+                has_warning=true
+                issues+=("$file: expected $expected_perm, got $actual_perm")
+                log "WARN" "$file has incorrect permissions: $actual_perm (expected $expected_perm)"
+            fi
+        fi
+    done
+
+    if [ ${#issues[@]} -gt 0 ]; then
+        echo -e "${YELLOW}→ ${MSG_PERMISSION_ISSUES:-Permission issues found}:${NC}"
+        printf '   • %s\n' "${issues[@]}"
+    fi
+
+    # Resultado final
+    if $has_error; then
+        STAT_CHECK_PERMISSIONS="$ICON_FAIL"
+        log "ERROR" "${MSG_PERMISSIONS_ERRORS:-Critical permission errors found}"
+    elif $has_warning; then
+        STAT_CHECK_PERMISSIONS="$ICON_WARN"
+        log "WARN" "${MSG_PERMISSIONS_WARNINGS:-Permission warnings found}"
+    else
+        STAT_CHECK_PERMISSIONS="$ICON_OK"
+        echo "→ ${MSG_PERMISSIONS_OK:-All critical permissions are correct}"
+        log "SUCCESS" "${MSG_PERMISSIONS_OK:-All critical permissions are correct}"
+    fi
+}
+
+# ============================================================================
+# PASO 8: AUDITAR SERVICIOS INNECESARIOS
+# ============================================================================
+
+step_audit_services() {
+    [ "$STEP_AUDIT_SERVICES" = 0 ] && return
+
+    print_step "${MSG_AUDITING_SERVICES:-Auditing system services...}"
+
+    local has_warning=false
+    local suspicious_services=()
+    local listening_ports=()
+
+    echo "→ ${MSG_CHECKING_ENABLED_SERVICES:-Checking enabled services...}"
+
+    # Servicios potencialmente innecesarios en servidores
+    local unnecessary_services=(
+        "cups"           # Print server
+        "avahi-daemon"   # mDNS/Bonjour
+        "bluetooth"      # Bluetooth
+        "ModemManager"   # Modem support
+        "whoopsie"       # Ubuntu error reporting
+        "apport"         # Crash reporting
+    )
+
+    for service in "${unnecessary_services[@]}"; do
+        if systemctl is-enabled "$service" &>/dev/null; then
+            suspicious_services+=("$service")
+        fi
+    done
+
+    if [ ${#suspicious_services[@]} -gt 0 ]; then
+        has_warning=true
+        echo -e "${YELLOW}→ ${MSG_UNNECESSARY_SERVICES:-Potentially unnecessary services enabled}:${NC}"
+        printf '   • %s\n' "${suspicious_services[@]}"
+        log "INFO" "Potentially unnecessary services: ${suspicious_services[*]}"
+    fi
+
+    # Verificar puertos en escucha
+    echo "→ ${MSG_CHECKING_LISTENING_PORTS:-Checking listening ports...}"
+
+    if command -v ss &>/dev/null; then
+        local open_ports=$(ss -tlnp 2>/dev/null | grep LISTEN | wc -l)
+        echo "→ ${MSG_OPEN_PORTS:-Open listening ports}: $open_ports"
+
+        # Mostrar puertos no estándar (>1024) que no sean localhost
+        local unusual_ports=$(ss -tlnp 2>/dev/null | grep LISTEN | grep -v "127.0.0.1" | grep -v "::1" | awk '{print $4}' | grep -E ":[0-9]{4,5}$" | head -5)
+        if [ -n "$unusual_ports" ]; then
+            has_warning=true
+            echo -e "${YELLOW}→ ${MSG_UNUSUAL_PORTS:-Unusual ports open}:${NC}"
+            echo "$unusual_ports" | sed 's/^/   • /'
+        fi
+    fi
+
+    # Verificar servicios fallidos
+    local failed=$(systemctl --failed --no-legend 2>/dev/null | wc -l)
+    failed=${failed//[^0-9]/}
+    if [ "${failed:-0}" -gt 0 ]; then
+        has_warning=true
+        echo -e "${YELLOW}→ ${MSG_FAILED_SERVICES:-Failed services}: $failed${NC}"
+    fi
+
+    # Resultado final
+    if $has_warning; then
+        STAT_AUDIT_SERVICES="$ICON_WARN"
+        log "WARN" "${MSG_SERVICES_AUDIT_WARNINGS:-Service audit found items to review}"
+    else
+        STAT_AUDIT_SERVICES="$ICON_OK"
+        echo "→ ${MSG_SERVICES_OK:-Service configuration looks good}"
+        log "SUCCESS" "${MSG_SERVICES_OK:-Service configuration looks good}"
+    fi
+}
+
+# ============================================================================
+# PASO 20: LIMPIAR SESIONES ABANDONADAS
+# ============================================================================
+
+step_cleanup_sessions() {
+    [ "$STEP_CLEANUP_SESSIONS" = 0 ] && return
+
+    print_step "${MSG_CLEANING_SESSIONS:-Cleaning abandoned sessions...}"
+
+    local cleaned=0
+    local has_warning=false
+
+    # Limpiar sesiones tmux huérfanas
+    if command -v tmux &>/dev/null; then
+        echo "→ ${MSG_CHECKING_TMUX:-Checking tmux sessions...}"
+        local tmux_sessions=$(tmux list-sessions 2>/dev/null | wc -l)
+        tmux_sessions=${tmux_sessions:-0}
+
+        if [ "$tmux_sessions" -gt 0 ]; then
+            echo "   ${MSG_TMUX_SESSIONS:-Active tmux sessions}: $tmux_sessions"
+            # No limpiar automáticamente, solo informar
+        fi
+    fi
+
+    # Limpiar sesiones screen huérfanas
+    if command -v screen &>/dev/null; then
+        echo "→ ${MSG_CHECKING_SCREEN:-Checking screen sessions...}"
+        local dead_screens=$(screen -ls 2>/dev/null | grep -c "Dead")
+        dead_screens=${dead_screens:-0}
+
+        if [ "$dead_screens" -gt 0 ]; then
+            echo "→ ${MSG_CLEANING_DEAD_SCREENS:-Cleaning $dead_screens dead screen sessions...}"
+            screen -wipe &>/dev/null
+            cleaned=$((cleaned + dead_screens))
+        fi
+    fi
+
+    # Limpiar archivos de bloqueo huérfanos en /tmp
+    echo "→ ${MSG_CHECKING_LOCK_FILES:-Checking orphan lock files...}"
+    local orphan_locks=$(find /tmp -maxdepth 1 -name "*.lock" -mtime +1 2>/dev/null | wc -l)
+    orphan_locks=${orphan_locks:-0}
+
+    if [ "$orphan_locks" -gt 0 ]; then
+        has_warning=true
+        echo -e "${YELLOW}→ ${MSG_ORPHAN_LOCKS:-Orphan lock files found}: $orphan_locks${NC}"
+        log "INFO" "Found $orphan_locks orphan lock files in /tmp"
+    fi
+
+    # Limpiar archivos de sesión antiguos
+    echo "→ ${MSG_CLEANING_OLD_SESSIONS:-Cleaning old session files...}"
+    local old_sessions=$(find /var/lib/systemd/linger -type f -mtime +30 2>/dev/null | wc -l)
+    old_sessions=${old_sessions:-0}
+
+    # Resultado final
+    if [ "$cleaned" -gt 0 ]; then
+        STAT_CLEANUP_SESSIONS="$ICON_OK"
+        echo "→ ${MSG_SESSIONS_CLEANED:-Cleaned $cleaned abandoned sessions}"
+        log "SUCCESS" "Cleaned $cleaned abandoned sessions"
+    elif $has_warning; then
+        STAT_CLEANUP_SESSIONS="$ICON_WARN"
+        log "WARN" "${MSG_SESSIONS_WARNINGS:-Session cleanup warnings}"
+    else
+        STAT_CLEANUP_SESSIONS="$ICON_OK"
+        echo "→ ${MSG_NO_SESSIONS_TO_CLEAN:-No abandoned sessions to clean}"
+        log "SUCCESS" "${MSG_NO_SESSIONS_TO_CLEAN:-No abandoned sessions to clean}"
+    fi
+}
+
+# ============================================================================
+# PASO 21: VERIFICAR/CONFIGURAR LOGROTATE
+# ============================================================================
+
+step_check_logrotate() {
+    [ "$STEP_CHECK_LOGROTATE" = 0 ] && return
+
+    print_step "${MSG_CHECKING_LOGROTATE:-Checking logrotate configuration...}"
+
+    local has_error=false
+    local has_warning=false
+    local issues=()
+
+    # Verificar si logrotate está instalado
+    if ! command -v logrotate &>/dev/null; then
+        echo -e "${YELLOW}→ ${MSG_LOGROTATE_NOT_INSTALLED:-logrotate not installed}${NC}"
+        STAT_CHECK_LOGROTATE="$ICON_WARN"
+        log "WARN" "logrotate not installed"
+        return
+    fi
+
+    echo "→ ${MSG_VERIFYING_LOGROTATE_CONFIG:-Verifying logrotate configuration...}"
+
+    # Verificar configuración principal
+    if [ ! -f /etc/logrotate.conf ]; then
+        has_error=true
+        issues+=("Missing /etc/logrotate.conf")
+    fi
+
+    # Verificar sintaxis de configuración
+    if ! logrotate -d /etc/logrotate.conf &>/dev/null; then
+        has_warning=true
+        issues+=("Logrotate configuration has warnings")
+        log "WARN" "Logrotate configuration has syntax issues"
+    fi
+
+    # Verificar última ejecución
+    if [ -f /var/lib/logrotate/status ]; then
+        local last_run=$(stat -c %Y /var/lib/logrotate/status 2>/dev/null || echo "0")
+        local now=$(date +%s)
+        local days_since=$(( (now - last_run) / 86400 ))
+
+        if [ "$days_since" -gt 2 ]; then
+            has_warning=true
+            echo -e "${YELLOW}→ ${MSG_LOGROTATE_OLD:-Logrotate has not run in $days_since days}${NC}"
+            log "WARN" "Logrotate has not run in $days_since days"
+        else
+            echo "→ ${MSG_LOGROTATE_RECENT:-Logrotate ran recently (within $days_since days)}"
+        fi
+    fi
+
+    # Verificar logs grandes que deberían rotarse
+    echo "→ ${MSG_CHECKING_LARGE_LOGS:-Checking for large log files...}"
+    local large_logs=$(find /var/log -type f -size +100M 2>/dev/null | head -5)
+    if [ -n "$large_logs" ]; then
+        has_warning=true
+        echo -e "${YELLOW}→ ${MSG_LARGE_LOGS_FOUND:-Large log files found (>100MB)}:${NC}"
+        echo "$large_logs" | while read -r logfile; do
+            local size=$(du -h "$logfile" 2>/dev/null | cut -f1)
+            echo "   • $logfile ($size)"
+        done
+    fi
+
+    # Resultado final
+    if $has_error; then
+        STAT_CHECK_LOGROTATE="$ICON_FAIL"
+        log "ERROR" "${MSG_LOGROTATE_ERRORS:-Logrotate configuration errors}"
+        printf '   • %s\n' "${issues[@]}"
+    elif $has_warning; then
+        STAT_CHECK_LOGROTATE="$ICON_WARN"
+        log "WARN" "${MSG_LOGROTATE_WARNINGS:-Logrotate warnings found}"
+    else
+        STAT_CHECK_LOGROTATE="$ICON_OK"
+        echo "→ ${MSG_LOGROTATE_OK:-Logrotate configuration is correct}"
+        log "SUCCESS" "${MSG_LOGROTATE_OK:-Logrotate configuration is correct}"
+    fi
+}
+
+# ============================================================================
+# PASO 22: VERIFICAR ESPACIO DE INODOS
+# ============================================================================
+
+step_check_inodes() {
+    [ "$STEP_CHECK_INODES" = 0 ] && return
+
+    print_step "${MSG_CHECKING_INODES:-Checking inode usage...}"
+
+    local has_error=false
+    local has_warning=false
+    local critical_partitions=()
+    local warning_partitions=()
+
+    echo "→ ${MSG_ANALYZING_INODES:-Analyzing inode usage on all partitions...}"
+
+    # Obtener uso de inodos de todas las particiones
+    while IFS= read -r line; do
+        # Saltar la línea de encabezado
+        [[ "$line" =~ ^Filesystem ]] && continue
+
+        local filesystem=$(echo "$line" | awk '{print $1}')
+        local iuse=$(echo "$line" | awk '{print $5}' | tr -d '%')
+        local mountpoint=$(echo "$line" | awk '{print $6}')
+
+        # Saltar sistemas de archivos virtuales
+        [[ "$filesystem" =~ ^(tmpfs|devtmpfs|none|udev) ]] && continue
+
+        iuse=${iuse:-0}
+
+        if [ "$iuse" -ge 95 ]; then
+            has_error=true
+            critical_partitions+=("$mountpoint: ${iuse}%")
+        elif [ "$iuse" -ge 80 ]; then
+            has_warning=true
+            warning_partitions+=("$mountpoint: ${iuse}%")
+        fi
+
+        # Mostrar todas las particiones
+        if [ "$iuse" -ge 80 ]; then
+            echo -e "  ${FIXED_YELLOW}[!!]${NC} $mountpoint: ${iuse}% ${MSG_INODES_USED:-inodes used}"
+        else
+            echo -e "  ${FIXED_GREEN}[OK]${NC} $mountpoint: ${iuse}% ${MSG_INODES_USED:-inodes used}"
+        fi
+    done < <(df -i 2>/dev/null | grep -v "^Filesystem")
+
+    # Si hay particiones críticas, buscar directorios con muchos archivos
+    if $has_error || $has_warning; then
+        echo ""
+        echo "→ ${MSG_SEARCHING_INODE_HOGS:-Searching for directories with many files...}"
+
+        # Buscar directorios con muchos archivos pequeños
+        local inode_hogs=$(find /var /tmp /home -xdev -type d 2>/dev/null | while read -r dir; do
+            count=$(find "$dir" -maxdepth 1 -type f 2>/dev/null | wc -l)
+            if [ "$count" -gt 1000 ]; then
+                echo "$count $dir"
+            fi
+        done | sort -rn | head -5)
+
+        if [ -n "$inode_hogs" ]; then
+            echo -e "${YELLOW}→ ${MSG_DIRS_MANY_FILES:-Directories with many files}:${NC}"
+            echo "$inode_hogs" | while read -r count dir; do
+                echo "   • $dir ($count files)"
+            done
+        fi
+    fi
+
+    # Resultado final
+    if $has_error; then
+        STAT_CHECK_INODES="$ICON_FAIL"
+        log "ERROR" "${MSG_INODES_CRITICAL:-Critical inode usage detected}"
+        send_critical_notification "INODE SPACE CRITICAL" "One or more partitions on $(hostname) are running out of inodes. Immediate action required."
+    elif $has_warning; then
+        STAT_CHECK_INODES="$ICON_WARN"
+        log "WARN" "${MSG_INODES_WARNING:-High inode usage detected}"
+    else
+        STAT_CHECK_INODES="$ICON_OK"
+        echo "→ ${MSG_INODES_OK:-Inode usage is healthy on all partitions}"
+        log "SUCCESS" "${MSG_INODES_OK:-Inode usage is healthy on all partitions}"
+    fi
+}
+
+# ============================================================================
+# PASO 23: VERIFICAR NECESIDAD DE REINICIO
 # ============================================================================
 
 step_check_reboot() {
@@ -3420,26 +4113,37 @@ show_final_summary() {
     [ $space_freed_boot -lt 0 ] && space_freed_boot=0
     local total_freed=$((space_freed_root + space_freed_boot))
 
-    # Mapear STAT_* a STEP_STATUS_ARRAY para resumen (orden lógico por fases)
-    # Fase 1: 0=Conectividad, 1=Dependencias, 2=SMART
-    # Fase 2: 3=Backup, 4=Snapshot
-    # Fase 3: 5=Repos, 6=Upgrade, 7=Flatpak, 8=Snap, 9=Firmware
-    # Fase 4: 10=APT, 11=Kernels, 12=Disco, 13=Docker
-    # Fase 5: 14=Reinicio
-    local step_vars=("STEP_CHECK_CONNECTIVITY" "STEP_CHECK_DEPENDENCIES" "STEP_CHECK_SMART"
-                     "STEP_BACKUP_TAR" "STEP_SNAPSHOT_TIMESHIFT" "STEP_UPDATE_REPOS"
-                     "STEP_UPGRADE_SYSTEM" "STEP_UPDATE_FLATPAK" "STEP_UPDATE_SNAP"
-                     "STEP_CHECK_FIRMWARE" "STEP_CLEANUP_APT" "STEP_CLEANUP_KERNELS"
-                     "STEP_CLEANUP_DISK" "STEP_CLEANUP_DOCKER" "STEP_CHECK_REBOOT")
-    local stat_vars=("STAT_CONNECTIVITY" "STAT_DEPENDENCIES" "STAT_SMART"
-                     "STAT_BACKUP_TAR" "STAT_SNAPSHOT" "STAT_REPO"
-                     "STAT_UPGRADE" "STAT_FLATPAK" "STAT_SNAP" "STAT_FIRMWARE"
-                     "STAT_CLEAN_APT" "STAT_CLEAN_KERNEL" "STAT_CLEAN_DISK"
-                     "STAT_DOCKER" "STAT_REBOOT")
+    # Mapear STAT_* a STEP_STATUS_ARRAY para resumen (23 pasos, orden lógico por fases)
+    # Fase 1 (1-8): Conectividad, Dependencias, Repos APT, SMART, Debsums, Seguridad, Permisos, Servicios
+    # Fase 2 (9-10): Backup TAR, Timeshift
+    # Fase 3 (11-15): Update Repos, Upgrade, Flatpak, Snap, Firmware
+    # Fase 4 (16-22): APT, Kernels, Disco, Docker, Sesiones, Logrotate, Inodos
+    # Fase 5 (23): Reinicio
+    local step_vars=(
+        "STEP_CHECK_CONNECTIVITY" "STEP_CHECK_DEPENDENCIES" "STEP_CHECK_REPOS"
+        "STEP_CHECK_SMART" "STEP_CHECK_DEBSUMS" "STEP_CHECK_SECURITY"
+        "STEP_CHECK_PERMISSIONS" "STEP_AUDIT_SERVICES"
+        "STEP_BACKUP_TAR" "STEP_SNAPSHOT_TIMESHIFT"
+        "STEP_UPDATE_REPOS" "STEP_UPGRADE_SYSTEM" "STEP_UPDATE_FLATPAK"
+        "STEP_UPDATE_SNAP" "STEP_CHECK_FIRMWARE"
+        "STEP_CLEANUP_APT" "STEP_CLEANUP_KERNELS" "STEP_CLEANUP_DISK"
+        "STEP_CLEANUP_DOCKER" "STEP_CLEANUP_SESSIONS" "STEP_CHECK_LOGROTATE"
+        "STEP_CHECK_INODES" "STEP_CHECK_REBOOT"
+    )
+    local stat_vars=(
+        "STAT_CONNECTIVITY" "STAT_DEPENDENCIES" "STAT_CHECK_REPOS"
+        "STAT_SMART" "STAT_CHECK_DEBSUMS" "STAT_CHECK_SECURITY"
+        "STAT_CHECK_PERMISSIONS" "STAT_AUDIT_SERVICES"
+        "STAT_BACKUP_TAR" "STAT_SNAPSHOT"
+        "STAT_REPO" "STAT_UPGRADE" "STAT_FLATPAK" "STAT_SNAP" "STAT_FIRMWARE"
+        "STAT_CLEAN_APT" "STAT_CLEAN_KERNEL" "STAT_CLEAN_DISK"
+        "STAT_DOCKER" "STAT_CLEANUP_SESSIONS" "STAT_CHECK_LOGROTATE"
+        "STAT_CHECK_INODES" "STAT_REBOOT"
+    )
 
-    # Contar resultados y determinar estados
+    # Contar resultados y determinar estados (23 pasos: índices 0-22)
     local success_count=0 error_count=0 skipped_count=0 warning_count=0
-    for i in {0..14}; do
+    for i in {0..22}; do
         local step_var="${step_vars[$i]}"
         local stat_var="${stat_vars[$i]}"
         local step_enabled="${!step_var}"
@@ -3505,18 +4209,19 @@ show_final_summary() {
     print_box_sep
     print_box_line "${BOLD}${MSG_SUMMARY_STEP_DETAIL}${BOX_NC}"
 
-    # Generar líneas de 3 columnas (5 filas x 3 cols = 15 slots, usamos 13)
-    # Formato fijo: icono[4] + espacio[1] + nombre[10] = 15 chars por celda
-    for row in {0..4}; do
+    # Generar líneas de 4 columnas (6 filas x 4 cols = 24 slots, usamos 23)
+    # Formato fijo: icono[4] + espacio[1] + nombre[11] = 16 chars por celda
+    local cols=4
+    for row in {0..5}; do
         local line=""
-        for col in {0..2}; do
-            local idx=$((row * 3 + col))
-            if [ $idx -le 14 ]; then
+        for col in {0..3}; do
+            local idx=$((row * cols + col))
+            if [ $idx -le 22 ]; then
                 local icon=$(get_step_icon_summary "${STEP_STATUS_ARRAY[$idx]}")
-                # Nombre con ancho fijo de 10 chars
+                # Nombre con ancho fijo de 11 chars
                 local name
-                name=$(printf "%-10.10s" "${STEP_SHORT_NAMES[$idx]}")
-                line+="${icon} ${name} "
+                name=$(printf "%-11.11s" "${STEP_SHORT_NAMES[$idx]}")
+                line+="${icon} ${name}"
             else
                 # Celda vacía: 16 espacios
                 line+="                "
@@ -3856,31 +4561,40 @@ validate_step_dependencies
 
 check_disk_space
 
-# Ejecutar pasos configurados
-# FASE 1: Verificaciones previas
-step_check_connectivity
-step_check_dependencies
-step_check_smart
+# Ejecutar pasos configurados (23 pasos totales)
 
-# FASE 2: Backups
-step_backup_tar
-step_snapshot_timeshift
+# FASE 1: Verificaciones previas y diagnósticos (pasos 1-8)
+step_check_connectivity      # 1. Conectividad
+step_check_dependencies      # 2. Dependencias
+step_check_repos             # 3. Integridad repos APT
+step_check_smart             # 4. SMART discos
+step_check_debsums           # 5. Integridad paquetes
+step_check_security          # 6. Actualizaciones seguridad
+step_check_permissions       # 7. Permisos críticos
+step_audit_services          # 8. Servicios innecesarios
 
-# FASE 3: Actualizaciones
-step_update_repos
-step_upgrade_system
-step_update_flatpak
-step_update_snap
-step_check_firmware
+# FASE 2: Backups (pasos 9-10)
+step_backup_tar              # 9. Backup TAR
+step_snapshot_timeshift      # 10. Snapshot Timeshift
 
-# FASE 4: Limpieza
-step_cleanup_apt
-step_cleanup_kernels
-step_cleanup_disk
-step_cleanup_docker
+# FASE 3: Actualizaciones (pasos 11-15)
+step_update_repos            # 11. Actualizar repos
+step_upgrade_system          # 12. Actualizar sistema
+step_update_flatpak          # 13. Flatpak
+step_update_snap             # 14. Snap
+step_check_firmware          # 15. Firmware
 
-# FASE 5: Verificación final
-step_check_reboot
+# FASE 4: Limpieza (pasos 16-22)
+step_cleanup_apt             # 16. Limpieza APT
+step_cleanup_kernels         # 17. Kernels antiguos
+step_cleanup_disk            # 18. Limpieza disco
+step_cleanup_docker          # 19. Docker
+step_cleanup_sessions        # 20. Sesiones abandonadas
+step_check_logrotate         # 21. Logrotate
+step_check_inodes            # 22. Inodos
+
+# FASE 5: Verificación final (paso 23)
+step_check_reboot            # 23. Necesidad reinicio
 
 # Mostrar resumen final
 show_final_summary
