@@ -1,0 +1,239 @@
+# ============================================================================
+# Autoclean Notifier Plugin: Email via SMTP
+# ============================================================================
+# Envia notificaciones por email usando curl con SMTP directo
+# Soporta Gmail, Outlook, Yahoo y cualquier servidor SMTP
+# No requiere dependencias adicionales (solo curl)
+# ============================================================================
+
+# === METADATA ===
+NOTIFIER_NAME="Email"
+NOTIFIER_CODE="email"
+NOTIFIER_DESCRIPTION="Email via SMTP (Gmail, Outlook, custom)"
+NOTIFIER_DEPS="curl"
+
+# === CONFIGURACION ===
+declare -A NOTIFIER_FIELDS=(
+    ["NOTIFIER_EMAIL_TO"]="Recipient email (required)"
+    ["NOTIFIER_EMAIL_FROM"]="Sender email (required)"
+    ["NOTIFIER_EMAIL_SMTP_SERVER"]="SMTP server (e.g., smtp.gmail.com)"
+    ["NOTIFIER_EMAIL_SMTP_PORT"]="SMTP port (465=SSL, 587=STARTTLS)"
+    ["NOTIFIER_EMAIL_USER"]="SMTP username (usually your email)"
+    ["NOTIFIER_EMAIL_PASSWORD"]="SMTP password or app password"
+)
+
+# === FUNCIONES ===
+
+notifier_check_deps() {
+    command -v curl &>/dev/null
+}
+
+notifier_is_configured() {
+    [[ -n "$NOTIFIER_EMAIL_TO" && \
+       -n "$NOTIFIER_EMAIL_FROM" && \
+       -n "$NOTIFIER_EMAIL_SMTP_SERVER" && \
+       -n "$NOTIFIER_EMAIL_SMTP_PORT" && \
+       -n "$NOTIFIER_EMAIL_USER" && \
+       -n "$NOTIFIER_EMAIL_PASSWORD" ]]
+}
+
+notifier_send() {
+    local title="$1"
+    local message="$2"
+    local severity="${3:-info}"
+
+    # Mapear severidad a prefijo de subject
+    local prefix=""
+    case "$severity" in
+        critical) prefix="[CRITICAL]" ;;
+        error)    prefix="[ERROR]" ;;
+        warning)  prefix="[WARNING]" ;;
+        success)  prefix="[OK]" ;;
+        *)        prefix="[INFO]" ;;
+    esac
+
+    local subject="${prefix} ${title}"
+    local server="$NOTIFIER_EMAIL_SMTP_SERVER"
+    local port="$NOTIFIER_EMAIL_SMTP_PORT"
+    local from="$NOTIFIER_EMAIL_FROM"
+    local to="$NOTIFIER_EMAIL_TO"
+    local user="$NOTIFIER_EMAIL_USER"
+    local password="$NOTIFIER_EMAIL_PASSWORD"
+
+    # Determinar protocolo segun puerto
+    local protocol="smtp"
+    if [[ "$port" == "465" ]]; then
+        protocol="smtps"
+    fi
+
+    # Generar fecha RFC 2822
+    local date_header
+    date_header=$(date -R 2>/dev/null || date "+%a, %d %b %Y %H:%M:%S %z")
+
+    # Construir email con headers
+    local email_content
+    email_content=$(cat <<EOF
+From: ${from}
+To: ${to}
+Subject: ${subject}
+Date: ${date_header}
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+X-Mailer: Autoclean Notifier
+
+${message}
+EOF
+)
+
+    # Enviar via curl SMTP
+    local result
+    result=$(echo "$email_content" | curl -s \
+        --url "${protocol}://${server}:${port}" \
+        --ssl-reqd \
+        --mail-from "$from" \
+        --mail-rcpt "$to" \
+        --user "${user}:${password}" \
+        --upload-file - \
+        --connect-timeout 15 \
+        --max-time 60 \
+        -w "%{http_code}" \
+        -o /dev/null \
+        2>&1)
+
+    # curl SMTP no retorna HTTP code, verificar exit code
+    if [[ $? -eq 0 ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+notifier_test() {
+    local hostname
+    hostname=$(hostname 2>/dev/null || echo "unknown")
+
+    notifier_send "Autoclean Test" "Email notifications configured correctly!
+
+Host: ${hostname}
+Date: $(date '+%Y-%m-%d %H:%M:%S')
+SMTP Server: ${NOTIFIER_EMAIL_SMTP_SERVER}:${NOTIFIER_EMAIL_SMTP_PORT}
+From: ${NOTIFIER_EMAIL_FROM}
+To: ${NOTIFIER_EMAIL_TO}
+
+This is a test message from Autoclean." "success"
+}
+
+notifier_help() {
+    cat << 'HELP_EOF'
+================================================================================
+                      EMAIL NOTIFICATIONS - SETUP GUIDE
+================================================================================
+
+OVERVIEW:
+---------
+This notifier sends emails via SMTP using curl. No additional packages needed.
+Works with Gmail, Outlook, Yahoo, and any standard SMTP server.
+
+================================================================================
+                              GMAIL SETUP
+================================================================================
+
+STEP 1: Enable 2-Factor Authentication
+--------------------------------------
+1. Go to https://myaccount.google.com/security
+2. Enable "2-Step Verification" if not already enabled
+
+STEP 2: Generate App Password
+-----------------------------
+1. Go to https://myaccount.google.com/apppasswords
+2. Select "Mail" as the app
+3. Select your device
+4. Click "Generate"
+5. Copy the 16-character password (no spaces)
+
+STEP 3: Configure in Autoclean
+------------------------------
+  Recipient email:  your-destination@email.com
+  Sender email:     your-gmail@gmail.com
+  SMTP server:      smtp.gmail.com
+  SMTP port:        465 (recommended) or 587
+  SMTP username:    your-gmail@gmail.com
+  SMTP password:    xxxx-xxxx-xxxx-xxxx (app password)
+
+================================================================================
+                            OUTLOOK/OFFICE 365 SETUP
+================================================================================
+
+STEP 1: Configure in Autoclean
+------------------------------
+  Recipient email:  destination@email.com
+  Sender email:     your-email@outlook.com
+  SMTP server:      smtp.office365.com
+  SMTP port:        587
+  SMTP username:    your-email@outlook.com
+  SMTP password:    your-password (or app password if 2FA enabled)
+
+================================================================================
+                              YAHOO SETUP
+================================================================================
+
+STEP 1: Generate App Password
+-----------------------------
+1. Go to https://login.yahoo.com/account/security
+2. Click "Generate app password"
+3. Select "Other App" and name it
+4. Copy the generated password
+
+STEP 2: Configure in Autoclean
+------------------------------
+  SMTP server:      smtp.mail.yahoo.com
+  SMTP port:        465
+  SMTP password:    (use the app password)
+
+================================================================================
+                           CUSTOM SMTP SERVER
+================================================================================
+
+For self-hosted or corporate SMTP servers:
+
+  SMTP server:      mail.yourdomain.com
+  SMTP port:        25 (unencrypted), 465 (SSL), or 587 (STARTTLS)
+  SMTP username:    your-username
+  SMTP password:    your-password
+
+PORT REFERENCE:
+  25   - Unencrypted (not recommended)
+  465  - SSL/TLS (direct encryption)
+  587  - STARTTLS (upgrade to encryption)
+
+================================================================================
+                              TROUBLESHOOTING
+================================================================================
+
+"Authentication failed":
+  - Verify username and password are correct
+  - For Gmail/Yahoo: Use App Password, not your regular password
+  - Check if 2FA is enabled and you need an app password
+
+"Connection refused":
+  - Verify SMTP server address is correct
+  - Check if port is correct (465 vs 587)
+  - Your network may be blocking outbound SMTP
+
+"Certificate error":
+  - The SMTP server may have an invalid certificate
+  - For testing, this might indicate wrong server/port
+
+"Timeout":
+  - SMTP server may be slow or unreachable
+  - Check your internet connection
+  - Try a different port (465 vs 587)
+
+No email received:
+  - Check spam/junk folder
+  - Verify recipient email is correct
+  - Some providers delay delivery for new senders
+
+================================================================================
+HELP_EOF
+}

@@ -22,7 +22,7 @@ Coleccion de scripts de mantenimiento y actualizacion para distribuciones basada
 
 ## Scripts Disponibles
 
-### autoclean.sh - Script Principal (RECOMENDADO)
+### autoclean.sh - Script Principal 
 
 **Version:** 2025.12
 **Ultima revision:** Diciembre 2025
@@ -89,7 +89,7 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 ### Sistema de Notificaciones Multi-canal
 
 - **Arquitectura de plugins**: Los notificadores se cargan dinamicamente desde `plugins/notifiers/`
-- **Notificadores incluidos**: Desktop (notify-send), Telegram Bot API, ntfy.sh, Webhook (Slack/Discord/Teams)
+- **Notificadores incluidos**: Desktop (notify-send), Telegram Bot API, ntfy.sh, Webhook (Slack/Discord/Teams), Email SMTP
 - **Menu dedicado**: Tecla `[O]` en el menu principal para gestionar notificaciones
 - **Configuracion por servicio**: Cada notificador tiene su propia pantalla de configuracion
 - **Ayuda integrada**: Instrucciones de setup para cada servicio (como crear bot de Telegram, etc.)
@@ -102,6 +102,7 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 | Telegram | Mensajes via Telegram Bot API | Bot Token + Chat ID |
 | ntfy.sh | Push notifications via ntfy.sh | Topic (+ Server/Token opcional) |
 | Webhook | HTTP webhooks (Slack, Discord, Teams, custom) | URL + Preset |
+| Email | Email via SMTP (Gmail, Outlook, custom) | SMTP Server + Credentials |
 
 | Tema | Descripcion | Fondo |
 |------|-------------|-------|
@@ -704,7 +705,7 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 - **Pasos modulares:** 15
 - **Idiomas soportados:** 6 (en, es, pt, fr, de, it) - deteccion dinamica
 - **Temas de colores:** 9 (Default, Norton, Turbo, Green, Amber, Dracula, Matrix, Synthwave, Monokai) - deteccion dinamica
-- **Notificadores:** 4 (Desktop, Telegram, ntfy.sh, Webhook) - arquitectura de plugins extensible
+- **Notificadores:** 5 (Desktop, Telegram, ntfy.sh, Webhook, Email) - arquitectura de plugins extensible
 - **Distribuciones soportadas:** 7+ (auto-deteccion)
 - **Compatible con:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
 - **Interfaz:** Enterprise UI con grid 5x3, navegacion bidimensional, selector de idioma, temas y notificaciones
@@ -719,6 +720,7 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 - **Notificador Telegram** - Notificaciones via Telegram Bot API con configuracion guiada
 - **Notificador ntfy.sh** - Push notifications via ntfy.sh con soporte para servidores self-hosted
 - **Notificador Webhook** - HTTP webhooks con presets para Slack, Discord, Microsoft Teams y APIs custom
+- **Notificador Email** - Email via SMTP con curl (Gmail, Outlook, Yahoo, custom) sin dependencias extra
 - **Tutorial de notificadores** - Documentacion en `plugins/notifiers/TUTORIAL.md` para crear notificadores custom
 - **Perfiles Predefinidos** - Nuevo argumento `--profile` con 5 perfiles: server, desktop, developer, minimal, **custom**
 - **Perfil Custom** - Nuevo perfil que lee toda la configuracion desde `autoclean.conf` (idioma, tema y pasos)
