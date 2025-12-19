@@ -2857,11 +2857,15 @@ step_update_flatpak() {
         return
     fi
 
+    # 1. Update appstream metadata (catalog of available apps)
+    safe_run "flatpak update --appstream -y" "Error updating appstream"
+
+    # 2. Update installed applications
     if safe_run "flatpak update -y" "Error"; then
-        # Limpiar referencias huérfanas
+        # 3. Clean orphaned refs
         safe_run "flatpak uninstall --unused -y" "Error"
 
-        # Reparar instalación
+        # 4. Repair installation
         safe_run "flatpak repair" "Error"
 
         echo "→ ${MSG_FLATPAK_UPDATED}"
