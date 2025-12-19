@@ -1,0 +1,353 @@
+# ============================================================================
+# Autoclean Notifier Plugin: Generic Webhook
+# ============================================================================
+# Envia notificaciones via HTTP webhooks a cualquier servicio
+# Soporta presets para Slack, Discord, Microsoft Teams y JSON generico
+# ============================================================================
+
+# === METADATA ===
+NOTIFIER_NAME="Webhook"
+NOTIFIER_CODE="webhook"
+NOTIFIER_DESCRIPTION="HTTP webhooks (Slack, Discord, Teams, custom)"
+NOTIFIER_DEPS="curl"
+
+# === CONFIGURACION ===
+declare -A NOTIFIER_FIELDS=(
+    ["NOTIFIER_WEBHOOK_URL"]="Webhook URL (required)"
+    ["NOTIFIER_WEBHOOK_PRESET"]="Preset: generic, slack, discord, teams"
+    ["NOTIFIER_WEBHOOK_METHOD"]="HTTP method (default: POST)"
+    ["NOTIFIER_WEBHOOK_AUTH_HEADER"]="Auth header (optional)"
+    ["NOTIFIER_WEBHOOK_CONTENT_TYPE"]="Content-Type (default: application/json)"
+)
+
+# === FUNCIONES AUXILIARES ===
+
+# Escapar caracteres especiales para JSON
+_webhook_json_escape() {
+    local str="$1"
+    str="${str//\\/\\\\}"      # backslash
+    str="${str//\"/\\\"}"      # double quote
+    str="${str//$'\n'/\\n}"    # newline
+    str="${str//$'\r'/\\r}"    # carriage return
+    str="${str//$'\t'/\\t}"    # tab
+    echo "$str"
+}
+
+# Mapear severidad a color hex
+_webhook_severity_color() {
+    local severity="$1"
+    case "$severity" in
+        critical) echo "d63031" ;;  # rojo
+        error)    echo "e74c3c" ;;  # rojo claro
+        warning)  echo "f39c12" ;;  # naranja
+        success)  echo "27ae60" ;;  # verde
+        *)        echo "3498db" ;;  # azul (info)
+    esac
+}
+
+# Mapear severidad a color decimal (para Discord)
+_webhook_severity_color_decimal() {
+    local hex=$(_webhook_severity_color "$1")
+    echo $((16#$hex))
+}
+
+# Mapear severidad a emoji
+_webhook_severity_emoji() {
+    local severity="$1"
+    case "$severity" in
+        critical) echo ":rotating_light:" ;;
+        error)    echo ":x:" ;;
+        warning)  echo ":warning:" ;;
+        success)  echo ":white_check_mark:" ;;
+        *)        echo ":information_source:" ;;
+    esac
+}
+
+# === GENERADORES DE PAYLOAD ===
+
+# Payload JSON generico (n8n, Zapier, custom APIs)
+_webhook_payload_generic() {
+    local title="$1"
+    local message="$2"
+    local severity="$3"
+    local hostname=$(hostname 2>/dev/null || echo "unknown")
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    title=$(_webhook_json_escape "$title")
+    message=$(_webhook_json_escape "$message")
+
+    cat <<EOF
+{
+  "source": "autoclean",
+  "hostname": "${hostname}",
+  "timestamp": "${timestamp}",
+  "severity": "${severity}",
+  "title": "${title}",
+  "message": "${message}"
+}
+EOF
+}
+
+# Payload para Slack Incoming Webhooks
+_webhook_payload_slack() {
+    local title="$1"
+    local message="$2"
+    local severity="$3"
+    local color=$(_webhook_severity_color "$severity")
+    local emoji=$(_webhook_severity_emoji "$severity")
+    local hostname=$(hostname 2>/dev/null || echo "unknown")
+
+    title=$(_webhook_json_escape "$title")
+    message=$(_webhook_json_escape "$message")
+
+    cat <<EOF
+{
+  "attachments": [
+    {
+      "color": "#${color}",
+      "title": "${emoji} ${title}",
+      "text": "${message}",
+      "footer": "Autoclean | ${hostname}",
+      "ts": $(date +%s)
+    }
+  ]
+}
+EOF
+}
+
+# Payload para Discord Webhooks
+_webhook_payload_discord() {
+    local title="$1"
+    local message="$2"
+    local severity="$3"
+    local color=$(_webhook_severity_color_decimal "$severity")
+    local hostname=$(hostname 2>/dev/null || echo "unknown")
+    local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+    title=$(_webhook_json_escape "$title")
+    message=$(_webhook_json_escape "$message")
+
+    cat <<EOF
+{
+  "embeds": [
+    {
+      "title": "${title}",
+      "description": "${message}",
+      "color": ${color},
+      "footer": {
+        "text": "Autoclean | ${hostname}"
+      },
+      "timestamp": "${timestamp}"
+    }
+  ]
+}
+EOF
+}
+
+# Payload para Microsoft Teams (MessageCard)
+_webhook_payload_teams() {
+    local title="$1"
+    local message="$2"
+    local severity="$3"
+    local color=$(_webhook_severity_color "$severity")
+    local hostname=$(hostname 2>/dev/null || echo "unknown")
+
+    title=$(_webhook_json_escape "$title")
+    message=$(_webhook_json_escape "$message")
+
+    cat <<EOF
+{
+  "@type": "MessageCard",
+  "@context": "http://schema.org/extensions",
+  "themeColor": "${color}",
+  "summary": "${title}",
+  "sections": [
+    {
+      "activityTitle": "${title}",
+      "text": "${message}",
+      "facts": [
+        {
+          "name": "Host",
+          "value": "${hostname}"
+        },
+        {
+          "name": "Severity",
+          "value": "${severity}"
+        }
+      ]
+    }
+  ]
+}
+EOF
+}
+
+# === FUNCIONES REQUERIDAS ===
+
+notifier_check_deps() {
+    command -v curl &>/dev/null
+}
+
+notifier_is_configured() {
+    [[ -n "$NOTIFIER_WEBHOOK_URL" ]]
+}
+
+notifier_send() {
+    local title="$1"
+    local message="$2"
+    local severity="${3:-info}"
+
+    # Valores por defecto
+    local method="${NOTIFIER_WEBHOOK_METHOD:-POST}"
+    local preset="${NOTIFIER_WEBHOOK_PRESET:-generic}"
+    local content_type="${NOTIFIER_WEBHOOK_CONTENT_TYPE:-application/json}"
+
+    # Generar payload segun preset
+    local payload=""
+    case "$preset" in
+        slack)   payload=$(_webhook_payload_slack "$title" "$message" "$severity") ;;
+        discord) payload=$(_webhook_payload_discord "$title" "$message" "$severity") ;;
+        teams)   payload=$(_webhook_payload_teams "$title" "$message" "$severity") ;;
+        *)       payload=$(_webhook_payload_generic "$title" "$message" "$severity") ;;
+    esac
+
+    # Construir comando curl
+    local curl_args=(
+        -s
+        -o /dev/null
+        -w "%{http_code}"
+        -X "$method"
+        -H "Content-Type: ${content_type}"
+        --connect-timeout 10
+        --max-time 30
+    )
+
+    # Agregar header de autenticacion si existe
+    if [[ -n "$NOTIFIER_WEBHOOK_AUTH_HEADER" ]]; then
+        curl_args+=(-H "$NOTIFIER_WEBHOOK_AUTH_HEADER")
+    fi
+
+    # Enviar request
+    local http_code
+    http_code=$(curl "${curl_args[@]}" -d "$payload" "$NOTIFIER_WEBHOOK_URL" 2>/dev/null)
+
+    # Verificar respuesta (2xx = exito)
+    if [[ "$http_code" =~ ^2[0-9][0-9]$ ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+notifier_test() {
+    local hostname
+    hostname=$(hostname 2>/dev/null || echo "unknown")
+    local preset="${NOTIFIER_WEBHOOK_PRESET:-generic}"
+
+    notifier_send "Autoclean Test" "Webhook notifications configured correctly!
+
+Host: ${hostname}
+Date: $(date '+%Y-%m-%d %H:%M:%S')
+Preset: ${preset}
+URL: ${NOTIFIER_WEBHOOK_URL:0:50}..." "success"
+}
+
+notifier_help() {
+    cat << 'HELP_EOF'
+================================================================================
+                    WEBHOOK NOTIFICATIONS - SETUP GUIDE
+================================================================================
+
+OVERVIEW:
+---------
+This notifier sends HTTP webhooks to any service that accepts them.
+Perfect for integrating with automation platforms, chat apps, or custom APIs.
+
+SUPPORTED PRESETS:
+------------------
+  generic  - Standard JSON payload (n8n, Zapier, Make, custom APIs)
+  slack    - Slack Incoming Webhooks format
+  discord  - Discord Webhooks format
+  teams    - Microsoft Teams MessageCard format
+
+CONFIGURATION FIELDS:
+---------------------
+  Webhook URL      - The destination URL (required)
+  Preset           - Payload format: generic, slack, discord, teams
+  HTTP Method      - Usually POST (default)
+  Auth Header      - Optional, e.g., "Authorization: Bearer TOKEN"
+  Content-Type     - Usually application/json (default)
+
+================================================================================
+                              SETUP BY SERVICE
+================================================================================
+
+SLACK:
+------
+1. Go to: https://api.slack.com/apps
+2. Create New App > From scratch
+3. Enable "Incoming Webhooks" feature
+4. Click "Add New Webhook to Workspace"
+5. Select a channel and authorize
+6. Copy the Webhook URL
+7. Set preset to: slack
+
+DISCORD:
+--------
+1. Open your Discord server settings
+2. Go to Integrations > Webhooks
+3. Click "New Webhook"
+4. Name it and select the channel
+5. Copy the Webhook URL
+6. Set preset to: discord
+
+MICROSOFT TEAMS:
+----------------
+1. Open the Teams channel
+2. Click "..." > Connectors
+3. Find "Incoming Webhook" and configure
+4. Name it and copy the URL
+5. Set preset to: teams
+
+N8N / ZAPIER / MAKE:
+--------------------
+1. Create a new workflow with Webhook trigger
+2. Copy the webhook URL provided
+3. Use preset: generic
+4. The payload includes: source, hostname, timestamp, severity, title, message
+
+CUSTOM API:
+-----------
+1. Enter your API endpoint URL
+2. Use preset: generic (or customize Content-Type)
+3. Add Auth Header if needed: "Authorization: Bearer YOUR_TOKEN"
+4. The generic payload is:
+   {
+     "source": "autoclean",
+     "hostname": "...",
+     "timestamp": "ISO8601",
+     "severity": "info|success|warning|error|critical",
+     "title": "...",
+     "message": "..."
+   }
+
+AUTHENTICATION:
+---------------
+For APIs requiring authentication, use the Auth Header field:
+  - Bearer token:  Authorization: Bearer abc123
+  - API key:       X-API-Key: your-key-here
+  - Basic auth:    Authorization: Basic base64encoded
+
+TESTING:
+--------
+Use the "Test" option to verify your configuration works.
+
+TROUBLESHOOTING:
+----------------
+- "401 Unauthorized": Check your Auth Header is correct
+- "403 Forbidden": Verify the webhook URL has proper permissions
+- "404 Not Found": Double-check the webhook URL
+- No notification: Ensure the service is active and accepting webhooks
+
+================================================================================
+HELP_EOF
+}
