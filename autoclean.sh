@@ -1522,13 +1522,9 @@ show_notifier_config() {
             local label="${field_labels[$i]}"
             local current_value="${!var_name}"
 
-            # Extraer nombre corto del label (primera parte antes de los paréntesis)
-            local short_label
-            short_label=$(echo "$label" | sed 's/(.*//' | sed 's/[[:space:]]*$//')
-
             # Mostrar valor actual (ocultar tokens parcialmente)
             local display_value="${current_value:-(${DIM}not set${BOX_NC})}"
-            if [[ "$var_name" == *"TOKEN"* || "$var_name" == *"PASSWORD"* || "$var_name" == *"KEY"* ]]; then
+            if [[ "$var_name" == *"TOKEN"* || "$var_name" == *"PASSWORD"* || "$var_name" == *"KEY"* || "$var_name" == *"AUTH"* ]]; then
                 if [ -n "$current_value" ]; then
                     display_value="${current_value:0:10}..."
                 fi
@@ -1538,8 +1534,8 @@ show_notifier_config() {
             local status_color="${RED}"
             [ -n "$current_value" ] && status_color="${GREEN}"
 
-            print_box_line "  ${CYAN}[$((i+1))]${BOX_NC} ${BOLD}${short_label}${BOX_NC}"
-            print_box_line "      ${DIM}${label}${BOX_NC}"
+            # Formato compacto: label completo en una línea, valor en la siguiente
+            print_box_line "  ${CYAN}[$((i+1))]${BOX_NC} ${label}"
             print_box_line "      ${status_color}▶${BOX_NC} ${display_value}"
             print_box_line ""
         done
