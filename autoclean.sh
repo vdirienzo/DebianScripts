@@ -430,6 +430,9 @@ NOTIF_HEADER
         chown "$SUDO_USER:$SUDO_USER" "$CONFIG_FILE" 2>/dev/null
     fi
 
+    # Proteger archivo de configuración (contiene credenciales sensibles)
+    chmod 600 "$CONFIG_FILE" 2>/dev/null
+
     return $result
 }
 
@@ -1508,8 +1511,9 @@ show_notifier_config() {
         field_labels+=("${NOTIFIER_FIELDS[$var_name]}")
     done
     local num_fields=${#field_vars[@]}
+    local current_index=0
 
-    tput cnorm 2>/dev/null
+    tput civis 2>/dev/null
 
     while true; do
         clear
@@ -1518,92 +1522,83 @@ show_notifier_config() {
         print_box_sep
         print_box_line ""
 
-        # Mostrar campos en 2 columnas si hay 4+ campos, sino 1 columna
+        # Mostrar campos en 1 columna con navegación por flechas
         local i
-        local col_width=36
+        for ((i=0; i<num_fields; i++)); do
+            local var_name="${field_vars[$i]}"
+            local label="${field_labels[$i]}"
+            local current_value="${!var_name}"
+            local display_value="${current_value:-not set}"
+            [[ "$var_name" == *"TOKEN"* || "$var_name" == *"PASSWORD"* || "$var_name" == *"KEY"* || "$var_name" == *"AUTH"* ]] && [ -n "$current_value" ] && display_value="${current_value:0:10}..."
+            local status_color="${RED}"; [ -n "$current_value" ] && status_color="${GREEN}"
 
-        if [ $num_fields -ge 4 ]; then
-            # Layout de 2 columnas
-            for ((i=0; i<num_fields; i+=2)); do
-                # Columna izquierda
-                local var1="${field_vars[$i]}"
-                local label1="${field_labels[$i]}"
-                local val1="${!var1}"
-                local disp1="${val1:-not set}"
-                [[ "$var1" == *"TOKEN"* || "$var1" == *"PASSWORD"* || "$var1" == *"KEY"* || "$var1" == *"AUTH"* ]] && [ -n "$val1" ] && disp1="${val1:0:8}..."
-                local color1="${RED}"; [ -n "$val1" ] && color1="${GREEN}"
-
-                # Columna derecha (si existe)
-                local label2="" disp2="" color2="" num2=""
-                if [ $((i+1)) -lt $num_fields ]; then
-                    local var2="${field_vars[$((i+1))]}"
-                    label2="${field_labels[$((i+1))]}"
-                    local val2="${!var2}"
-                    disp2="${val2:-not set}"
-                    [[ "$var2" == *"TOKEN"* || "$var2" == *"PASSWORD"* || "$var2" == *"KEY"* || "$var2" == *"AUTH"* ]] && [ -n "$val2" ] && disp2="${val2:0:8}..."
-                    color2="${RED}"; [ -n "$val2" ] && color2="${GREEN}"
-                    num2="$((i+2))"
-                fi
-
-                # Imprimir filas con padding manual
-                local left_lbl="[$((i+1))] ${label1}"
-                local left_val="    ${color1}▶${BOX_NC} ${disp1}"
-                if [ -n "$label2" ]; then
-                    # Padding para alinear columnas
-                    local pad=$((col_width - ${#left_lbl}))
-                    [ $pad -lt 1 ] && pad=1
-                    print_box_line "  ${CYAN}[$((i+1))]${BOX_NC} ${label1}$(printf '%*s' $pad '')${CYAN}[${num2}]${BOX_NC} ${label2}"
-                    pad=$((col_width - ${#disp1} - 6))
-                    [ $pad -lt 1 ] && pad=1
-                    print_box_line "      ${color1}▶${BOX_NC} ${disp1}$(printf '%*s' $pad '')  ${color2}▶${BOX_NC} ${disp2}"
-                else
-                    print_box_line "  ${CYAN}[$((i+1))]${BOX_NC} ${label1}"
-                    print_box_line "      ${color1}▶${BOX_NC} ${disp1}"
-                fi
-                print_box_line ""
-            done
-        else
-            # Layout de 1 columna (pocos campos)
-            for ((i=0; i<num_fields; i++)); do
-                local var_name="${field_vars[$i]}"
-                local label="${field_labels[$i]}"
-                local current_value="${!var_name}"
-                local display_value="${current_value:-not set}"
-                [[ "$var_name" == *"TOKEN"* || "$var_name" == *"PASSWORD"* || "$var_name" == *"KEY"* || "$var_name" == *"AUTH"* ]] && [ -n "$current_value" ] && display_value="${current_value:0:10}..."
-                local status_color="${RED}"; [ -n "$current_value" ] && status_color="${GREEN}"
-                print_box_line "  ${CYAN}[$((i+1))]${BOX_NC} ${label}"
+            # Mostrar indicador de selección
+            if [ $i -eq $current_index ]; then
+                print_box_line "  ${CYAN}▶${BOX_NC} ${BOLD}${label}${BOX_NC}"
                 print_box_line "      ${status_color}▶${BOX_NC} ${display_value}"
-                print_box_line ""
-            done
-        fi
+            else
+                print_box_line "    ${DIM}${label}${BOX_NC}"
+                print_box_line "      ${status_color}▶${BOX_NC} ${display_value}"
+            fi
+            print_box_line ""
+        done
 
         print_box_sep
-        print_box_line "  ${CYAN}[1-${num_fields}]${BOX_NC} ${MENU_EDIT_FIELD:-Edit field}    ${CYAN}[S]${BOX_NC} ${MENU_SAVE:-Save}    ${CYAN}[Q]${BOX_NC} ${MENU_BACK:-Back}"
+        print_box_line "  ${CYAN}[↑/↓]${BOX_NC} ${MENU_NAV_SELECT:-Navigate}    ${CYAN}[ENTER]${BOX_NC} ${MENU_EDIT_FIELD:-Edit}    ${CYAN}[S]${BOX_NC} ${MENU_SAVE:-Save}    ${CYAN}[Q]${BOX_NC} ${MENU_BACK:-Back}"
         print_box_bottom
 
         # Leer tecla
-        read -rsn1 key
+        local key=""
+        IFS= read -rsn1 key
 
-        # Verificar si es un número válido
-        if [[ "$key" =~ ^[1-9]$ ]]; then
-            local field_idx=$((key - 1))
-            if [ $field_idx -lt $num_fields ]; then
-                local var_name="${field_vars[$field_idx]}"
-                local label="${field_labels[$field_idx]}"
+        # Detectar secuencias de escape (flechas)
+        if [[ "$key" == $'\x1b' ]]; then
+            read -rsn2 -t 0.1 key
+            case "$key" in
+                '[A') # Arriba
+                    if [ $current_index -gt 0 ]; then
+                        ((current_index--))
+                    else
+                        current_index=$((num_fields - 1))
+                    fi
+                    ;;
+                '[B') # Abajo
+                    if [ $current_index -lt $((num_fields - 1)) ]; then
+                        ((current_index++))
+                    else
+                        current_index=0
+                    fi
+                    ;;
+            esac
+        elif [[ "$key" == "" ]]; then
+            # ENTER - Editar campo seleccionado
+            tput cnorm 2>/dev/null
+            local var_name="${field_vars[$current_index]}"
+            local label="${field_labels[$current_index]}"
 
-                echo ""
-                print_box_top
-                print_box_center "${BOLD}${label}${BOX_NC}"
-                print_box_bottom
-                echo ""
-                printf "  ${MENU_ENTER_VALUE:-Enter value}: "
-                local new_value
-                read -r new_value
+            echo ""
+            print_box_top
+            print_box_center "${BOLD}${label}${BOX_NC}"
+            print_box_bottom
+            echo ""
+            printf "  ${MENU_ENTER_VALUE:-Enter value}: "
+            local new_value
+            read -r new_value
 
-                if [ -n "$new_value" ]; then
-                    export "$var_name"="$new_value"
+            if [ -n "$new_value" ]; then
+                export "$var_name"="$new_value"
+                # Advertencia de seguridad para URLs HTTP (sin cifrado)
+                if [[ "$var_name" == *"URL"* || "$var_name" == *"SERVER"* ]] && [[ "$new_value" == http://* ]]; then
+                    echo ""
+                    print_box_top
+                    print_box_center "${YELLOW}${ICON_WARN:-⚠}  ${MENU_HTTP_WARNING:-WARNING: HTTP is not secure}${BOX_NC}"
+                    print_box_line "  ${DIM}${MENU_HTTP_WARNING_DESC:-Credentials may be transmitted in plaintext.}${BOX_NC}"
+                    print_box_line "  ${DIM}${MENU_HTTP_WARNING_HINT:-Consider using HTTPS instead.}${BOX_NC}"
+                    print_box_bottom
+                    sleep 2
                 fi
             fi
+            tput civis 2>/dev/null
         elif [[ "$key" == "s" || "$key" == "S" ]]; then
             # Guardar configuración
             save_config
@@ -1617,7 +1612,7 @@ show_notifier_config() {
         fi
     done
 
-    tput civis 2>/dev/null
+    tput cnorm 2>/dev/null
 }
 
 show_notifier_help() {
@@ -2327,7 +2322,7 @@ show_interactive_menu() {
         print_box_sep
         print_box_line "${MENU_SELECTED}: ${GREEN}${active_count}${BOX_NC}/${total_items}    ${MENU_PROFILE}: $(config_exists && echo "${GREEN}${MENU_PROFILE_SAVED}${BOX_NC}" || echo "${DIM}${MENU_PROFILE_UNSAVED}${BOX_NC}")"
         print_box_sep
-        print_box_center "${CYAN}[ENTER]${BOX_NC} ${MENU_CTRL_ENTER} ${CYAN}[A]${BOX_NC} ${MENU_CTRL_ALL} ${CYAN}[G]${BOX_NC} ${MENU_CTRL_SAVE} ${CYAN}[L]${BOX_NC} ${MENU_CTRL_LANG} ${CYAN}[T]${BOX_NC} ${MENU_CTRL_THEME:-Theme} ${CYAN}[O]${BOX_NC} ${MENU_CTRL_NOTIF:-Notif} ${CYAN}[Q]${BOX_NC} ${MENU_CTRL_QUIT}"
+        print_box_center "${CYAN}[ENTER]${BOX_NC} ${MENU_CTRL_ENTER} ${CYAN}[G]${BOX_NC} ${MENU_CTRL_SAVE} ${CYAN}[L]${BOX_NC} ${MENU_CTRL_LANG} ${CYAN}[T]${BOX_NC} ${MENU_CTRL_THEME:-Theme} ${CYAN}[O]${BOX_NC} ${MENU_CTRL_NOTIF:-Notif} ${CYAN}[Q]${BOX_NC} ${MENU_CTRL_QUIT}"
         print_box_bottom
 
         # Leer tecla
