@@ -720,128 +720,60 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 
 ## Changelog v2025.12
 
-### Historial de Commits (Desarrollo)
+### Nuevas Funcionalidades
+- **Sistema de Notificaciones Multi-canal** - Arquitectura de plugins para notificaciones con menu dedicado `[O]`
+- **Notificador Desktop** - Notificaciones de escritorio via notify-send (funciona con sudo)
+- **Notificador Telegram** - Notificaciones via Telegram Bot API con configuracion guiada
+- **Notificador ntfy.sh** - Push notifications via ntfy.sh con soporte para servidores self-hosted
+- **Notificador Webhook** - HTTP webhooks con presets para Slack, Discord, Microsoft Teams y APIs custom
+- **Notificador Email** - Email via SMTP con curl (Gmail, Outlook, Yahoo, custom) sin dependencias extra
+- **Tutorial de notificadores** - Documentacion en `plugins/notifiers/TUTORIAL.md` para crear notificadores custom
+- **Perfiles Predefinidos** - Nuevo argumento `--profile` con 5 perfiles: server, desktop, developer, minimal, **custom**
+- **Perfil Custom** - Nuevo perfil que lee toda la configuracion desde `autoclean.conf` (idioma, tema y pasos)
+- **Auto-generacion de configuracion** - Si `autoclean.conf` no existe, se genera automaticamente con valores por defecto
+- **Deteccion automatica del idioma** - El archivo de configuracion se genera con el idioma del sistema
+- **Limpieza Docker/Podman** - Nuevo paso para limpiar imagenes, contenedores y volumenes sin usar
+- **Verificacion SMART** - Diagnostico de salud de discos duros antes de realizar cambios
+- **Programacion Systemd Timer** - Opciones `--schedule`, `--unschedule`, `--schedule-status` para automatizar ejecucion
+- **Deteccion dinamica de idiomas** - Los idiomas se detectan automaticamente desde `plugins/lang/`, selector en grid 4 columnas
+- **Tutorial de idiomas** - Documentacion en `plugins/lang/TUTORIAL.md` para crear idiomas personalizados
+- **Deteccion dinamica de temas** - Los temas se detectan automaticamente desde `plugins/themes/`
+- **4 nuevos temas** - Dracula, Matrix (fondo negro), Synthwave (fondo purpura), Monokai
+- **Tutorial de temas** - Documentacion en `plugins/themes/TUTORIAL.md` para crear temas personalizados
+- **Estructura simplificada** - Carpetas lang/ y themes/ movidas dentro de plugins/ para centralizar recursos
 
-```
-bd07012 fix(i18n): regionalize hardcoded messages and fix validation
-5cef5a2 fix: auto-detect system language when generating default config
-ec8f8be security: fix critical and high severity vulnerabilities
-f6137b6 refactor: move lang and themes into plugins directory
-2ce0c5e Security fixes and UI improvements (closes #8)
-46f3edb Update email notifier labels with examples
-98c2ef5 Optimize notifier config UI: 2-column layout and shorter labels
-48dd888 Add email notification plugin via SMTP (curl)
-53f5c7f Optimize notifier config screen layout
-e0d4449 Add --notify flag for dry-run notifications (closes #7)
-aef0952 Add generic webhook notification plugin (closes #6)
-0fc4f99 Add ntfy.sh notification plugin
-398fb39 Add multi-channel notification system with plugin architecture
-1894aaf Remove Russian language file and update README
-78e30bd Add dynamic language detection, Russian language, and language tutorial
-5b03f2e Update README with 9 themes and dynamic detection
-17aa892 Add dynamic theme detection, 4 new themes, and theme tutorial
-6646032 Add security hardening: source validation, declare -n, and find cleanup
-ceb46b1 Add custom profile and auto-generate configuration file
-c1be704 Add unattended mode to server and minimal profiles
-```
+### Mejoras
+- **UI de configuracion de notificadores** - Interfaz clara con campos numerados, indicadores de estado y guardado directo
+- **Descripciones de notificadores traducidas** - Las descripciones se adaptan al idioma seleccionado
+- **Archivo de configuracion mejorado** - Ahora incluye SAVED_PROFILE, idioma, tema, notificadores y todos los pasos
+- **Comentarios de configuracion en ingles** - El archivo autoclean.conf se genera con comentarios en ingles
+- **Orden logico de pasos** - Reorganizado en 5 fases: Verificaciones, Backups, Actualizaciones, Limpieza, Final
+- **SMART en posicion temprana** - Verifica salud de discos ANTES de hacer cambios al sistema
+- **Instalacion interactiva de herramientas** - Ofrece instalar smartmontools si no esta disponible
+- **EXECUTION SUMMARY completo** - Ahora muestra los 15 pasos correctamente
+- **Selectores en grid 4 columnas** - Tanto idiomas como temas usan navegacion con flechas
+- **Validacion de archivos de configuracion** - Los archivos `.conf`, `.lang` y `.theme` se validan antes de cargar
+- **Regionalizacion completa** - Todos los mensajes del script usan variables MSG_* para soportar multiples idiomas
 
-### Detalle por Commit
+### Seguridad
+- **Funcion validate_source_file()** - Valida archivos antes de `source` para prevenir inyeccion de codigo
+- **Funcion validate_notifier_file()** - Validacion especifica para plugins que permite comandos pero bloquea patrones peligrosos
+- **Variables seguras con declare -n** - Usa nameref en lugar de eval para manipulacion de variables en el menu
+- **Limpieza segura con find** - Usa find con delimitadores seguros en lugar de ls | xargs rm
+- **Reemplazo de eval por bash -c** - safe_run() ahora usa bash -c en lugar de eval para evitar command injection
+- **Validacion de /etc/os-release** - Se valida el archivo antes de hacer source para prevenir code execution
+- **Proteccion anti-symlink** - validate_source_file() y validate_notifier_file() verifican que los archivos no sean symlinks maliciosos
+- **Flock atomico** - check_lock() usa flock para evitar race conditions TOCTOU
+- **Validacion de webhook** - El notificador webhook valida formato de URL, metodo HTTP y headers de autenticacion
+- **Umask seguro** - Los archivos de configuracion se crean con umask 077 para evitar exposicion temporal de credenciales
+- **Regex de validacion mejorado** - Permite codigos ANSI en temas pero bloquea ejecucion de comandos
 
-#### bd07012 - fix(i18n): regionalize hardcoded messages and fix validation
-- Fix validate_source_file regex para permitir códigos ANSI en temas
-- Fix log() para no fallar antes de init_log()
-- Regionalizar check_root() usando variables MSG_*
-- Regionalizar mensajes de "skipping tool check" y "APT busy"
-- Actualizar comentarios de config a inglés
-- Fix cleanup() para solo loguear cuando el lock file existe
-
-#### 5cef5a2 - fix: auto-detect system language when generating default config
-- generate_default_config() ahora detecta el idioma del sistema
-- Si el idioma existe en plugins/lang/, lo usa automáticamente
-
-#### ec8f8be - security: fix critical and high severity vulnerabilities
-- Reemplazo de eval por bash -c en safe_run()
-- Validación de /etc/os-release antes de source
-- Regex más estricto en validate_source_file()
-- Protección anti-symlink con realpath
-- Flock atómico en check_lock()
-- Validación de webhook URL/method/headers
-- Umask 077 para archivos de configuración
-
-#### f6137b6 - refactor: move lang and themes into plugins directory
-- Movido lang/ a plugins/lang/
-- Movido themes/ a plugins/themes/
-- Actualizado LANG_DIR y THEME_DIR
-- Actualizado hints en menús
-
-#### 2ce0c5e - Security fixes and UI improvements (closes #8)
-- Mejoras de seguridad generales
-- Mejoras de interfaz de usuario
-
-#### 48dd888 - Add email notification plugin via SMTP (curl)
-- Nuevo notificador Email via SMTP
-- Soporte para Gmail, Outlook, Yahoo, custom
-- Sin dependencias extra (usa curl)
-
-#### aef0952 - Add generic webhook notification plugin (closes #6)
-- Notificador Webhook con presets
-- Soporte Slack, Discord, Teams, APIs custom
-- Validación de seguridad de URLs
-
-#### 0fc4f99 - Add ntfy.sh notification plugin
-- Notificador ntfy.sh para push notifications
-- Soporte para servidores self-hosted
-
-#### 398fb39 - Add multi-channel notification system with plugin architecture
-- Arquitectura de plugins para notificaciones
-- Menú dedicado [O] para notificaciones
-- Carga dinámica de notificadores
-
-#### 17aa892 - Add dynamic theme detection, 4 new themes, and theme tutorial
-- Detección dinámica de temas desde plugins/themes/
-- Nuevos temas: Dracula, Matrix, Synthwave, Monokai
-- Tutorial en plugins/themes/TUTORIAL.md
-
-#### 78e30bd - Add dynamic language detection and language tutorial
-- Detección dinámica de idiomas desde plugins/lang/
-- Tutorial en plugins/lang/TUTORIAL.md
-- Selector en grid 4 columnas
-
-#### 6646032 - Add security hardening
-- Función validate_source_file() para validar archivos
-- Variables seguras con declare -n
-- Limpieza segura con find
-
-#### ceb46b1 - Add custom profile and auto-generate configuration file
-- Nuevo perfil "custom" que lee toda la config
-- Auto-generación de autoclean.conf si no existe
-
----
-
-### Resumen de Funcionalidades
-
-#### Nuevas Funcionalidades
-- **Sistema de Notificaciones Multi-canal** - Arquitectura de plugins con 5 notificadores
-- **Perfiles Predefinidos** - 5 perfiles: server, desktop, developer, minimal, custom
-- **Auto-generacion de configuracion** - autoclean.conf se genera automáticamente
-- **Limpieza Docker/Podman** - Nuevo paso para contenedores
-- **Verificacion SMART** - Diagnóstico de salud de discos
-- **Programacion Systemd Timer** - Automatización con systemd
-- **Deteccion dinamica de idiomas y temas** - Plugins extensibles
-
-#### Seguridad
-- Validación de archivos antes de source
-- Protección anti-symlink
-- Flock atómico
-- Umask seguro
-- Reemplazo de eval por bash -c
-
-#### Correcciones
-- Fix Norton Commander theme overflow
-- Fix resumen de ejecución 15/15 pasos
-- Fix regex de validación para temas con ANSI
-- Fix log() sin init
-- Regionalización completa de mensajes
+### Correcciones
+- **Fix Norton Commander theme** - Corregido overflow de fondo azul fuera de los margenes
+- **Fix resumen de ejecucion** - Arreglado para mostrar 15/15 pasos en lugar de 13/13
+- **Fix validacion de temas** - Regex corregido para permitir codigos ANSI como `\033[0;31m`
+- **Fix log() sin init** - La funcion log() ya no falla si se llama antes de init_log()
+- **Fix cleanup() innecesario** - Ya no muestra "Lock file removed" cuando no hay lock
 
 ---
 
