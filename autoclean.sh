@@ -345,34 +345,34 @@ update_language_arrays() {
 # ============================================================================
 
 save_config() {
-    # Guardar estado actual de los pasos y preferencias en archivo de configuración
-    # SECURITY: Crear archivo con permisos restrictivos desde el inicio (evita race condition)
+    # Save current step states and preferences to configuration file
+    # SECURITY: Create file with restrictive permissions from the start (avoid race condition)
     local old_umask=$(umask)
     umask 077
     cat > "$CONFIG_FILE" << EOF
-# Configuración de autoclean - Generado automáticamente
-# Fecha: $(date '+%Y-%m-%d %H:%M:%S')
+# Autoclean configuration - Auto-generated
+# Date: $(date '+%Y-%m-%d %H:%M:%S')
 
 # ============================================================================
-# PERFIL / PROFILE
+# PROFILE
 # ============================================================================
-# Valores: server, desktop, developer, minimal, custom
+# Values: server, desktop, developer, minimal, custom
 SAVED_PROFILE=${PROFILE:-custom}
 
 # ============================================================================
-# IDIOMA / LANGUAGE
+# LANGUAGE
 # ============================================================================
 SAVED_LANG=$CURRENT_LANG
 
 # ============================================================================
-# TEMA / THEME
+# THEME
 # ============================================================================
 SAVED_THEME=$CURRENT_THEME
 
 # ============================================================================
-# CONFIGURACION DE PASOS / STEPS CONFIGURATION
+# STEPS CONFIGURATION
 # ============================================================================
-# (Solo aplica cuando SAVED_PROFILE=custom)
+# (Only applies when SAVED_PROFILE=custom)
 STEP_CHECK_CONNECTIVITY=$STEP_CHECK_CONNECTIVITY
 STEP_CHECK_DEPENDENCIES=$STEP_CHECK_DEPENDENCIES
 STEP_BACKUP_TAR=$STEP_BACKUP_TAR
@@ -390,21 +390,21 @@ STEP_CHECK_SMART=$STEP_CHECK_SMART
 STEP_CHECK_REBOOT=$STEP_CHECK_REBOOT
 EOF
 
-    # Agregar sección de notificadores
+    # Add notifiers section
     cat >> "$CONFIG_FILE" << 'NOTIF_HEADER'
 
 # ============================================================================
-# NOTIFICACIONES / NOTIFICATIONS
+# NOTIFICATIONS
 # ============================================================================
 NOTIF_HEADER
 
-    # Guardar estado habilitado/deshabilitado de cada notificador
+    # Save enabled/disabled state of each notifier
     for code in "${AVAILABLE_NOTIFIERS[@]}"; do
         local enabled="${NOTIFIER_ENABLED[$code]:-0}"
         echo "NOTIFIER_${code^^}_ENABLED=$enabled" >> "$CONFIG_FILE"
     done
 
-    # Guardar configuraciones específicas de cada notificador
+    # Save specific configuration for each notifier
     # Telegram
     [ -n "$NOTIFIER_TELEGRAM_BOT_TOKEN" ] && echo "NOTIFIER_TELEGRAM_BOT_TOKEN=\"$NOTIFIER_TELEGRAM_BOT_TOKEN\"" >> "$CONFIG_FILE"
     [ -n "$NOTIFIER_TELEGRAM_CHAT_ID" ] && echo "NOTIFIER_TELEGRAM_CHAT_ID=\"$NOTIFIER_TELEGRAM_CHAT_ID\"" >> "$CONFIG_FILE"
@@ -466,13 +466,13 @@ validate_source_file() {
     local content
     content=$(grep -v '^\s*#' "$file" 2>/dev/null)
 
-    # SECURITY: Buscar patrones peligrosos con regex más estricto:
+    # SECURITY: Buscar patrones peligrosos con regex:
     # - $( o ` = command substitution
-    # - ; seguido de cualquier caracter (no solo espacio+letra) = ejecución secuencial
+    # - ; seguido de espacios opcionales y letra = ejecución secuencial (permite ;0-9 para ANSI codes)
     # - | = pipe a otro comando
     # - && o || = operadores lógicos (con o sin espacios)
     # - ${ con comandos = parameter expansion peligrosa
-    if echo "$content" | grep -qE '\$\(|`|;.|[^a-zA-Z0-9_]\|[^a-zA-Z0-9_]|&&|\|\||\$\{[^}]*(:|/|%|#)' 2>/dev/null; then
+    if echo "$content" | grep -qE '\$\(|`|;[[:space:]]*[a-zA-Z_]|[^a-zA-Z0-9_]\|[^a-zA-Z0-9_]|&&|\|\||\$\{[^}]*(:|/|%|#)' 2>/dev/null; then
         log "WARN" "Archivo $file_type rechazado: contiene sintaxis no permitida"
         return 1
     fi
@@ -583,31 +583,31 @@ generate_default_config() {
     local old_umask=$(umask)
     umask 077
     cat > "$CONFIG_FILE" << EOF
-# Configuracion de autoclean - Generado automaticamente
-# Fecha: $(date '+%Y-%m-%d %H:%M:%S')
+# Autoclean configuration - Auto-generated
+# Date: $(date '+%Y-%m-%d %H:%M:%S')
 
 # ============================================================================
-# PERFIL / PROFILE
+# PROFILE
 # ============================================================================
-# Valores: server, desktop, developer, minimal, custom
-# custom = usa los valores STEP_* definidos abajo
+# Values: server, desktop, developer, minimal, custom
+# custom = uses the STEP_* values defined below
 SAVED_PROFILE=custom
 
 # ============================================================================
-# IDIOMA / LANGUAGE
+# LANGUAGE
 # ============================================================================
 SAVED_LANG=$detected_lang
 
 # ============================================================================
-# TEMA / THEME
+# THEME
 # ============================================================================
 SAVED_THEME=$DEFAULT_THEME
 
 # ============================================================================
-# CONFIGURACION DE PASOS / STEPS CONFIGURATION
+# STEPS CONFIGURATION
 # ============================================================================
-# (Solo aplica cuando SAVED_PROFILE=custom)
-# Cambia a 0 para desactivar un paso, 1 para activarlo
+# (Only applies when SAVED_PROFILE=custom)
+# Set to 0 to disable a step, 1 to enable it
 
 STEP_CHECK_CONNECTIVITY=1
 STEP_CHECK_DEPENDENCIES=1
@@ -2019,10 +2019,14 @@ log() {
     local level="$1"; shift
     local message="$*"
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo "[${timestamp}] [${level}] ${message}" >> "$LOG_FILE"
-    
+
+    # Only write to log file if it exists (init_log has been called)
+    if [[ -n "$LOG_FILE" && -w "$(dirname "$LOG_FILE" 2>/dev/null)" ]]; then
+        echo "[${timestamp}] [${level}] ${message}" >> "$LOG_FILE" 2>/dev/null
+    fi
+
     [ "$QUIET" = true ] && return
-    
+
     case "$level" in
         ERROR)   echo -e "${RED}[XX] ${message}${NC}" ;;
         WARN)    echo -e "${YELLOW}[!!] ${message}${NC}" ;;
@@ -2085,8 +2089,11 @@ print_header() {
 cleanup() {
     # SECURITY: Cerrar el file descriptor del flock y eliminar lock file
     exec 200>&- 2>/dev/null  # Cerrar fd 200 (libera el flock automáticamente)
-    rm -f "$LOCK_FILE" 2>/dev/null
-    log "INFO" "Lock file removed"
+    # Only log if lock file existed and was removed
+    if [[ -f "$LOCK_FILE" ]]; then
+        rm -f "$LOCK_FILE" 2>/dev/null
+        log "INFO" "Lock file removed"
+    fi
 }
 
 trap cleanup EXIT INT TERM
@@ -2174,16 +2181,16 @@ check_root() {
     if [ "$EUID" -ne 0 ]; then
         echo ""
         print_box_top "$RED"
-        print_box_line "${RED}[XX] ERROR: Este script requiere permisos de root${NC}"
+        print_box_line "${RED}[XX] ERROR: ${MSG_ROOT_REQUIRED:-This script requires root permissions}${NC}"
         print_box_bottom "$RED"
         echo ""
-        echo -e "  ${YELLOW}Uso correcto:${NC}"
+        echo -e "  ${YELLOW}${MSG_CORRECT_USAGE:-Correct usage:}${NC}"
         echo -e "    ${GREEN}sudo ./autoclean.sh${NC}"
         echo ""
-        echo -e "  ${CYAN}Opciones disponibles:${NC}"
-        echo -e "    ${GREEN}sudo ./autoclean.sh --help${NC}      Ver ayuda completa"
-        echo -e "    ${GREEN}sudo ./autoclean.sh --dry-run${NC}   Simular sin cambios"
-        echo -e "    ${GREEN}sudo ./autoclean.sh -y${NC}          Modo desatendido"
+        echo -e "  ${CYAN}${MSG_AVAILABLE_OPTIONS:-Available options:}${NC}"
+        echo -e "    ${GREEN}sudo ./autoclean.sh --help${NC}      ${MSG_VIEW_HELP:-View full help}"
+        echo -e "    ${GREEN}sudo ./autoclean.sh --dry-run${NC}   ${MSG_SIMULATE_CHANGES:-Simulate without changes}"
+        echo -e "    ${GREEN}sudo ./autoclean.sh -y${NC}          ${MSG_UNATTENDED_MODE:-Unattended mode}"
         echo ""
         exit 1
     fi
@@ -2205,7 +2212,7 @@ check_lock() {
 
     # Verificación extra de locks de APT
     if fuser /var/lib/dpkg/lock* /var/lib/apt/lists/lock* 2>/dev/null | grep -q .; then
-        echo -e "${RED}[XX] APT esta ocupado. Cierra Synaptic/Discover e intenta de nuevo.${NC}"
+        echo -e "${RED}[XX] ${MSG_APT_BUSY:-APT is busy. Close Synaptic/Discover and try again.}${NC}"
         exit 1
     fi
 }
@@ -2230,25 +2237,25 @@ count_active_steps() {
 }
 
 validate_step_dependencies() {
-    log "INFO" "Validando dependencias entre pasos..."
+    log "INFO" "${MSG_VALIDATING_DEPS:-Validating step dependencies...}"
     
     # Si se va a actualizar sistema, DEBE actualizarse repositorios
     if [ "$STEP_UPGRADE_SYSTEM" = 1 ] && [ "$STEP_UPDATE_REPOS" = 0 ]; then
-        die "No puedes actualizar el sistema (STEP_UPGRADE_SYSTEM=1) sin actualizar repositorios (STEP_UPDATE_REPOS=0). Activa STEP_UPDATE_REPOS."
+        die "${MSG_UPGRADE_WITHOUT_REPOS:-You cannot upgrade the system (STEP_UPGRADE_SYSTEM=1) without updating repos (STEP_UPDATE_REPOS=0). Enable STEP_UPDATE_REPOS.}"
     fi
     
     # Si se va a limpiar kernels en Testing, recomendamos snapshot
     if [ "$STEP_CLEANUP_KERNELS" = 1 ] && [ "$STEP_SNAPSHOT_TIMESHIFT" = 0 ]; then
-        log "WARN" "Limpieza de kernels sin snapshot de Timeshift puede ser riesgoso"
+        log "WARN" "${MSG_KERNEL_CLEANUP_RISKY:-Kernel cleanup without Timeshift snapshot may be risky}"
         if [ "$UNATTENDED" = false ]; then
-            echo -e "${YELLOW}[!!] Vas a limpiar kernels sin crear snapshot de Timeshift.${NC}"
-            read -p "¿Continuar de todos modos? (s/N): " -n 1 -r
+            echo -e "${YELLOW}[!!] ${MSG_KERNEL_CLEANUP_RISKY:-Kernel cleanup without Timeshift snapshot may be risky}${NC}"
+            read -p "${MSG_CONTINUE_ANYWAY:-Continue anyway? (y/N):} " -n 1 -r
             echo
-            [[ ! $REPLY =~ ^[Ss]$ ]] && die "Abortado por el usuario"
+            [[ ! $REPLY =~ ^[YySs]$ ]] && die "${MSG_ABORTED_BY_USER:-Aborted by user}"
         fi
     fi
     
-    log "SUCCESS" "Validación de dependencias OK"
+    log "SUCCESS" "${MSG_DEPS_VALIDATION_OK:-Dependency validation OK}"
 }
 
 show_step_summary() {
@@ -2552,7 +2559,7 @@ step_check_dependencies() {
         else
             # El paso está desactivado, no verificar esta herramienta
             skipped_tools+=("$tool")
-            log "INFO" "Omitiendo verificación de $tool (paso desactivado)"
+            log "INFO" "$(printf "${MSG_SKIPPING_TOOL_CHECK:-Skipping verification of %s (step disabled)}" "$tool")"
         fi
     done
     
@@ -3005,7 +3012,7 @@ step_cleanup_kernels() {
     
     # Validación crítica: asegurar que el kernel actual esté en la lista
     if ! echo "$kernels_to_keep" | grep -q "$current_kernel_pkg"; then
-        log "WARN" "Kernel actual no está en los más recientes, forzando inclusión"
+        log "WARN" "${MSG_KERNEL_FORCING_INCLUSION:-Current kernel not in most recent list, forcing inclusion}"
         kernels_to_keep=$(echo -e "${current_kernel_pkg}\n${kernels_to_keep}" | sort -V | tail -n "$KERNELS_TO_KEEP")
     fi
     
@@ -3322,7 +3329,7 @@ step_check_reboot() {
         local critical_libs=$(echo "$needrestart_output" | grep "NEEDRESTART-UCSTA:" | awk '{print $2}')
         critical_libs=$(echo "$critical_libs" | tr -d '[:space:]')
         
-        log "INFO" "Estado UCSTA (librerías críticas): '$critical_libs'"
+        log "INFO" "${MSG_UCSTA_STATUS:-UCSTA status (critical libraries)}: '$critical_libs'"
         
         # LÓGICA CRÍTICA:
         # UCSTA=1 puede ser persistente desde una actualización anterior
@@ -3466,7 +3473,7 @@ show_final_summary() {
     send_notification "Autoclean ${overall_status}" "$notification_message" "$notification_severity"
 
     log "INFO" "=========================================="
-    log "INFO" "Mantenimiento completado en ${minutes}m ${seconds}s"
+    log "INFO" "$(printf "${MSG_MAINTENANCE_COMPLETED:-Maintenance completed in %dm %ds}" "$minutes" "$seconds")"
     log "INFO" "=========================================="
 
     # === RESUMEN ENTERPRISE 3 COLUMNAS (78 chars) ===
@@ -3740,8 +3747,8 @@ EOF
             exit 0
             ;;
         *)
-            echo "Opción desconocida: $1"
-            echo "Usa --help para ver las opciones disponibles"
+            echo "${MSG_UNKNOWN_OPTION:-Unknown option}: $1"
+            echo "${MSG_USE_HELP:-Use --help to see available options}"
             exit 1
             ;;
     esac
@@ -3796,7 +3803,7 @@ check_root
 # Inicialización
 init_log
 log "INFO" "=========================================="
-log "INFO" "Iniciando Mantenimiento v${SCRIPT_VERSION}"
+log "INFO" "${MSG_STARTING_MAINTENANCE:-Starting Maintenance} v${SCRIPT_VERSION}"
 log "INFO" "=========================================="
 
 # Aplicar perfil si se especificó via CLI (--profile)
