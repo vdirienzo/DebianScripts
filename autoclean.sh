@@ -571,6 +571,14 @@ generate_default_config() {
     # Esta funcion se llama automaticamente si el archivo no existe
     log "INFO" "${MSG_CONFIG_GENERATING:-Generating default configuration file...}"
 
+    # Detectar idioma del sistema y verificar si está soportado
+    local detected_lang="$DEFAULT_LANG"
+    local sys_lang="${LANG%%_*}"
+    sys_lang="${sys_lang%%.*}"
+    if [ -n "$sys_lang" ] && [ -f "${LANG_DIR}/${sys_lang}.lang" ]; then
+        detected_lang="$sys_lang"
+    fi
+
     # SECURITY: Crear archivo con permisos restrictivos desde el inicio
     local old_umask=$(umask)
     umask 077
@@ -588,7 +596,7 @@ SAVED_PROFILE=custom
 # ============================================================================
 # IDIOMA / LANGUAGE
 # ============================================================================
-SAVED_LANG=$DEFAULT_LANG
+SAVED_LANG=$detected_lang
 
 # ============================================================================
 # TEMA / THEME
