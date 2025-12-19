@@ -16,8 +16,8 @@ NOTIFIER_DEPS="curl"
 declare -A NOTIFIER_FIELDS=(
     ["NOTIFIER_EMAIL_TO"]="Recipient email"
     ["NOTIFIER_EMAIL_FROM"]="Sender email"
-    ["NOTIFIER_EMAIL_SMTP_SERVER"]="SMTP server"
-    ["NOTIFIER_EMAIL_SMTP_PORT"]="SMTP port (465/587)"
+    ["NOTIFIER_EMAIL_SMTP_SERVER"]="SMTP server ej: smtp.gmail.com"
+    ["NOTIFIER_EMAIL_SMTP_PORT"]="SMTP port 587 (TLS) o 465 (SSL)"
     ["NOTIFIER_EMAIL_USER"]="SMTP username"
     ["NOTIFIER_EMAIL_PASSWORD"]="SMTP password"
 )
