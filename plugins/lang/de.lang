@@ -190,6 +190,7 @@ MSG_FLATPAK_ERROR="Fehler beim Aktualisieren von Flatpak"
 MSG_UPDATING_SNAP="Aktualisiere Snap-Anwendungen..."
 MSG_SNAP_NOT_INSTALLED="Snap ist nicht installiert"
 MSG_SNAP_UPDATED="Snap aktualisiert"
+MSG_SNAP_CLEANING_OLD="Alte Snap-Revisionen werden bereinigt..."
 MSG_SNAP_ERROR="Fehler beim Aktualisieren von Snap"
 
 # === MESSAGES - FIRMWARE ===

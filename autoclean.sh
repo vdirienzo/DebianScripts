@@ -2892,7 +2892,20 @@ step_update_snap() {
         return
     fi
 
+    # 1. Update all snaps
     if safe_run "snap refresh" "Error"; then
+        # 2. Clean old revisions (disabled snaps) to free disk space
+        local disabled_snaps
+        disabled_snaps=$(snap list --all 2>/dev/null | awk '/disabled/{print $1, $3}')
+
+        if [[ -n "$disabled_snaps" ]]; then
+            echo "→ ${MSG_SNAP_CLEANING_OLD:-Cleaning old snap revisions...}"
+            while read -r name rev; do
+                [[ -z "$name" ]] && continue
+                snap remove "$name" --revision="$rev" &>/dev/null
+            done <<< "$disabled_snaps"
+        fi
+
         echo "→ ${MSG_SNAP_UPDATED}"
         STAT_SNAP="$ICON_OK"
         log "SUCCESS" "${MSG_SNAP_UPDATED}"
