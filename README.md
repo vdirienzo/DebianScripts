@@ -133,6 +133,8 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 - **Validacion de archivos de configuracion**: Los archivos `.conf`, `.lang` y `.theme` se validan antes de cargar para prevenir inyeccion de codigo
 - **Manejo seguro de archivos**: Usa `find` con delimitadores seguros para limpieza de logs y backups
 - **Variables seguras**: Usa `declare -n` (nameref) en lugar de `eval` para manipulacion de variables en el menu
+- **Proteccion de credenciales**: El archivo `autoclean.conf` se guarda con permisos `600` (solo lectura/escritura para el propietario)
+- **Advertencia HTTP**: Muestra alerta al configurar URLs HTTP en webhooks (recomendando HTTPS)
 
 ### Control y Modularidad
 
@@ -361,7 +363,7 @@ Al ejecutar el script sin argumentos, se muestra un menu interactivo en formato 
 ╠════════════════════════════════════════════════════════════════════════════╣
 ║ Seleccionados: 13/15    Perfil: Guardado                                   ║
 ╠════════════════════════════════════════════════════════════════════════════╣
-║          [ENTER] Ejecutar [A] Todos [N] Ninguno [G] Guardar [Q] Salir      ║
+║          [ENTER] Ejecutar [G] Guardar [L] Idioma [T] Tema [O] Notif [Q] Salir      ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 ```
 
@@ -373,14 +375,18 @@ Al ejecutar el script sin argumentos, se muestra un menu interactivo en formato 
 | ↑ / ↓ | Navegar dentro de la columna |
 | ESPACIO | Activar/desactivar paso seleccionado |
 | ENTER | Ejecutar con la configuracion actual |
-| A | Activar todos los pasos |
-| N | Desactivar todos los pasos |
 | G | Guardar configuracion actual |
 | D | Borrar configuracion guardada |
 | L | Selector de idioma |
 | T | Selector de tema |
 | O | Menu de notificaciones |
 | Q | Salir sin ejecutar |
+
+**Atajos ocultos** (no se muestran en la interfaz):
+| Tecla | Accion |
+|-------|--------|
+| A | Activar todos los pasos |
+| N | Desactivar todos los pasos |
 
 ### Configuracion Persistente
 
