@@ -142,14 +142,14 @@ LOG_DIR="/var/log/debian-maintenance"
 SCRIPT_VERSION="2025.12"
 
 # Configuración de idioma
-LANG_DIR="${SCRIPT_DIR}/lang"
+LANG_DIR="${SCRIPT_DIR}/plugins/lang"
 DEFAULT_LANG="en"
 CURRENT_LANG=""
 AVAILABLE_LANGS=()    # Se llena dinámicamente con detect_languages()
 LANG_NAMES=()         # Nombres para mostrar (de LANG_NAME en cada archivo)
 
 # Configuración de tema
-THEME_DIR="${SCRIPT_DIR}/themes"
+THEME_DIR="${SCRIPT_DIR}/plugins/themes"
 DEFAULT_THEME="default"
 CURRENT_THEME=""
 AVAILABLE_THEMES=()   # Se llena dinámicamente con detect_themes()
@@ -856,7 +856,7 @@ show_language_selector() {
 
         print_box_line ""
         print_box_sep
-        print_box_center "${DIM}${MENU_LANG_HINT:-Add .lang files to lang/ folder}${BOX_NC}"
+        print_box_center "${DIM}${MENU_LANG_HINT:-Add .lang files to plugins/lang/ folder}${BOX_NC}"
         print_box_sep
         print_box_center "${STATUS_INFO}[ENTER]${BOX_NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${BOX_NC} ${MENU_BACK:-Back}"
         print_box_bottom
@@ -1095,7 +1095,7 @@ show_theme_selector() {
 
         print_box_line ""
         print_box_sep
-        print_box_center "${DIM}${MENU_THEME_HINT:-Add .theme files to themes/ folder}${BOX_NC}"
+        print_box_center "${DIM}${MENU_THEME_HINT:-Add .theme files to plugins/themes/ folder}${BOX_NC}"
         print_box_sep
         print_box_center "${STATUS_INFO}[ENTER]${BOX_NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${BOX_NC} ${MENU_BACK:-Back}"
         print_box_bottom

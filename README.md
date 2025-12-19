@@ -70,9 +70,9 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 ### Multi-Idioma (i18n)
 
 - **6 idiomas soportados**: Ingles (en), Espanol (es), Portugues (pt), Frances (fr), Aleman (de), Italiano (it)
-- **Deteccion dinamica de idiomas**: Los idiomas se detectan automaticamente desde la carpeta `lang/`
+- **Deteccion dinamica de idiomas**: Los idiomas se detectan automaticamente desde la carpeta `plugins/lang/`
 - **Selector en grid 4 columnas**: Tecla `[L]` en el menu, navegacion con flechas ←/→/↑/↓
-- **Crea tu propio idioma**: Tutorial incluido en `lang/TUTORIAL.md`
+- **Crea tu propio idioma**: Tutorial incluido en `plugins/lang/TUTORIAL.md`
 - **Deteccion automatica del sistema**: Detecta el idioma del sistema y lo aplica automaticamente
 - **Patrones de confirmacion localizados**: S/N, Y/N, O/N, J/N segun el idioma
 - **Parametro --lang**: Fuerza un idioma especifico desde linea de comandos
@@ -81,9 +81,9 @@ La deteccion se realiza automaticamente usando `/etc/os-release` y el script ada
 ### Temas de Colores
 
 - **9 temas incluidos**: Gran variedad de estilos visuales
-- **Deteccion dinamica**: Los temas se detectan automaticamente desde la carpeta `themes/`
+- **Deteccion dinamica**: Los temas se detectan automaticamente desde la carpeta `plugins/themes/`
 - **Selector en grid 4 columnas**: Tecla `[T]` en el menu, navegacion con flechas
-- **Crea tu propio tema**: Tutorial incluido en `themes/TUTORIAL.md`
+- **Crea tu propio tema**: Tutorial incluido en `plugins/themes/TUTORIAL.md`
 - **Configuracion persistente**: El tema seleccionado se guarda en `autoclean.conf`
 
 ### Sistema de Notificaciones Multi-canal
@@ -734,11 +734,11 @@ Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y dist
 - **Limpieza Docker/Podman** - Nuevo paso para limpiar imagenes, contenedores y volumenes sin usar
 - **Verificacion SMART** - Diagnostico de salud de discos duros antes de realizar cambios
 - **Programacion Systemd Timer** - Opciones `--schedule`, `--unschedule`, `--schedule-status` para automatizar ejecucion
-- **Deteccion dinamica de idiomas** - Los idiomas se detectan automaticamente desde `lang/`, selector en grid 4 columnas
-- **Tutorial de idiomas** - Documentacion en `lang/TUTORIAL.md` para crear idiomas personalizados
-- **Deteccion dinamica de temas** - Los temas se detectan automaticamente desde `themes/`
+- **Deteccion dinamica de idiomas** - Los idiomas se detectan automaticamente desde `plugins/lang/`, selector en grid 4 columnas
+- **Tutorial de idiomas** - Documentacion en `plugins/lang/TUTORIAL.md` para crear idiomas personalizados
+- **Deteccion dinamica de temas** - Los temas se detectan automaticamente desde `plugins/themes/`
 - **4 nuevos temas** - Dracula, Matrix (fondo negro), Synthwave (fondo purpura), Monokai
-- **Tutorial de temas** - Documentacion en `themes/TUTORIAL.md` para crear temas personalizados
+- **Tutorial de temas** - Documentacion en `plugins/themes/TUTORIAL.md` para crear temas personalizados
 
 ### Mejoras
 - **UI de configuracion de notificadores** - Interfaz clara con campos numerados, indicadores de estado y guardado directo
