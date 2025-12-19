@@ -1518,30 +1518,64 @@ show_notifier_config() {
         print_box_sep
         print_box_line ""
 
-        # Mostrar todos los campos con números
+        # Mostrar campos en 2 columnas si hay 4+ campos, sino 1 columna
         local i
-        for ((i=0; i<num_fields; i++)); do
-            local var_name="${field_vars[$i]}"
-            local label="${field_labels[$i]}"
-            local current_value="${!var_name}"
+        local col_width=36
 
-            # Mostrar valor actual (ocultar tokens parcialmente)
-            local display_value="${current_value:-(${DIM}not set${BOX_NC})}"
-            if [[ "$var_name" == *"TOKEN"* || "$var_name" == *"PASSWORD"* || "$var_name" == *"KEY"* || "$var_name" == *"AUTH"* ]]; then
-                if [ -n "$current_value" ]; then
-                    display_value="${current_value:0:10}..."
+        if [ $num_fields -ge 4 ]; then
+            # Layout de 2 columnas
+            for ((i=0; i<num_fields; i+=2)); do
+                # Columna izquierda
+                local var1="${field_vars[$i]}"
+                local label1="${field_labels[$i]}"
+                local val1="${!var1}"
+                local disp1="${val1:-not set}"
+                [[ "$var1" == *"TOKEN"* || "$var1" == *"PASSWORD"* || "$var1" == *"KEY"* || "$var1" == *"AUTH"* ]] && [ -n "$val1" ] && disp1="${val1:0:8}..."
+                local color1="${RED}"; [ -n "$val1" ] && color1="${GREEN}"
+
+                # Columna derecha (si existe)
+                local label2="" disp2="" color2="" num2=""
+                if [ $((i+1)) -lt $num_fields ]; then
+                    local var2="${field_vars[$((i+1))]}"
+                    label2="${field_labels[$((i+1))]}"
+                    local val2="${!var2}"
+                    disp2="${val2:-not set}"
+                    [[ "$var2" == *"TOKEN"* || "$var2" == *"PASSWORD"* || "$var2" == *"KEY"* || "$var2" == *"AUTH"* ]] && [ -n "$val2" ] && disp2="${val2:0:8}..."
+                    color2="${RED}"; [ -n "$val2" ] && color2="${GREEN}"
+                    num2="$((i+2))"
                 fi
-            fi
 
-            # Determinar color según si está configurado
-            local status_color="${RED}"
-            [ -n "$current_value" ] && status_color="${GREEN}"
-
-            # Formato compacto: label completo en una línea, valor en la siguiente
-            print_box_line "  ${CYAN}[$((i+1))]${BOX_NC} ${label}"
-            print_box_line "      ${status_color}▶${BOX_NC} ${display_value}"
-            print_box_line ""
-        done
+                # Imprimir filas con padding manual
+                local left_lbl="[$((i+1))] ${label1}"
+                local left_val="    ${color1}▶${BOX_NC} ${disp1}"
+                if [ -n "$label2" ]; then
+                    # Padding para alinear columnas
+                    local pad=$((col_width - ${#left_lbl}))
+                    [ $pad -lt 1 ] && pad=1
+                    print_box_line "  ${CYAN}[$((i+1))]${BOX_NC} ${label1}$(printf '%*s' $pad '')${CYAN}[${num2}]${BOX_NC} ${label2}"
+                    pad=$((col_width - ${#disp1} - 6))
+                    [ $pad -lt 1 ] && pad=1
+                    print_box_line "      ${color1}▶${BOX_NC} ${disp1}$(printf '%*s' $pad '')  ${color2}▶${BOX_NC} ${disp2}"
+                else
+                    print_box_line "  ${CYAN}[$((i+1))]${BOX_NC} ${label1}"
+                    print_box_line "      ${color1}▶${BOX_NC} ${disp1}"
+                fi
+                print_box_line ""
+            done
+        else
+            # Layout de 1 columna (pocos campos)
+            for ((i=0; i<num_fields; i++)); do
+                local var_name="${field_vars[$i]}"
+                local label="${field_labels[$i]}"
+                local current_value="${!var_name}"
+                local display_value="${current_value:-not set}"
+                [[ "$var_name" == *"TOKEN"* || "$var_name" == *"PASSWORD"* || "$var_name" == *"KEY"* || "$var_name" == *"AUTH"* ]] && [ -n "$current_value" ] && display_value="${current_value:0:10}..."
+                local status_color="${RED}"; [ -n "$current_value" ] && status_color="${GREEN}"
+                print_box_line "  ${CYAN}[$((i+1))]${BOX_NC} ${label}"
+                print_box_line "      ${status_color}▶${BOX_NC} ${display_value}"
+                print_box_line ""
+            done
+        fi
 
         print_box_sep
         print_box_line "  ${CYAN}[1-${num_fields}]${BOX_NC} ${MENU_EDIT_FIELD:-Edit field}    ${CYAN}[S]${BOX_NC} ${MENU_SAVE:-Save}    ${CYAN}[Q]${BOX_NC} ${MENU_BACK:-Back}"
