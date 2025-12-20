@@ -331,14 +331,14 @@ MENU_STEP_VARS=(
 # Function to update arrays from language variables
 update_language_arrays() {
     MENU_STEP_NAMES=(
-        "$STEP_NAME_1"   # Conectividad
-        "$STEP_NAME_2"   # Dependencias
-        "$STEP_NAME_3"   # Repos APT (NUEVO)
+        "$STEP_NAME_1"   # Connectivity
+        "$STEP_NAME_2"   # Dependencies
+        "$STEP_NAME_3"   # APT Repos (NEW)
         "$STEP_NAME_4"   # SMART
-        "$STEP_NAME_5"   # Debsums (NUEVO)
-        "$STEP_NAME_6"   # Seguridad (NUEVO)
-        "$STEP_NAME_7"   # Permisos (NUEVO)
-        "$STEP_NAME_8"   # Servicios (NUEVO)
+        "$STEP_NAME_5"   # Debsums (NEW)
+        "$STEP_NAME_6"   # Security (NEW)
+        "$STEP_NAME_7"   # Permissions (NEW)
+        "$STEP_NAME_8"   # Services (NEW)
         "$STEP_NAME_9"   # Backup TAR
         "$STEP_NAME_10"  # Timeshift
         "$STEP_NAME_11"  # Update Repos
@@ -350,9 +350,9 @@ update_language_arrays() {
         "$STEP_NAME_17"  # Cleanup Kernels
         "$STEP_NAME_18"  # Cleanup Disk
         "$STEP_NAME_19"  # Docker
-        "$STEP_NAME_20"  # Sesiones (NUEVO)
-        "$STEP_NAME_21"  # Logrotate (NUEVO)
-        "$STEP_NAME_22"  # Inodes (NUEVO)
+        "$STEP_NAME_20"  # Sessions (NEW)
+        "$STEP_NAME_21"  # Logrotate (NEW)
+        "$STEP_NAME_22"  # Inodes (NEW)
         "$STEP_NAME_23"  # Reboot
     )
 
@@ -497,89 +497,89 @@ NOTIF_HEADER
 
     local result=$?
 
-    # SECURITY: Restaurar umask original
+    # SECURITY: Restore original umask
     umask "$old_umask"
 
-    # Cambiar ownership al usuario que ejecutó sudo (no root)
+    # Change ownership to the user who ran sudo (not root)
     if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
         chown "$SUDO_USER:$SUDO_USER" "$CONFIG_FILE" 2>/dev/null
     fi
 
-    # Nota: chmod 600 ya no es necesario, umask 077 crea el archivo con permisos correctos
+    # Note: chmod 600 is no longer needed, umask 077 creates the file with correct permissions
 
     return $result
 }
 
-# Validar archivo antes de hacer source (seguridad)
-# Rechaza archivos con sintaxis peligrosa que podría ejecutar código
+# Validate file before sourcing (security)
+# Rejects files with dangerous syntax that could execute code
 validate_source_file() {
     local file="$1"
     local file_type="${2:-file}"
 
-    # Verificar que el archivo existe y es legible
+    # Verify that the file exists and is readable
     [[ ! -f "$file" || ! -r "$file" ]] && return 1
 
-    # SECURITY: Verificar que no es un symlink apuntando fuera del directorio esperado
+    # SECURITY: Verify that it's not a symlink pointing outside the expected directory
     local real_path
     real_path=$(realpath "$file" 2>/dev/null)
     local expected_dir
     expected_dir=$(dirname "$file")
     expected_dir=$(realpath "$expected_dir" 2>/dev/null)
     if [[ "$real_path" != "$expected_dir"/* ]]; then
-        log "WARN" "Archivo $file_type rechazado: symlink fuera del directorio permitido"
+        log "WARN" "File $file_type rejected: symlink outside allowed directory"
         return 1
     fi
 
-    # Patrones peligrosos a rechazar (podrían ejecutar código arbitrario)
-    # Se buscan en contenido no comentado
+    # Dangerous patterns to reject (could execute arbitrary code)
+    # Searched in non-commented content
     local content
     content=$(grep -v '^\s*#' "$file" 2>/dev/null)
 
-    # SECURITY: Buscar patrones peligrosos con regex:
-    # - $( o ` = command substitution
-    # - ; seguido de espacios opcionales y letra = ejecución secuencial (permite ;0-9 para ANSI codes)
-    # - | = pipe a otro comando
-    # - && o || = operadores lógicos (con o sin espacios)
-    # - ${ con comandos = parameter expansion peligrosa
+    # SECURITY: Search for dangerous patterns with regex:
+    # - $( or ` = command substitution
+    # - ; followed by optional spaces and letter = sequential execution (allows ;0-9 for ANSI codes)
+    # - | = pipe to another command
+    # - && or || = logical operators (with or without spaces)
+    # - ${ with commands = dangerous parameter expansion
     if echo "$content" | grep -qE '\$\(|`|;[[:space:]]*[a-zA-Z_]|[^a-zA-Z0-9_]\|[^a-zA-Z0-9_]|&&|\|\||\$\{[^}]*(:|/|%|#)' 2>/dev/null; then
-        log "WARN" "Archivo $file_type rechazado: contiene sintaxis no permitida"
+        log "WARN" "File $file_type rejected: contains disallowed syntax"
         return 1
     fi
 
     return 0
 }
 
-# Validar archivo notifier (menos restrictivo que validate_source_file)
-# Los notifiers necesitan ejecutar comandos, pero bloqueamos patrones muy peligrosos
+# Validate notifier file (less restrictive than validate_source_file)
+# Notifiers need to execute commands, but we block very dangerous patterns
 validate_notifier_file() {
     local file="$1"
 
-    # Verificar que el archivo existe y es legible
+    # Verify that the file exists and is readable
     [[ ! -f "$file" || ! -r "$file" ]] && return 1
 
-    # SECURITY: Verificar que no es un symlink apuntando fuera del directorio de notifiers
+    # SECURITY: Verify that it's not a symlink pointing outside the notifiers directory
     local real_path
     real_path=$(realpath "$file" 2>/dev/null)
     local expected_dir
     expected_dir=$(realpath "$NOTIFIER_DIR" 2>/dev/null)
     if [[ "$real_path" != "$expected_dir"/* ]]; then
-        log "WARN" "Archivo notifier rechazado: symlink fuera del directorio permitido"
+        log "WARN" "Notifier file rejected: symlink outside allowed directory"
         return 1
     fi
 
     local content
     content=$(grep -v '^\s*#' "$file" 2>/dev/null)
 
-    # SECURITY: Patrones peligrosos a bloquear (regex reforzado):
-    # - eval con cualquier separador (no solo espacio)
-    # - source/. de URLs o variables = cargar código externo
-    # - curl/wget con -o/-O = descarga a archivo
-    # - curl/wget piped to bash/sh = ejecución remota
-    # - rm -rf / = destrucción del sistema
-    # - dd if= = escritura directa a disco
-    # - mkfs = formateo de discos
-    # - chmod 777 = permisos inseguros
-    # - exec = reemplazo del proceso
+    # SECURITY: Dangerous patterns to block (reinforced regex):
+    # - eval with any separator (not just space)
+    # - source/. from URLs or variables = load external code
+    # - curl/wget with -o/-O = download to file
+    # - curl/wget piped to bash/sh = remote execution
+    # - rm -rf / = system destruction
+    # - dd if= = direct disk writing
+    # - mkfs = disk formatting
+    # - chmod 777 = insecure permissions
+    # - exec = process replacement
     local dangerous_patterns='eval[^a-zA-Z]|exec[^a-zA-Z]'
     dangerous_patterns+='|source\s+["\x27]?(https?://|\$)|^\s*\.\s+["\x27]?(https?://|\$)'
     dangerous_patterns+='|curl.*-[oO]\s|wget.*-[oO]\s'
@@ -587,13 +587,13 @@ validate_notifier_file() {
     dangerous_patterns+='|rm\s+-[rf]*\s+/[^a-zA-Z]|dd\s+if=|mkfs\.|chmod\s+777'
 
     if echo "$content" | grep -qE "$dangerous_patterns" 2>/dev/null; then
-        log "WARN" "Archivo notifier rechazado: contiene patrones peligrosos"
+        log "WARN" "Notifier file rejected: contains dangerous patterns"
         return 1
     fi
 
-    # Verificar que tiene las funciones básicas requeridas
+    # Verify that it has the required basic functions
     if ! grep -q 'notifier_send\s*()' "$file" 2>/dev/null; then
-        log "WARN" "Archivo notifier rechazado: falta función notifier_send()"
+        log "WARN" "Notifier file rejected: missing notifier_send() function"
         return 1
     fi
 
@@ -601,15 +601,15 @@ validate_notifier_file() {
 }
 
 load_config() {
-    # Cargar configuración si existe el archivo
+    # Load configuration if file exists
     if [ -f "$CONFIG_FILE" ]; then
         if validate_source_file "$CONFIG_FILE" "config"; then
             source "$CONFIG_FILE"
-            # Aplicar configuración de notificadores
+            # Apply notifier configuration
             apply_notifier_config
             return 0
         else
-            log "WARN" "Archivo de configuración no pasó validación de seguridad"
+            log "WARN" "Configuration file failed security validation"
             return 1
         fi
     fi
@@ -617,8 +617,8 @@ load_config() {
 }
 
 apply_notifier_config() {
-    # Aplicar configuración guardada de notificadores al array NOTIFIER_ENABLED
-    # Las variables NOTIFIER_*_ENABLED se cargan del config file via source
+    # Apply saved notifier configuration to the NOTIFIER_ENABLED array
+    # The NOTIFIER_*_ENABLED variables are loaded from config file via source
     for code in "${AVAILABLE_NOTIFIERS[@]}"; do
         local var_name="NOTIFIER_${code^^}_ENABLED"
         if [ -n "${!var_name}" ]; then
@@ -636,11 +636,11 @@ delete_config() {
 }
 
 generate_default_config() {
-    # Genera autoclean.conf con valores predeterminados del script
-    # Esta funcion se llama automaticamente si el archivo no existe
+    # Generate autoclean.conf with script default values
+    # This function is called automatically if the file doesn't exist
     log "INFO" "${MSG_CONFIG_GENERATING:-Generating default configuration file...}"
 
-    # Detectar idioma del sistema y verificar si está soportado
+    # Detect system language and verify if it's supported
     local detected_lang="$DEFAULT_LANG"
     local sys_lang="${LANG%%_*}"
     sys_lang="${sys_lang%%.*}"
@@ -648,7 +648,7 @@ generate_default_config() {
         detected_lang="$sys_lang"
     fi
 
-    # SECURITY: Crear archivo con permisos restrictivos desde el inicio
+    # SECURITY: Create file with restrictive permissions from the start
     local old_umask=$(umask)
     umask 077
     cat > "$CONFIG_FILE" << EOF
@@ -714,10 +714,10 @@ EOF
 
     local result=$?
 
-    # SECURITY: Restaurar umask original
+    # SECURITY: Restore original umask
     umask "$old_umask"
 
-    # Cambiar ownership al usuario que ejecuto sudo (no root)
+    # Change ownership to the user who ran sudo (not root)
     if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
         chown "$SUDO_USER:$SUDO_USER" "$CONFIG_FILE" 2>/dev/null
     fi
@@ -730,7 +730,7 @@ EOF
 }
 
 # ============================================================================
-# PERFILES PREDEFINIDOS
+# PREDEFINED PROFILES
 # ============================================================================
 
 apply_profile() {
@@ -738,99 +738,99 @@ apply_profile() {
 
     case "$profile" in
         server)
-            # Servidor: Sin UI, Docker habilitado, SMART activo, sin Flatpak/Snap
-            # Seguridad y auditoría maximizadas
+            # Server: No UI, Docker enabled, SMART active, no Flatpak/Snap
+            # Security and audit maximized
             STEP_CHECK_CONNECTIVITY=1
             STEP_CHECK_DEPENDENCIES=1
-            STEP_CHECK_REPOS=1           # Verificar integridad de repos
+            STEP_CHECK_REPOS=1           # Verify repository integrity
             STEP_CHECK_SMART=1
-            STEP_CHECK_DEBSUMS=1         # Verificar integridad de paquetes
-            STEP_CHECK_SECURITY=1        # Actualizaciones de seguridad críticas
-            STEP_CHECK_PERMISSIONS=1     # Auditar permisos críticos
-            STEP_AUDIT_SERVICES=1        # Auditar servicios innecesarios
+            STEP_CHECK_DEBSUMS=1         # Verify package integrity
+            STEP_CHECK_SECURITY=1        # Critical security updates
+            STEP_CHECK_PERMISSIONS=1     # Audit critical permissions
+            STEP_AUDIT_SERVICES=1        # Audit unnecessary services
             STEP_BACKUP_TAR=1
-            STEP_SNAPSHOT_TIMESHIFT=0    # Servidores no usan Timeshift
+            STEP_SNAPSHOT_TIMESHIFT=0    # Servers don't use Timeshift
             STEP_UPDATE_REPOS=1
             STEP_UPGRADE_SYSTEM=1
-            STEP_UPDATE_FLATPAK=0        # Servidores no usan Flatpak
-            STEP_UPDATE_SNAP=0           # Servidores no usan Snap
+            STEP_UPDATE_FLATPAK=0        # Servers don't use Flatpak
+            STEP_UPDATE_SNAP=0           # Servers don't use Snap
             STEP_CHECK_FIRMWARE=1
             STEP_CLEANUP_APT=1
             STEP_CLEANUP_KERNELS=1
             STEP_CLEANUP_DISK=1
-            STEP_CLEANUP_DOCKER=1        # Docker habilitado
-            STEP_CLEANUP_SESSIONS=1      # Limpiar sesiones SSH/tmux abandonadas
-            STEP_CHECK_LOGROTATE=1       # Logs crecen mucho en servidores
-            STEP_CHECK_INODES=1          # Crítico para servidores con muchos archivos
+            STEP_CLEANUP_DOCKER=1        # Docker enabled
+            STEP_CLEANUP_SESSIONS=1      # Clean abandoned SSH/tmux sessions
+            STEP_CHECK_LOGROTATE=1       # Logs grow a lot on servers
+            STEP_CHECK_INODES=1          # Critical for servers with many files
             STEP_CHECK_REBOOT=1
-            NO_MENU=true                 # Sin UI interactiva
-            UNATTENDED=true              # Modo desatendido (acepta todo)
+            NO_MENU=true                 # No interactive UI
+            UNATTENDED=true              # Unattended mode (accepts everything)
             ;;
         desktop)
-            # Desktop: UI activa, sin Docker, SMART activo, Flatpak habilitado
-            # Configuración balanceada para uso diario
+            # Desktop: Active UI, no Docker, SMART active, Flatpak enabled
+            # Balanced configuration for daily use
             STEP_CHECK_CONNECTIVITY=1
             STEP_CHECK_DEPENDENCIES=1
-            STEP_CHECK_REPOS=1           # Verificar repos
+            STEP_CHECK_REPOS=1           # Verify repos
             STEP_CHECK_SMART=1
-            STEP_CHECK_DEBSUMS=0         # Menos crítico para desktop
-            STEP_CHECK_SECURITY=1        # Actualizaciones de seguridad
-            STEP_CHECK_PERMISSIONS=0     # Menos crítico para desktop
-            STEP_AUDIT_SERVICES=0        # Desktop tiene más servicios legítimos
+            STEP_CHECK_DEBSUMS=0         # Less critical for desktop
+            STEP_CHECK_SECURITY=1        # Security updates
+            STEP_CHECK_PERMISSIONS=0     # Less critical for desktop
+            STEP_AUDIT_SERVICES=0        # Desktop has more legitimate services
             STEP_BACKUP_TAR=1
-            STEP_SNAPSHOT_TIMESHIFT=1    # Timeshift recomendado
+            STEP_SNAPSHOT_TIMESHIFT=1    # Timeshift recommended
             STEP_UPDATE_REPOS=1
             STEP_UPGRADE_SYSTEM=1
-            STEP_UPDATE_FLATPAK=1        # Flatpak habilitado
+            STEP_UPDATE_FLATPAK=1        # Flatpak enabled
             STEP_UPDATE_SNAP=0
             STEP_CHECK_FIRMWARE=1
             STEP_CLEANUP_APT=1
             STEP_CLEANUP_KERNELS=1
             STEP_CLEANUP_DISK=1
-            STEP_CLEANUP_DOCKER=0        # Sin Docker
-            STEP_CLEANUP_SESSIONS=0      # Menos relevante para desktop
-            STEP_CHECK_LOGROTATE=0       # Menos crítico
-            STEP_CHECK_INODES=0          # Raro problema en desktop
+            STEP_CLEANUP_DOCKER=0        # No Docker
+            STEP_CLEANUP_SESSIONS=0      # Less relevant for desktop
+            STEP_CHECK_LOGROTATE=0       # Less critical
+            STEP_CHECK_INODES=0          # Rare problem on desktop
             STEP_CHECK_REBOOT=1
             ;;
         developer)
-            # Desarrollador: UI activa, Docker habilitado, sin SMART, todo activo
-            # Optimizado para rapidez y entornos de desarrollo
+            # Developer: Active UI, Docker enabled, no SMART, everything active
+            # Optimized for speed and development environments
             STEP_CHECK_CONNECTIVITY=1
             STEP_CHECK_DEPENDENCIES=1
-            STEP_CHECK_REPOS=1           # Evitar problemas de repos
-            STEP_CHECK_SMART=0           # Sin SMART (puede ser lento)
-            STEP_CHECK_DEBSUMS=0         # Lento, desarrolladores prefieren rapidez
-            STEP_CHECK_SECURITY=1        # Actualizaciones de seguridad
-            STEP_CHECK_PERMISSIONS=0     # Menos crítico en desarrollo
-            STEP_AUDIT_SERVICES=0        # Desarrolladores tienen muchos servicios
+            STEP_CHECK_REPOS=1           # Avoid repo problems
+            STEP_CHECK_SMART=0           # No SMART (can be slow)
+            STEP_CHECK_DEBSUMS=0         # Slow, developers prefer speed
+            STEP_CHECK_SECURITY=1        # Security updates
+            STEP_CHECK_PERMISSIONS=0     # Less critical in development
+            STEP_AUDIT_SERVICES=0        # Developers have many services
             STEP_BACKUP_TAR=1
             STEP_SNAPSHOT_TIMESHIFT=1
             STEP_UPDATE_REPOS=1
             STEP_UPGRADE_SYSTEM=1
             STEP_UPDATE_FLATPAK=1
-            STEP_UPDATE_SNAP=1           # Snap habilitado
-            STEP_CHECK_FIRMWARE=0        # Sin firmware (evita interrupciones)
+            STEP_UPDATE_SNAP=1           # Snap enabled
+            STEP_CHECK_FIRMWARE=0        # No firmware (avoid interruptions)
             STEP_CLEANUP_APT=1
             STEP_CLEANUP_KERNELS=1
             STEP_CLEANUP_DISK=1
-            STEP_CLEANUP_DOCKER=1        # Docker habilitado
-            STEP_CLEANUP_SESSIONS=1      # Limpiar sesiones de desarrollo abandonadas
-            STEP_CHECK_LOGROTATE=0       # Menos crítico
-            STEP_CHECK_INODES=0          # Menos crítico
+            STEP_CLEANUP_DOCKER=1        # Docker enabled
+            STEP_CLEANUP_SESSIONS=1      # Clean abandoned development sessions
+            STEP_CHECK_LOGROTATE=0       # Less critical
+            STEP_CHECK_INODES=0          # Less critical
             STEP_CHECK_REBOOT=1
             ;;
         minimal)
-            # Minimo: Solo actualizaciones esenciales, sin limpieza agresiva
-            # Todo deshabilitado excepto lo absolutamente necesario
+            # Minimal: Only essential updates, no aggressive cleanup
+            # Everything disabled except the absolutely necessary
             STEP_CHECK_CONNECTIVITY=1
             STEP_CHECK_DEPENDENCIES=0
-            STEP_CHECK_REPOS=0           # Mínimo
+            STEP_CHECK_REPOS=0           # Minimal
             STEP_CHECK_SMART=0
-            STEP_CHECK_DEBSUMS=0         # Mínimo
-            STEP_CHECK_SECURITY=0        # Mínimo
-            STEP_CHECK_PERMISSIONS=0     # Mínimo
-            STEP_AUDIT_SERVICES=0        # Mínimo
+            STEP_CHECK_DEBSUMS=0         # Minimal
+            STEP_CHECK_SECURITY=0        # Minimal
+            STEP_CHECK_PERMISSIONS=0     # Minimal
+            STEP_AUDIT_SERVICES=0        # Minimal
             STEP_BACKUP_TAR=0
             STEP_SNAPSHOT_TIMESHIFT=0
             STEP_UPDATE_REPOS=1
@@ -842,24 +842,24 @@ apply_profile() {
             STEP_CLEANUP_KERNELS=0
             STEP_CLEANUP_DISK=0
             STEP_CLEANUP_DOCKER=0
-            STEP_CLEANUP_SESSIONS=0      # Mínimo
-            STEP_CHECK_LOGROTATE=0       # Mínimo
-            STEP_CHECK_INODES=0          # Mínimo
+            STEP_CLEANUP_SESSIONS=0      # Minimal
+            STEP_CHECK_LOGROTATE=0       # Minimal
+            STEP_CHECK_INODES=0          # Minimal
             STEP_CHECK_REBOOT=1
-            NO_MENU=true                 # Sin UI interactiva
-            UNATTENDED=true              # Modo desatendido (acepta todo)
+            NO_MENU=true                 # No interactive UI
+            UNATTENDED=true              # Unattended mode (accepts everything)
             ;;
         custom)
-            # Custom: Lee configuracion desde autoclean.conf, sin UI
-            # NO modifica las variables STEP_* - usa exactamente lo que esta en el archivo
+            # Custom: Read configuration from autoclean.conf, no UI
+            # Does NOT modify STEP_* variables - uses exactly what's in the file
             if config_exists; then
                 load_config
                 log "INFO" "${MSG_PROFILE_CUSTOM_LOADED:-Custom profile loaded from configuration file}"
             else
                 log "WARN" "${MSG_CONFIG_NOT_FOUND:-Configuration file not found, using defaults}"
             fi
-            NO_MENU=true                 # Sin UI interactiva
-            UNATTENDED=true              # Modo desatendido (acepta todo)
+            NO_MENU=true                 # No interactive UI
+            UNATTENDED=true              # Unattended mode (accepts everything)
             ;;
         *)
             echo "Error: ${MSG_PROFILE_UNKNOWN:-Unknown profile}: $profile"
@@ -872,35 +872,35 @@ apply_profile() {
 }
 
 # ============================================================================
-# FUNCIONES DE IDIOMA (i18n)
+# LANGUAGE FUNCTIONS (i18n)
 # ============================================================================
 
-# Detectar idiomas disponibles dinámicamente desde la carpeta lang/
+# Detect available languages dynamically from the lang/ folder
 detect_languages() {
     AVAILABLE_LANGS=()
     LANG_NAMES=()
 
-    # Buscar todos los archivos .lang
+    # Search for all .lang files
     local lang_file
     for lang_file in "$LANG_DIR"/*.lang; do
         [ -f "$lang_file" ] || continue
 
-        # Extraer código del idioma (nombre del archivo sin extensión)
+        # Extract language code (filename without extension)
         local code
         code=$(basename "$lang_file" .lang)
 
-        # Extraer nombre del idioma del archivo (LANG_NAME="...")
+        # Extract language name from file (LANG_NAME="...")
         local name
         name=$(grep -m1 '^LANG_NAME=' "$lang_file" 2>/dev/null | cut -d'"' -f2)
 
-        # Si no tiene LANG_NAME, usar el código en mayúsculas
+        # If it doesn't have LANG_NAME, use the code in uppercase
         [ -z "$name" ] && name="${code^^}"
 
         AVAILABLE_LANGS+=("$code")
         LANG_NAMES+=("$name")
     done
 
-    # Si no hay idiomas, usar inglés como fallback
+    # If no languages found, use English as fallback
     if [ ${#AVAILABLE_LANGS[@]} -eq 0 ]; then
         AVAILABLE_LANGS=("en")
         LANG_NAMES=("English")
@@ -910,35 +910,35 @@ detect_languages() {
 load_language() {
     local lang_to_load="$1"
 
-    # Si no se especifica idioma, detectar automáticamente
+    # If no language specified, detect automatically
     if [ -z "$lang_to_load" ]; then
-        # Prioridad: 1) Config guardada, 2) Variable de entorno, 3) Sistema, 4) Default
+        # Priority: 1) Saved config, 2) Environment variable, 3) System, 4) Default
         if [ -n "$SAVED_LANG" ]; then
             lang_to_load="$SAVED_LANG"
         elif [ -n "$AUTOCLEAN_LANG" ]; then
             lang_to_load="$AUTOCLEAN_LANG"
         else
-            # Detectar idioma del sistema
+            # Detect system language
             local sys_lang="${LANG%%_*}"
             sys_lang="${sys_lang%%.*}"
             lang_to_load="${sys_lang:-$DEFAULT_LANG}"
         fi
     fi
 
-    # Verificar que el idioma existe
+    # Verify that the language exists
     local lang_file="${LANG_DIR}/${lang_to_load}.lang"
     if [ ! -f "$lang_file" ]; then
-        # Fallback a idioma por defecto
+        # Fallback to default language
         lang_file="${LANG_DIR}/${DEFAULT_LANG}.lang"
         lang_to_load="$DEFAULT_LANG"
     fi
 
-    # Cargar archivo de idioma (con validación de seguridad)
+    # Load language file (with security validation)
     if [ -f "$lang_file" ]; then
         if validate_source_file "$lang_file" "lang"; then
             source "$lang_file"
             CURRENT_LANG="$lang_to_load"
-            # Actualizar arrays con textos del idioma cargado
+            # Update arrays with loaded language texts
             update_language_arrays
             # Load help content for current language (steps)
             local help_file="${HELP_DIR}/help_${lang_to_load}.lang"
@@ -954,21 +954,21 @@ load_language() {
             exit 1
         fi
     else
-        # Fallback crítico: usar inglés hardcodeado mínimo
+        # Critical fallback: use minimal hardcoded English
         echo "ERROR: No language files found in $LANG_DIR"
         exit 1
     fi
 }
 
 show_language_selector() {
-    # Detectar idiomas disponibles dinámicamente
+    # Detect available languages dynamically
     detect_languages
 
     local selected=0
     local total=${#AVAILABLE_LANGS[@]}
-    local cols=4  # Número de columnas en el grid
+    local cols=4  # Number of columns in the grid
 
-    # Encontrar índice del idioma actual
+    # Find index of current language
     for i in "${!AVAILABLE_LANGS[@]}"; do
         if [[ "${AVAILABLE_LANGS[$i]}" == "$CURRENT_LANG" ]]; then
             selected=$i
@@ -976,12 +976,12 @@ show_language_selector() {
         fi
     done
 
-    # Ocultar cursor
+    # Hide cursor
     tput civis 2>/dev/null
     trap 'tput cnorm 2>/dev/null' RETURN
 
     while true; do
-        # Calcular fila y columna actual
+        # Calculate current row and column
         local cur_row=$((selected / cols))
         local cur_col=$((selected % cols))
         local total_rows=$(( (total + cols - 1) / cols ))
@@ -992,36 +992,36 @@ show_language_selector() {
         print_box_sep
         print_box_line ""
 
-        # Mostrar idiomas en grid de 4 columnas
-        # Cada celda: 18 chars (prefix[1] + bracket[1] + check[1] + bracket[1] + space[1] + name[13])
+        # Display languages in 4-column grid
+        # Each cell: 18 chars (prefix[1] + bracket[1] + check[1] + bracket[1] + space[1] + name[13])
         for row in $(seq 0 $((total_rows - 1))); do
             local line=""
             for col in $(seq 0 $((cols - 1))); do
                 local idx=$((row * cols + col))
                 if [ $idx -lt $total ]; then
-                    # Truncar/pad nombre a exactamente 13 chars
+                    # Truncate/pad name to exactly 13 chars
                     local name
                     name=$(printf "%-13.13s" "${LANG_NAMES[$idx]}")
 
-                    # Determinar prefijo y estado
+                    # Determine prefix and state
                     local prefix=" "
                     local check=" "
                     [ "${AVAILABLE_LANGS[$idx]}" = "$CURRENT_LANG" ] && check="x"
                     [ $idx -eq $selected ] && prefix=">"
 
-                    # Construir celda con formato consistente (18 chars)
+                    # Build cell with consistent format (18 chars)
                     if [ $idx -eq $selected ]; then
-                        # Seleccionado: todo en cyan brillante
+                        # Selected: all in bright cyan
                         line+="${BRIGHT_CYAN}${prefix}[${check}]${BOX_NC} ${BRIGHT_CYAN}${name}${BOX_NC}"
                     elif [ "${AVAILABLE_LANGS[$idx]}" = "$CURRENT_LANG" ]; then
-                        # Idioma activo: [x] en verde
+                        # Active language: [x] in green
                         line+=" ${GREEN}[x]${BOX_NC} ${name}"
                     else
-                        # Inactivo: [ ] en dim
+                        # Inactive: [ ] in dim
                         line+=" ${DIM}[ ]${BOX_NC} ${name}"
                     fi
                 else
-                    # Celda vacía: 18 espacios
+                    # Empty cell: 18 spaces
                     line+="                  "
                 fi
             done
@@ -1035,60 +1035,60 @@ show_language_selector() {
         print_box_center "${STATUS_INFO}[ENTER]${BOX_NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${BOX_NC} ${MENU_BACK:-Back}"
         print_box_bottom
 
-        # Leer tecla
+        # Read key
         local key=""
         IFS= read -rsn1 key
 
-        # Detectar secuencias de escape (flechas o ESC solo)
+        # Detect escape sequences (arrows or ESC alone)
         if [[ "$key" == $'\x1b' ]]; then
             read -rsn2 -t 0.1 key
             case "$key" in
-                '[A') # Arriba: misma columna, fila anterior
+                '[A') # Up: same column, previous row
                     if [ $cur_row -gt 0 ]; then
                         ((selected-=cols))
                     else
-                        # Ir a la última fila de la columna
+                        # Go to last row of column
                         local last_row=$(( (total - 1) / cols ))
                         local new_idx=$((last_row * cols + cur_col))
                         [ $new_idx -ge $total ] && new_idx=$((new_idx - cols))
                         [ $new_idx -ge 0 ] && selected=$new_idx
                     fi
                     ;;
-                '[B') # Abajo: misma columna, fila siguiente
+                '[B') # Down: same column, next row
                     local new_idx=$((selected + cols))
                     if [ $new_idx -lt $total ]; then
                         selected=$new_idx
                     else
-                        # Volver a la primera fila de la columna
+                        # Return to first row of column
                         selected=$cur_col
                     fi
                     ;;
-                '[C') # Derecha: columna siguiente
+                '[C') # Right: next column
                     if [ $cur_col -lt $((cols - 1)) ]; then
                         local new_idx=$((selected + 1))
                         [ $new_idx -lt $total ] && selected=$new_idx
                     else
-                        # Ir al inicio de la fila
+                        # Go to start of row
                         selected=$((cur_row * cols))
                     fi
                     ;;
-                '[D') # Izquierda: columna anterior
+                '[D') # Left: previous column
                     if [ $cur_col -gt 0 ]; then
                         ((selected--))
                     else
-                        # Ir al final de la fila
+                        # Go to end of row
                         local new_idx=$((cur_row * cols + cols - 1))
                         [ $new_idx -ge $total ] && new_idx=$((total - 1))
                         selected=$new_idx
                     fi
                     ;;
-                '') # ESC solo
+                '') # ESC alone
                     tput cnorm 2>/dev/null
                     return
                     ;;
             esac
         elif [[ "$key" == "" ]]; then
-            # ENTER - seleccionar idioma
+            # ENTER - select language
             load_language "${AVAILABLE_LANGS[$selected]}"
             tput cnorm 2>/dev/null
             return
@@ -1097,35 +1097,35 @@ show_language_selector() {
 }
 
 # ============================================================================
-# SISTEMA DE TEMAS
+# THEME SYSTEM
 # ============================================================================
 
-# Detectar temas disponibles dinámicamente desde la carpeta themes/
+# Detect available themes dynamically from the themes/ folder
 detect_themes() {
     AVAILABLE_THEMES=()
     THEME_NAMES=()
 
-    # Buscar todos los archivos .theme
+    # Search for all .theme files
     local theme_file
     for theme_file in "$THEME_DIR"/*.theme; do
         [ -f "$theme_file" ] || continue
 
-        # Extraer código del tema (nombre del archivo sin extensión)
+        # Extract theme code (filename without extension)
         local code
         code=$(basename "$theme_file" .theme)
 
-        # Extraer nombre del tema del archivo (THEME_NAME="...")
+        # Extract theme name from file (THEME_NAME="...")
         local name
         name=$(grep -m1 '^THEME_NAME=' "$theme_file" 2>/dev/null | cut -d'"' -f2)
 
-        # Si no tiene THEME_NAME, usar el código con primera letra mayúscula
+        # If it doesn't have THEME_NAME, use the code with first letter uppercase
         [ -z "$name" ] && name="${code^}"
 
         AVAILABLE_THEMES+=("$code")
         THEME_NAMES+=("$name")
     done
 
-    # Si no hay temas, usar default como fallback
+    # If no themes found, use default as fallback
     if [ ${#AVAILABLE_THEMES[@]} -eq 0 ]; then
         AVAILABLE_THEMES=("default")
         THEME_NAMES=("Default")
@@ -1135,7 +1135,7 @@ detect_themes() {
 load_theme() {
     local theme_to_load="$1"
 
-    # Prioridad: 1. Parámetro, 2. Config guardada, 3. Default
+    # Priority: 1. Parameter, 2. Saved config, 3. Default
     if [ -z "$theme_to_load" ]; then
         if [ -n "$SAVED_THEME" ]; then
             theme_to_load="$SAVED_THEME"
@@ -1144,17 +1144,17 @@ load_theme() {
         fi
     fi
 
-    # Verificar que el archivo existe
+    # Verify that the file exists
     local theme_file="${THEME_DIR}/${theme_to_load}.theme"
     if [ ! -f "$theme_file" ]; then
         theme_file="${THEME_DIR}/${DEFAULT_THEME}.theme"
         theme_to_load="$DEFAULT_THEME"
     fi
 
-    # Cargar archivo de tema (con validación de seguridad)
+    # Load theme file (with security validation)
     if [ -f "$theme_file" ]; then
         if validate_source_file "$theme_file" "theme"; then
-            # Limpiar variables de tema anterior (especialmente las opcionales)
+            # Clear previous theme variables (especially optional ones)
             unset T_BOX_BG T_BOX_NC
             unset T_RED T_GREEN T_YELLOW T_BLUE T_CYAN T_MAGENTA
             unset T_BRIGHT_GREEN T_BRIGHT_YELLOW T_BRIGHT_CYAN T_DIM
@@ -1172,7 +1172,7 @@ load_theme() {
 }
 
 apply_theme() {
-    # Mapear variables del tema a las variables globales del script
+    # Map theme variables to script global variables
     RED="${T_RED:-\033[0;31m}"
     GREEN="${T_GREEN:-\033[0;32m}"
     YELLOW="${T_YELLOW:-\033[1;33m}"
@@ -1184,9 +1184,9 @@ apply_theme() {
     BRIGHT_CYAN="${T_BRIGHT_CYAN:-\033[1;36m}"
     DIM="${T_DIM:-\033[2m}"
 
-    # Variables semanticas adicionales (usadas por funciones UI)
-    BOX_BG="${T_BOX_BG:-}"             # Fondo de caja (vacio por defecto, azul para norton)
-    BOX_NC="${T_BOX_NC:-$NC}"          # Reset dentro de cajas (preserva fondo en norton)
+    # Additional semantic variables (used by UI functions)
+    BOX_BG="${T_BOX_BG:-}"             # Box background (empty by default, blue for norton)
+    BOX_NC="${T_BOX_NC:-$NC}"          # Reset inside boxes (preserves background in norton)
     BOX_BORDER="${T_BOX_BORDER:-$BLUE}"
     BOX_TITLE="${T_BOX_TITLE:-$BOLD}"
     TEXT_SELECTED="${T_TEXT_SELECTED:-$BRIGHT_CYAN}"
@@ -1200,14 +1200,14 @@ apply_theme() {
 }
 
 show_theme_selector() {
-    # Detectar temas disponibles dinámicamente
+    # Detect available themes dynamically
     detect_themes
 
     local selected=0
     local total=${#AVAILABLE_THEMES[@]}
-    local cols=4  # Número de columnas en el grid
+    local cols=4  # Number of columns in the grid
 
-    # Encontrar índice del tema actual
+    # Find index of current theme
     for i in "${!AVAILABLE_THEMES[@]}"; do
         if [[ "${AVAILABLE_THEMES[$i]}" == "$CURRENT_THEME" ]]; then
             selected=$i
@@ -1215,12 +1215,12 @@ show_theme_selector() {
         fi
     done
 
-    # Ocultar cursor
+    # Hide cursor
     tput civis 2>/dev/null
     trap 'tput cnorm 2>/dev/null' RETURN
 
     while true; do
-        # Calcular fila y columna actual
+        # Calculate current row and column
         local cur_row=$((selected / cols))
         local cur_col=$((selected % cols))
         local total_rows=$(( (total + cols - 1) / cols ))
@@ -1231,36 +1231,36 @@ show_theme_selector() {
         print_box_sep
         print_box_line ""
 
-        # Mostrar temas en grid de 4 columnas
-        # Cada celda: 18 chars (prefix[1] + bracket[1] + check[1] + bracket[1] + space[1] + name[13])
+        # Display themes in 4-column grid
+        # Each cell: 18 chars (prefix[1] + bracket[1] + check[1] + bracket[1] + space[1] + name[13])
         for row in $(seq 0 $((total_rows - 1))); do
             local line=""
             for col in $(seq 0 $((cols - 1))); do
                 local idx=$((row * cols + col))
                 if [ $idx -lt $total ]; then
-                    # Truncar/pad nombre a exactamente 13 chars
+                    # Truncate/pad name to exactly 13 chars
                     local name
                     name=$(printf "%-13.13s" "${THEME_NAMES[$idx]}")
 
-                    # Determinar prefijo y estado
+                    # Determine prefix and state
                     local prefix=" "
                     local check=" "
                     [ "${AVAILABLE_THEMES[$idx]}" = "$CURRENT_THEME" ] && check="x"
                     [ $idx -eq $selected ] && prefix=">"
 
-                    # Construir celda con formato consistente (18 chars)
+                    # Build cell with consistent format (18 chars)
                     if [ $idx -eq $selected ]; then
-                        # Seleccionado: todo en cyan brillante
+                        # Selected: all in bright cyan
                         line+="${BRIGHT_CYAN}${prefix}[${check}]${BOX_NC} ${BRIGHT_CYAN}${name}${BOX_NC}"
                     elif [ "${AVAILABLE_THEMES[$idx]}" = "$CURRENT_THEME" ]; then
-                        # Tema activo: [x] en verde
+                        # Active theme: [x] in green
                         line+=" ${GREEN}[x]${BOX_NC} ${name}"
                     else
-                        # Inactivo: [ ] en dim
+                        # Inactive: [ ] in dim
                         line+=" ${DIM}[ ]${BOX_NC} ${name}"
                     fi
                 else
-                    # Celda vacía: 18 espacios
+                    # Empty cell: 18 spaces
                     line+="                  "
                 fi
             done
@@ -1274,60 +1274,60 @@ show_theme_selector() {
         print_box_center "${STATUS_INFO}[ENTER]${BOX_NC} ${MENU_SELECT:-Select}  ${STATUS_INFO}[ESC]${BOX_NC} ${MENU_BACK:-Back}"
         print_box_bottom
 
-        # Leer tecla
+        # Read key
         local key=""
         IFS= read -rsn1 key
 
-        # Detectar secuencias de escape (flechas o ESC solo)
+        # Detect escape sequences (arrows or ESC alone)
         if [[ "$key" == $'\x1b' ]]; then
             read -rsn2 -t 0.1 key
             case "$key" in
-                '[A') # Arriba: misma columna, fila anterior
+                '[A') # Up: same column, previous row
                     if [ $cur_row -gt 0 ]; then
                         ((selected-=cols))
                     else
-                        # Ir a la última fila de la columna
+                        # Go to last row of column
                         local last_row=$(( (total - 1) / cols ))
                         local new_idx=$((last_row * cols + cur_col))
                         [ $new_idx -ge $total ] && new_idx=$((new_idx - cols))
                         [ $new_idx -ge 0 ] && selected=$new_idx
                     fi
                     ;;
-                '[B') # Abajo: misma columna, fila siguiente
+                '[B') # Down: same column, next row
                     local new_idx=$((selected + cols))
                     if [ $new_idx -lt $total ]; then
                         selected=$new_idx
                     else
-                        # Volver a la primera fila de la columna
+                        # Return to first row of column
                         selected=$cur_col
                     fi
                     ;;
-                '[C') # Derecha: columna siguiente
+                '[C') # Right: next column
                     if [ $cur_col -lt $((cols - 1)) ]; then
                         local new_idx=$((selected + 1))
                         [ $new_idx -lt $total ] && selected=$new_idx
                     else
-                        # Ir al inicio de la fila
+                        # Go to start of row
                         selected=$((cur_row * cols))
                     fi
                     ;;
-                '[D') # Izquierda: columna anterior
+                '[D') # Left: previous column
                     if [ $cur_col -gt 0 ]; then
                         ((selected--))
                     else
-                        # Ir al final de la fila
+                        # Go to end of row
                         local new_idx=$((cur_row * cols + cols - 1))
                         [ $new_idx -ge $total ] && new_idx=$((total - 1))
                         selected=$new_idx
                     fi
                     ;;
-                '') # ESC solo
+                '') # ESC alone
                     tput cnorm 2>/dev/null
                     return
                     ;;
             esac
         elif [[ "$key" == "" ]]; then
-            # ENTER - seleccionar tema
+            # ENTER - select theme
             load_theme "${AVAILABLE_THEMES[$selected]}"
             tput cnorm 2>/dev/null
             return
@@ -1336,7 +1336,7 @@ show_theme_selector() {
 }
 
 # ============================================================================
-# SISTEMA DE NOTIFICADORES (Plugins)
+# NOTIFIER SYSTEM (Plugins)
 # ============================================================================
 
 detect_notifiers() {
@@ -1344,28 +1344,28 @@ detect_notifiers() {
     NOTIFIER_NAMES=()
     NOTIFIER_DESCRIPTIONS=()
 
-    # Verificar que existe el directorio
+    # Verify that the directory exists
     [ ! -d "$NOTIFIER_DIR" ] && return
 
-    # Buscar todos los archivos .notifier
+    # Find all .notifier files
     local notifier_file
     for notifier_file in "$NOTIFIER_DIR"/*.notifier; do
         [ -f "$notifier_file" ] || continue
 
-        # Extraer código del notificador (nombre del archivo sin extensión)
+        # Extract notifier code (filename without extension)
         local code
         code=$(basename "$notifier_file" .notifier)
 
-        # Extraer metadata del archivo
+        # Extract metadata from file
         local name desc
         name=$(grep -m1 '^NOTIFIER_NAME=' "$notifier_file" 2>/dev/null | cut -d'"' -f2)
         desc=$(grep -m1 '^NOTIFIER_DESCRIPTION=' "$notifier_file" 2>/dev/null | cut -d'"' -f2)
 
-        # Si no tiene NOTIFIER_NAME, usar el código con primera letra mayúscula
+        # If no NOTIFIER_NAME, use code with first letter capitalized
         [ -z "$name" ] && name="${code^}"
         [ -z "$desc" ] && desc="$name notifier"
 
-        # Intentar obtener descripción traducida (NOTIF_DESC_TELEGRAM, NOTIF_DESC_DESKTOP, etc.)
+        # Try to get translated description (NOTIF_DESC_TELEGRAM, NOTIF_DESC_DESKTOP, etc.)
         local i18n_key="NOTIF_DESC_${code^^}"
         [ -n "${!i18n_key}" ] && desc="${!i18n_key}"
 
@@ -1379,15 +1379,15 @@ load_notifier() {
     local notifier_code="$1"
     local notifier_file="${NOTIFIER_DIR}/${notifier_code}.notifier"
 
-    # Verificar que el archivo existe
+    # Verify that the file exists
     [ ! -f "$notifier_file" ] && return 1
 
-    # Cargar archivo de notificador (con validación de seguridad para notifiers)
+    # Load notifier file (with security validation for notifiers)
     if validate_notifier_file "$notifier_file"; then
         source "$notifier_file"
         NOTIFIER_LOADED["$notifier_code"]=1
 
-        # Verificar si tiene las funciones requeridas
+        # Verify if it has the required functions
         if type -t notifier_send &>/dev/null; then
             return 0
         else
@@ -1402,7 +1402,7 @@ load_notifier() {
 }
 
 load_all_enabled_notifiers() {
-    # Cargar todos los notificadores habilitados
+    # Load all enabled notifiers
     for code in "${AVAILABLE_NOTIFIERS[@]}"; do
         if [ "${NOTIFIER_ENABLED[$code]}" = "1" ]; then
             load_notifier "$code"
@@ -1415,24 +1415,24 @@ send_notification() {
     local message="$2"
     local severity="${3:-info}"
 
-    # No enviar si estamos en dry-run (a menos que --notify este activo)
+    # Don't send if we're in dry-run (unless --notify is active)
     if [ "$DRY_RUN" = true ] && [ "$NOTIFY_ON_DRY_RUN" != true ]; then
         return 0
     fi
 
-    # Agregar prefijo [DRY-RUN] si estamos en modo simulacion
+    # Add [DRY-RUN] prefix if we're in simulation mode
     if [ "$DRY_RUN" = true ]; then
         title="[DRY-RUN] $title"
     fi
 
     local any_sent=0
 
-    # Enviar a todos los notificadores habilitados
+    # Send to all enabled notifiers
     for code in "${AVAILABLE_NOTIFIERS[@]}"; do
         if [ "${NOTIFIER_ENABLED[$code]}" = "1" ]; then
-            # Cargar el notificador para tener sus funciones disponibles
+            # Load the notifier to have its functions available
             if load_notifier "$code"; then
-                # Verificar que está configurado
+                # Verify that it's configured
                 if type -t notifier_is_configured &>/dev/null && notifier_is_configured; then
                     if notifier_send "$title" "$message" "$severity" 2>/dev/null; then
                         log "INFO" "Notification sent via $code"
@@ -1451,14 +1451,14 @@ send_notification() {
 }
 
 send_critical_notification() {
-    # Enviar notificación crítica inmediata (para errores graves)
+    # Send immediate critical notification (for serious errors)
     local title="$1"
     local message="$2"
     send_notification "$title" "$message" "critical"
 }
 
 build_summary_notification() {
-    # Construir el mensaje de resumen detallado para la notificación final
+    # Build detailed summary message for the final notification
     local hostname
     hostname=$(hostname 2>/dev/null || echo "unknown")
 
@@ -1466,13 +1466,13 @@ build_summary_notification() {
     local mins=$((duration / 60))
     local secs=$((duration % 60))
 
-    # Calcular espacio liberado
+    # Calculate freed space
     local space_after_root space_freed_root
     space_after_root=$(df / --output=used 2>/dev/null | tail -1 | awk '{print $1}')
     space_freed_root=$(( (SPACE_BEFORE_ROOT - space_after_root) / 1024 ))
     [ $space_freed_root -lt 0 ] && space_freed_root=0
 
-    # Estado general
+    # General status
     local status_emoji status_text
     if [ "$REBOOT_NEEDED" = true ]; then
         status_emoji="⚠️"
@@ -1482,7 +1482,7 @@ build_summary_notification() {
         status_text="${MSG_COMPLETED:-Completed}"
     fi
 
-    # Construir lista de pasos
+    # Build list of steps
     local steps_summary=""
     local step_statuses=(
         "$STAT_CONNECTIVITY"
@@ -1517,7 +1517,7 @@ build_summary_notification() {
         ((i++))
     done
 
-    # Construir mensaje completo
+    # Build complete message
     cat << EOF
 🖥️ AUTOCLEAN - ${hostname}
 ━━━━━━━━━━━━━━━━━━━━━━
@@ -1532,13 +1532,13 @@ EOF
 }
 
 show_notification_menu() {
-    # Detectar notificadores disponibles
+    # Detect available notifiers
     detect_notifiers
 
     local selected=0
     local total=${#AVAILABLE_NOTIFIERS[@]}
 
-    # Si no hay notificadores, mostrar mensaje
+    # If no notifiers, show message
     if [ $total -eq 0 ]; then
         clear
         print_box_top
@@ -1555,7 +1555,7 @@ show_notification_menu() {
         return
     fi
 
-    # Ocultar cursor
+    # Hide cursor
     tput civis 2>/dev/null
     trap 'tput cnorm 2>/dev/null' RETURN
 
@@ -1567,7 +1567,7 @@ show_notification_menu() {
         print_box_line "${MENU_NOTIF_HELP:-Toggle notifications, configure, or test}"
         print_box_sep
 
-        # Mostrar lista de notificadores
+        # Show list of notifiers
         local i=0
         for code in "${AVAILABLE_NOTIFIERS[@]}"; do
             local name="${NOTIFIER_NAMES[$i]}"
@@ -1601,29 +1601,29 @@ show_notification_menu() {
         print_box_line "${CYAN}[SPACE]${BOX_NC} ${MENU_NOTIF_TOGGLE:-Toggle} ${CYAN}[C]${BOX_NC} ${MENU_NOTIF_CONFIG:-Config} ${CYAN}[T]${BOX_NC} ${MENU_NOTIF_TEST:-Test} ${CYAN}[H]${BOX_NC} ${MENU_NOTIF_HELP_KEY:-Help} ${CYAN}[S]${BOX_NC} ${MENU_SAVE:-Save} ${CYAN}[ESC]${BOX_NC} ${MENU_BACK:-Back}"
         print_box_bottom
 
-        # Leer tecla
+        # Read key
         local key=""
         IFS= read -rsn1 key
 
-        # Detectar secuencias de escape
+        # Detect escape sequences
         if [[ "$key" == $'\x1b' ]]; then
             read -rsn2 -t 0.1 key
             case "$key" in
-                '[A') # Arriba
+                '[A') # Up
                     ((selected--))
                     [ $selected -lt 0 ] && selected=$((total - 1))
                     ;;
-                '[B') # Abajo
+                '[B') # Down
                     ((selected++))
                     [ $selected -ge $total ] && selected=0
                     ;;
-                '') # ESC solo - volver
+                '') # ESC alone - return
                     tput cnorm 2>/dev/null
                     return
                     ;;
             esac
         elif [[ "$key" == " " ]]; then
-            # Toggle habilitado/deshabilitado
+            # Toggle enabled/disabled
             local code="${AVAILABLE_NOTIFIERS[$selected]}"
             if [ "${NOTIFIER_ENABLED[$code]}" = "1" ]; then
                 NOTIFIER_ENABLED["$code"]=0
@@ -1631,18 +1631,18 @@ show_notification_menu() {
                 NOTIFIER_ENABLED["$code"]=1
             fi
         elif [[ "$key" == "c" || "$key" == "C" ]]; then
-            # Configurar notificador
+            # Configure notifier
             show_notifier_config "${AVAILABLE_NOTIFIERS[$selected]}"
         elif [[ "$key" == "t" || "$key" == "T" ]]; then
-            # Probar notificador
+            # Test notifier
             test_notifier "${AVAILABLE_NOTIFIERS[$selected]}"
         elif [[ "$key" == "h" || "$key" == "H" ]]; then
-            # Mostrar ayuda
+            # Show help
             show_notifier_help "${AVAILABLE_NOTIFIERS[$selected]}"
         elif [[ "$key" == "s" || "$key" == "S" ]]; then
-            # Guardar configuración
+            # Save configuration
             save_config
-            # Mostrar confirmación breve
+            # Show brief confirmation
             clear
             print_box_top
             print_box_center "${GREEN}${MENU_CONFIG_SAVED:-Configuration saved!}${BOX_NC}"
@@ -1659,11 +1659,11 @@ show_notifier_config() {
     local code="$1"
     local notifier_file="${NOTIFIER_DIR}/${code}.notifier"
 
-    # Cargar el notificador para obtener NOTIFIER_FIELDS
+    # Load the notifier to get NOTIFIER_FIELDS
     [ ! -f "$notifier_file" ] && return
     source "$notifier_file" 2>/dev/null
 
-    # Verificar si tiene campos de configuración
+    # Verify if it has configuration fields
     if [ ${#NOTIFIER_FIELDS[@]} -eq 0 ]; then
         clear
         print_box_top
@@ -1677,7 +1677,7 @@ show_notifier_config() {
         return
     fi
 
-    # Convertir NOTIFIER_FIELDS a arrays indexados para acceso por número
+    # Convert NOTIFIER_FIELDS to indexed arrays for numbered access
     local -a field_vars=()
     local -a field_labels=()
     for var_name in "${!NOTIFIER_FIELDS[@]}"; do
@@ -1696,7 +1696,7 @@ show_notifier_config() {
         print_box_sep
         print_box_line ""
 
-        # Mostrar campos en 1 columna con navegación por flechas
+        # Show fields in 1 column with arrow navigation
         local i
         for ((i=0; i<num_fields; i++)); do
             local var_name="${field_vars[$i]}"
@@ -1706,7 +1706,7 @@ show_notifier_config() {
             [[ "$var_name" == *"TOKEN"* || "$var_name" == *"PASSWORD"* || "$var_name" == *"KEY"* || "$var_name" == *"AUTH"* ]] && [ -n "$current_value" ] && display_value="${current_value:0:10}..."
             local status_color="${RED}"; [ -n "$current_value" ] && status_color="${GREEN}"
 
-            # Mostrar indicador de selección
+            # Show selection indicator
             if [ $i -eq $current_index ]; then
                 print_box_line "  ${CYAN}▶${BOX_NC} ${BOLD}${label}${BOX_NC}"
                 print_box_line "      ${status_color}▶${BOX_NC} ${display_value}"
@@ -1721,22 +1721,22 @@ show_notifier_config() {
         print_box_line "  ${CYAN}[↑/↓]${BOX_NC} ${MENU_NAV_SELECT:-Navigate}    ${CYAN}[ENTER]${BOX_NC} ${MENU_EDIT_FIELD:-Edit}    ${CYAN}[S]${BOX_NC} ${MENU_SAVE:-Save}    ${CYAN}[Q]${BOX_NC} ${MENU_BACK:-Back}"
         print_box_bottom
 
-        # Leer tecla
+        # Read key
         local key=""
         IFS= read -rsn1 key
 
-        # Detectar secuencias de escape (flechas)
+        # Detect escape sequences (arrows)
         if [[ "$key" == $'\x1b' ]]; then
             read -rsn2 -t 0.1 key
             case "$key" in
-                '[A') # Arriba
+                '[A') # Up
                     if [ $current_index -gt 0 ]; then
                         ((current_index--))
                     else
                         current_index=$((num_fields - 1))
                     fi
                     ;;
-                '[B') # Abajo
+                '[B') # Down
                     if [ $current_index -lt $((num_fields - 1)) ]; then
                         ((current_index++))
                     else
@@ -1745,7 +1745,7 @@ show_notifier_config() {
                     ;;
             esac
         elif [[ "$key" == "" ]]; then
-            # ENTER - Editar campo seleccionado
+            # ENTER - Edit selected field
             tput cnorm 2>/dev/null
             local var_name="${field_vars[$current_index]}"
             local label="${field_labels[$current_index]}"
@@ -1761,7 +1761,7 @@ show_notifier_config() {
 
             if [ -n "$new_value" ]; then
                 export "$var_name"="$new_value"
-                # Advertencia de seguridad para URLs HTTP (sin cifrado)
+                # Security warning for HTTP URLs (unencrypted)
                 if [[ "$var_name" == *"URL"* || "$var_name" == *"SERVER"* ]] && [[ "$new_value" == http://* ]]; then
                     echo ""
                     print_box_top
@@ -1774,7 +1774,7 @@ show_notifier_config() {
             fi
             tput civis 2>/dev/null
         elif [[ "$key" == "s" || "$key" == "S" ]]; then
-            # Guardar configuración
+            # Save configuration
             save_config
             clear
             print_box_top
@@ -1793,20 +1793,20 @@ show_notifier_help() {
     local code="$1"
     local notifier_file="${NOTIFIER_DIR}/${code}.notifier"
 
-    # Cargar el notificador para obtener NOTIFIER_NAME
+    # Load the notifier to get NOTIFIER_NAME
     [ ! -f "$notifier_file" ] && return
     source "$notifier_file" 2>/dev/null
 
-    # Buscar ayuda traducida primero (HELP_NOTIF_DESKTOP, HELP_NOTIF_TELEGRAM, etc.)
-    local help_var="HELP_NOTIF_${code^^}"  # Convertir a mayusculas
+    # Search for translated help first (HELP_NOTIF_DESKTOP, HELP_NOTIF_TELEGRAM, etc.)
+    local help_var="HELP_NOTIF_${code^^}"  # Convert to uppercase
     local help_text="${!help_var}"
 
-    # Fallback a funcion notifier_help() del archivo .notifier
+    # Fallback to notifier_help() function from .notifier file
     if [ -z "$help_text" ] && type -t notifier_help &>/dev/null; then
         help_text=$(notifier_help 2>/dev/null)
     fi
 
-    # Si no hay ayuda, mostrar mensaje
+    # If no help available, show message
     if [ -z "$help_text" ]; then
         clear
         print_box_top
@@ -1820,22 +1820,22 @@ show_notifier_help() {
         return
     fi
 
-    # Procesar texto en líneas con word-wrap
+    # Process text into lines with word-wrap
     local -a help_lines=()
     local max_width=68
     local line=""
 
     while IFS= read -r line || [ -n "$line" ]; do
-        # Saltar líneas de separadores largos
+        # Skip long separator lines
         if [[ "$line" =~ ^=+$ ]] || [[ "$line" =~ ^-+$ ]]; then
             continue
         fi
-        # Línea vacía
+        # Empty line
         if [ -z "$line" ]; then
             help_lines+=("")
             continue
         fi
-        # Word-wrap de líneas largas
+        # Word-wrap long lines
         if [ ${#line} -le $max_width ]; then
             help_lines+=("$line")
         else
@@ -1859,7 +1859,7 @@ show_notifier_help() {
     local scroll_offset=0
     local visible_lines=${HELP_WINDOW_HEIGHT:-12}
 
-    # Ocultar cursor
+    # Hide cursor
     tput civis 2>/dev/null
     trap 'tput cnorm 2>/dev/null' RETURN
 
@@ -1869,14 +1869,14 @@ show_notifier_help() {
         print_box_center "${BOLD}${MENU_HELP_TITLE:-HELP}: ${NOTIFIER_NAME}${BOX_NC}"
         print_box_sep
 
-        # Indicador de scroll arriba
+        # Scroll up indicator
         if [ $scroll_offset -gt 0 ]; then
             print_box_center "${DIM}▲ ▲ ▲${BOX_NC}"
         else
             print_box_line ""
         fi
 
-        # Mostrar líneas visibles
+        # Show visible lines
         local end_line=$((scroll_offset + visible_lines))
         [ $end_line -gt $total_lines ] && end_line=$total_lines
 
@@ -1885,13 +1885,13 @@ show_notifier_help() {
             print_box_line "  ${help_lines[$i]}"
         done
 
-        # Rellenar líneas vacías si es necesario
+        # Fill empty lines if needed
         local shown=$((end_line - scroll_offset))
         for ((i = shown; i < visible_lines; i++)); do
             print_box_line ""
         done
 
-        # Indicador de scroll abajo
+        # Scroll down indicator
         if [ $((scroll_offset + visible_lines)) -lt $total_lines ]; then
             print_box_center "${DIM}▼ ▼ ▼${BOX_NC}"
         else
@@ -1907,20 +1907,20 @@ show_notifier_help() {
         print_box_center "${CYAN}[ESC]${BOX_NC} ${MENU_HELP_CLOSE:-Close}  ${CYAN}[Q]${BOX_NC} ${MENU_HELP_CLOSE:-Close}"
         print_box_bottom
 
-        # Leer tecla
+        # Read key
         local key=""
         IFS= read -rsn1 key
 
         if [[ "$key" == $'\x1b' ]]; then
             read -rsn2 -t 0.1 key
             case "$key" in
-                '[A') # Arriba
+                '[A') # Up
                     [ $scroll_offset -gt 0 ] && ((scroll_offset--))
                     ;;
-                '[B') # Abajo
+                '[B') # Down
                     [ $scroll_offset -lt $max_offset ] && ((scroll_offset++))
                     ;;
-                '') # ESC solo - salir
+                '') # ESC alone - exit
                     tput cnorm 2>/dev/null
                     return
                     ;;
@@ -1940,7 +1940,7 @@ test_notifier() {
     print_box_center "${BOLD}${MENU_TEST:-TEST}: ${code}${BOX_NC}"
     print_box_sep
 
-    # Cargar el notificador
+    # Load the notifier
     if ! load_notifier "$code"; then
         print_box_center "${RED}${MENU_LOAD_FAILED:-Failed to load notifier}${BOX_NC}"
         print_box_bottom
@@ -1948,7 +1948,7 @@ test_notifier() {
         return
     fi
 
-    # Verificar dependencias
+    # Verify dependencies
     print_box_line "${MENU_CHECKING_DEPS:-Checking dependencies...}"
     if type -t notifier_check_deps &>/dev/null && ! notifier_check_deps; then
         print_box_line "${RED}${MENU_DEPS_MISSING:-Dependencies missing}${BOX_NC}"
@@ -1959,7 +1959,7 @@ test_notifier() {
     fi
     print_box_line "  ${GREEN}${ICON_OK}${BOX_NC} ${MENU_DEPS_OK:-Dependencies OK}"
 
-    # Verificar configuración
+    # Verify configuration
     print_box_line "${MENU_CHECKING_CONFIG:-Checking configuration...}"
     if type -t notifier_is_configured &>/dev/null && ! notifier_is_configured; then
         print_box_line "${YELLOW}${MENU_NOT_CONFIGURED:-Not configured}${BOX_NC}"
@@ -1970,7 +1970,7 @@ test_notifier() {
     fi
     print_box_line "  ${GREEN}${ICON_OK}${BOX_NC} ${MENU_CONFIG_OK:-Configuration OK}"
 
-    # Enviar notificación de prueba
+    # Send test notification
     print_box_line "${MENU_SENDING_TEST:-Sending test notification...}"
     if type -t notifier_test &>/dev/null && notifier_test; then
         print_box_line "  ${GREEN}${ICON_OK}${BOX_NC} ${MENU_TEST_SUCCESS:-Test notification sent!}"
@@ -1985,7 +1985,7 @@ test_notifier() {
 }
 
 # ============================================================================
-# COLORES E ICONOS (valores por defecto, serán sobrescritos por el tema)
+# COLORS AND ICONS (default values, will be overwritten by theme)
 # ============================================================================
 
 RED='\033[0;31m'
@@ -2006,16 +2006,16 @@ ICON_CLOCK=""
 ICON_ROCKET=""
 
 # ============================================================================
-# UI ENTERPRISE - Colores adicionales y controles
+# UI ENTERPRISE - Additional colors and controls
 # ============================================================================
 
-# Colores brillantes
+# Bright colors
 BRIGHT_GREEN='\033[1;32m'
 BRIGHT_YELLOW='\033[1;33m'
 BRIGHT_CYAN='\033[1;36m'
 DIM='\033[2m'
 
-# Variables semanticas de tema (valores por defecto)
+# Semantic theme variables (default values)
 BOX_BORDER="$BLUE"
 BOX_TITLE="$BOLD"
 TEXT_SELECTED="$BRIGHT_CYAN"
@@ -2027,18 +2027,18 @@ STATUS_WARN="$YELLOW"
 STATUS_INFO="$CYAN"
 STEP_HEADER="$BLUE"
 
-# Colores FIJOS para metricas (NO cambian con el tema)
+# FIXED colors for metrics (do NOT change with theme)
 FIXED_GREEN='\033[0;32m'
 FIXED_RED='\033[0;31m'
 FIXED_YELLOW='\033[1;33m'
 FIXED_CYAN='\033[0;36m'
 
-# Control de cursor
+# Cursor control
 CURSOR_HIDE='\033[?25l'
 CURSOR_SHOW='\033[?25h'
 CLEAR_LINE='\033[2K'
 
-# Íconos ASCII de ancho fijo (4 chars) - garantiza alineación
+# Fixed-width ASCII icons (4 chars) - ensures alignment
 ICON_SUM_OK='[OK]'
 ICON_SUM_FAIL='[XX]'
 ICON_SUM_WARN='[!!]'
@@ -2046,25 +2046,25 @@ ICON_SUM_SKIP='[--]'
 ICON_SUM_RUN='[..]'
 ICON_SUM_PEND='[  ]'
 
-# Caracteres de progress bar
+# Progress bar characters
 PROGRESS_FILLED="█"
 PROGRESS_EMPTY="░"
 
-# Spinner frames (estilo dots)
+# Spinner frames (dots style)
 SPINNER_FRAMES=("⠋" "⠙" "⠹" "⠸" "⠼" "⠴" "⠦" "⠧" "⠇" "⠏")
 SPINNER_PID=""
 SPINNER_ACTIVE=false
 
-# Constantes de diseño UI (terminal 80x24)
+# UI design constants (80x24 terminal)
 BOX_WIDTH=78
 BOX_INNER=76
 
-# Arrays de estado de pasos para resumen
+# Step status arrays for summary
 declare -a STEP_STATUS_ARRAY
 declare -a STEP_TIME_START
 declare -a STEP_TIME_END
 
-# Inicializar arrays de estado
+# Initialize status arrays
 for i in {0..12}; do
     STEP_STATUS_ARRAY[$i]="pending"
     STEP_TIME_START[$i]=0
@@ -2072,96 +2072,96 @@ for i in {0..12}; do
 done
 
 # ============================================================================
-# FUNCIONES UI ENTERPRISE
+# UI ENTERPRISE FUNCTIONS
 # ============================================================================
 
-# Remover códigos ANSI de un texto - múltiples métodos para robustez
+# Remove ANSI codes from text - multiple methods for robustness
 strip_ansi() {
     local text="$1"
-    # Usar printf %b para expandir y sed para limpiar
-    # Esta combinación es más robusta que echo -e
+    # Use printf %b to expand and sed to clean
+    # This combination is more robust than echo -e
     printf '%b' "$text" | sed 's/\x1b\[[0-9;]*m//g; s/\x1b\[[0-9;]*[A-Za-z]//g'
 }
 
-# Calcular longitud visible - método ultra-robusto
-# Usa wc -L que calcula el ancho de columna real
+# Calculate visible length - ultra-robust method
+# Uses wc -L which calculates real column width
 visible_length() {
     local text="$1"
     local clean
     clean=$(strip_ansi "$text")
-    # wc -L devuelve el ancho de la línea más larga (considera Unicode correctamente)
+    # wc -L returns the longest line width (handles Unicode correctly)
     local len
     len=$(printf '%s' "$clean" | wc -L)
-    # Fallback a ${#} si wc -L falla
+    # Fallback to ${#} if wc -L fails
     [ -z "$len" ] || [ "$len" -eq 0 ] && len=${#clean}
     echo "$len"
 }
 
-# Generar N espacios
+# Generate N spaces
 make_spaces() {
     local n="$1"
     [ "$n" -le 0 ] && echo "" && return
     printf '%*s' "$n" ''
 }
 
-# Imprimir línea con bordes - MÉTODO ULTRA-ROBUSTO
-# Usa ESC[K (clear to EOL) + posicionamiento absoluto para garantizar alineación
+# Print line with borders - ULTRA-ROBUST METHOD
+# Uses ESC[K (clear to EOL) + absolute positioning to ensure alignment
 print_box_line() {
     local content="$1"
 
-    # Imprimir borde izquierdo + espacio (con fondo si está definido)
+    # Print left border + space (with background if defined)
     printf '%b' "${BOX_BORDER:-$BLUE}║${NC}${BOX_BG} "
 
-    # Imprimir contenido
+    # Print content
     printf '%b' "$content"
 
-    # Limpiar hasta el final de línea (respeta color de fondo actual para Norton)
+    # Clear to end of line (respects current background color for Norton)
     printf '\033[K'
 
-    # Posicionar cursor en columna fija para borde derecho (independiente de Unicode)
+    # Position cursor at fixed column for right border (independent of Unicode)
     printf '\033[%dG' "$BOX_WIDTH"
     printf '%b\033[K\n' "${BOX_BORDER:-$BLUE}║${NC}"
 }
 
-# Imprimir línea centrada - MÉTODO ULTRA-ROBUSTO
-# Usa ESC[K (clear to EOL) + posicionamiento absoluto para garantizar alineación
+# Print centered line - ULTRA-ROBUST METHOD
+# Uses ESC[K (clear to EOL) + absolute positioning to ensure alignment
 print_box_center() {
     local content="$1"
 
-    # Calcular longitud visible para centrado (solo para padding izquierdo)
+    # Calculate visible length for centering (only for left padding)
     local content_len
     content_len=$(visible_length "$content")
 
-    # Calcular padding izquierdo para centrar
+    # Calculate left padding for centering
     local total_pad=$((BOX_INNER - content_len))
     [ "$total_pad" -lt 0 ] && total_pad=0
     local left_pad=$((total_pad / 2))
 
-    # Generar espacios izquierdos
+    # Generate left spaces
     local left_spaces
     left_spaces=$(make_spaces "$left_pad")
 
-    # Imprimir: borde + espacios izquierdos + contenido
+    # Print: border + left spaces + content
     printf '%b' "${BOX_BORDER:-$BLUE}║${NC}${BOX_BG}"
     printf '%s' "$left_spaces"
     printf '%b' "$content"
 
-    # Limpiar hasta el final de línea (respeta color de fondo actual)
+    # Clear to end of line (respects current background color)
     printf '\033[K'
 
-    # Posicionar cursor en columna fija para borde derecho
+    # Position cursor at fixed column for right border
     printf '\033[%dG' "$BOX_WIDTH"
     printf '%b\033[K\n' "${BOX_BORDER:-$BLUE}║${NC}"
 }
 
-# Imprimir separador horizontal
+# Print horizontal separator
 print_box_sep() {
     printf '%b' "${BOX_BORDER:-$BLUE}╠"
     printf '═%.0s' $(seq 1 $BOX_INNER)
     printf '%b\n' "╣${NC}"
 }
 
-# Imprimir marco superior
+# Print top frame
 print_box_top() {
     local color="${1:-${BOX_BORDER:-$BLUE}}"
     printf '%b' "${color}╔"
@@ -2169,7 +2169,7 @@ print_box_top() {
     printf '%b\n' "╗${NC}"
 }
 
-# Imprimir marco inferior
+# Print bottom frame
 print_box_bottom() {
     local color="${1:-${BOX_BORDER:-$BLUE}}"
     printf '%b' "${color}╚"
@@ -2177,7 +2177,7 @@ print_box_bottom() {
     printf '%b\n' "╝${NC}"
 }
 
-# Obtener ícono ASCII por estado
+# Get ASCII icon by status
 get_step_icon_summary() {
     local status=$1
     case $status in
@@ -2190,7 +2190,7 @@ get_step_icon_summary() {
     esac
 }
 
-# Actualizar estado de un paso
+# Update step status
 update_step_status() {
     local step_index=$1
     local new_status=$2
@@ -2205,9 +2205,9 @@ update_step_status() {
     esac
 }
 
-# Spinner - Animación durante operaciones largas
+# Spinner - Animation during long operations
 start_spinner() {
-    local message="${1:-Procesando...}"
+    local message="${1:-Processing...}"
     [ "$QUIET" = true ] && return
     [ "$SPINNER_ACTIVE" = true ] && return
     SPINNER_ACTIVE=true
@@ -2247,7 +2247,7 @@ stop_spinner() {
 }
 
 # ============================================================================
-# FUNCIONES BASE Y UTILIDADES
+# BASE FUNCTIONS AND UTILITIES
 # ============================================================================
 
 init_log() {
@@ -2257,8 +2257,8 @@ init_log() {
     touch "$LOG_FILE"
     chmod 600 "$LOG_FILE"
 
-    # Limpiar logs antiguos (mantener últimas 5 ejecuciones)
-    # Usa find para manejo seguro de nombres de archivo
+    # Clean old logs (keep last 5 executions)
+    # Uses find for safe filename handling
     find "$LOG_DIR" -maxdepth 1 -name "sys-update-*.log" -type f -printf '%T@ %p\n' 2>/dev/null | \
         sort -rn | tail -n +6 | cut -d' ' -f2- | xargs -r -d'\n' rm -f
 }
@@ -2303,9 +2303,9 @@ safe_run() {
         return 0
     fi
 
-    # SECURITY: Usar bash -c en lugar de eval para evitar expansión doble
-    # Nota: safe_run solo debe usarse con comandos construidos internamente,
-    # NUNCA con input de usuario sin sanitizar
+    # SECURITY: Use bash -c instead of eval to avoid double expansion
+    # Note: safe_run should only be used with internally built commands,
+    # NEVER with unsanitized user input
     if bash -c "$cmd" >> "$LOG_FILE" 2>&1; then
         return 0
     else
@@ -2335,8 +2335,8 @@ print_header() {
 }
 
 cleanup() {
-    # SECURITY: Cerrar el file descriptor del flock y eliminar lock file
-    exec 200>&- 2>/dev/null  # Cerrar fd 200 (libera el flock automáticamente)
+    # SECURITY: Close flock file descriptor and remove lock file
+    exec 200>&- 2>/dev/null  # Close fd 200 (releases flock automatically)
     # Only log if lock file existed and was removed
     if [[ -f "$LOCK_FILE" ]]; then
         rm -f "$LOCK_FILE" 2>/dev/null
@@ -2347,22 +2347,22 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 # ============================================================================
-# FUNCIONES DE VALIDACIÓN Y CHEQUEO
+# VALIDATION AND CHECK FUNCTIONS
 # ============================================================================
 
 detect_distro() {
-    # Detectar distribución usando /etc/os-release
+    # Detect distribution using /etc/os-release
     if [ ! -f /etc/os-release ]; then
         die "${MSG_DISTRO_NOT_DETECTED}"
     fi
 
-    # SECURITY: Validar /etc/os-release antes de hacer source
-    # Solo permitir asignaciones de variables simples (VAR=value o VAR="value")
+    # SECURITY: Validate /etc/os-release before sourcing
+    # Only allow simple variable assignments (VAR=value or VAR="value")
     if grep -qE '(\$\(|`|\||;|&&|\|\|)' /etc/os-release 2>/dev/null; then
         die "ERROR: /etc/os-release contains unsafe content"
     fi
 
-    # Cargar variables de os-release
+    # Load os-release variables
     source /etc/os-release
 
     DISTRO_ID="${ID:-unknown}"
@@ -2370,7 +2370,7 @@ detect_distro() {
     DISTRO_VERSION="${VERSION_ID:-unknown}"
     DISTRO_CODENAME="${VERSION_CODENAME:-$UBUNTU_CODENAME}"
 
-    # Determinar familia y servidor de mirror según la distribución
+    # Determine family and mirror server based on distribution
     case "$DISTRO_ID" in
         debian)
             DISTRO_FAMILY="debian"
@@ -2383,7 +2383,7 @@ detect_distro() {
         linuxmint)
             DISTRO_FAMILY="mint"
             DISTRO_MIRROR="packages.linuxmint.com"
-            # Linux Mint está basado en Ubuntu
+            # Linux Mint is based on Ubuntu
             [ -z "$DISTRO_CODENAME" ] && DISTRO_CODENAME="${UBUNTU_CODENAME:-unknown}"
             ;;
         pop)
@@ -2403,7 +2403,7 @@ detect_distro() {
             DISTRO_MIRROR="http.kali.org"
             ;;
         *)
-            # Verificar si es derivada de Debian/Ubuntu
+            # Check if it's a Debian/Ubuntu derivative
             if [ -n "$ID_LIKE" ]; then
                 if echo "$ID_LIKE" | grep -q "ubuntu"; then
                     DISTRO_FAMILY="ubuntu"
@@ -2445,20 +2445,20 @@ check_root() {
 }
 
 check_lock() {
-    # SECURITY: Usar flock para bloqueo atómico (evita race conditions TOCTOU)
-    # El file descriptor 200 se mantiene abierto durante toda la ejecución
+    # SECURITY: Use flock for atomic locking (avoids TOCTOU race conditions)
+    # File descriptor 200 is kept open during entire execution
     exec 200>"$LOCK_FILE"
     if ! flock -n 200; then
-        # No pudimos obtener el lock, verificar quién lo tiene
+        # Couldn't obtain the lock, check who has it
         local pid
         pid=$(cat "$LOCK_FILE" 2>/dev/null)
-        echo -e "${RED}[XX] Ya hay una instancia del script corriendo (PID: ${pid:-desconocido})${NC}"
+        echo -e "${RED}[XX] Another instance of the script is already running (PID: ${pid:-unknown})${NC}"
         exit 1
     fi
-    # Escribir nuestro PID al archivo (para información, el lock real es flock)
+    # Write our PID to the file (for info, the real lock is flock)
     echo $$ >&200
 
-    # Verificación extra de locks de APT
+    # Extra verification of APT locks
     if fuser /var/lib/dpkg/lock* /var/lib/apt/lists/lock* 2>/dev/null | grep -q .; then
         echo -e "${RED}[XX] ${MSG_APT_BUSY:-APT is busy. Close Synaptic/Discover and try again.}${NC}"
         exit 1
@@ -2486,13 +2486,13 @@ count_active_steps() {
 
 validate_step_dependencies() {
     log "INFO" "${MSG_VALIDATING_DEPS:-Validating step dependencies...}"
-    
-    # Si se va a actualizar sistema, DEBE actualizarse repositorios
+
+    # If system upgrade is enabled, repos MUST be updated
     if [ "$STEP_UPGRADE_SYSTEM" = 1 ] && [ "$STEP_UPDATE_REPOS" = 0 ]; then
         die "${MSG_UPGRADE_WITHOUT_REPOS:-You cannot upgrade the system (STEP_UPGRADE_SYSTEM=1) without updating repos (STEP_UPDATE_REPOS=0). Enable STEP_UPDATE_REPOS.}"
     fi
-    
-    # Si se va a limpiar kernels en Testing, recomendamos snapshot
+
+    # If kernel cleanup is enabled in Testing, recommend snapshot
     if [ "$STEP_CLEANUP_KERNELS" = 1 ] && [ "$STEP_SNAPSHOT_TIMESHIFT" = 0 ]; then
         log "WARN" "${MSG_KERNEL_CLEANUP_RISKY:-Kernel cleanup without Timeshift snapshot may be risky}"
         if [ "$UNATTENDED" = false ]; then
@@ -2513,13 +2513,13 @@ show_step_summary() {
     local cols=4
 
     print_box_top
-    print_box_center "${BOLD}CONFIGURACIÓN DE PASOS - RESUMEN${NC}"
+    print_box_center "${BOLD}STEP CONFIGURATION - SUMMARY${NC}"
     print_box_sep
     print_box_center "${DISTRO_NAME} | ${DISTRO_FAMILY^} (${DISTRO_CODENAME:-N/A})"
     print_box_sep
-    print_box_line "${BOLD}PASOS A EJECUTAR${NC}"
+    print_box_line "${BOLD}STEPS TO EXECUTE${NC}"
 
-    # Mostrar en 4 columnas (6 filas) - formato fijo 18 chars por celda
+    # Show in 4 columns (6 rows) - fixed format 18 chars per cell
     for row in {0..5}; do
         local line=""
         for col in {0..3}; do
@@ -2527,7 +2527,7 @@ show_step_summary() {
             if [ $idx -lt $total_items ]; then
                 local var_name="${MENU_STEP_VARS[$idx]}"
                 local var_value="${!var_name}"
-                # Nombre con ancho fijo de 13 chars
+                # Name with fixed width of 13 chars
                 local name
                 name=$(printf "%-13.13s" "${STEP_SHORT_NAMES[$idx]}")
 
@@ -2537,7 +2537,7 @@ show_step_summary() {
                     line+=" ${DIM}[--]${NC}${name}"
                 fi
             else
-                # Celda vacía: 18 espacios
+                # Empty cell: 18 spaces
                 line+="                  "
             fi
         done
@@ -2674,7 +2674,7 @@ show_step_help() {
 }
 
 # ============================================================================
-# MENÚ INTERACTIVO DE CONFIGURACIÓN
+# INTERACTIVE CONFIGURATION MENU
 # ============================================================================
 
 show_interactive_menu() {
@@ -2682,23 +2682,23 @@ show_interactive_menu() {
     local total_items=${#MENU_STEP_NAMES[@]}
     local menu_running=true
 
-    # Ocultar cursor
+    # Hide cursor
     tput civis 2>/dev/null
     trap 'tput cnorm 2>/dev/null' RETURN
 
     while [ "$menu_running" = true ]; do
-        # Contar pasos activos
+        # Count active steps
         local active_count=0
         for var_name in "${MENU_STEP_VARS[@]}"; do
             [ "${!var_name}" = "1" ] && ((active_count++))
         done
 
-        # Calcular fila y columna actual (4 columnas × 6 filas)
+        # Calculate current row and column (4 columns × 6 rows)
         local cols=4
         local cur_row=$((current_index / cols))
         local cur_col=$((current_index % cols))
 
-        # Limpiar pantalla y mostrar interfaz enterprise
+        # Clear screen and show enterprise interface
         clear
         print_box_top
         print_box_center "${BOLD}${MENU_TITLE}${BOX_NC}"
@@ -2707,8 +2707,8 @@ show_interactive_menu() {
         print_box_sep
         print_box_line "${BOLD}${MENU_STEPS_TITLE}${BOX_NC} ${DIM}${MENU_STEPS_HELP}${BOX_NC}"
 
-        # Mostrar pasos en 4 columnas (6 filas) - 23 pasos total
-        # Cada celda: 18 chars fijos (prefix[1] + bracket[1] + check[1] + bracket[1] + space[1] + name[13])
+        # Show steps in 4 columns (6 rows) - 23 total steps
+        # Each cell: 18 fixed chars (prefix[1] + bracket[1] + check[1] + bracket[1] + space[1] + name[13])
         for row in {0..5}; do
             local line=""
             for col in {0..3}; do
@@ -2716,29 +2716,29 @@ show_interactive_menu() {
                 if [ $idx -lt $total_items ]; then
                     local var_name="${MENU_STEP_VARS[$idx]}"
                     local var_value="${!var_name}"
-                    # Truncar/pad nombre a exactamente 13 chars (ajustado para 4 columnas)
+                    # Truncate/pad name to exactly 13 chars (adjusted for 4 columns)
                     local name
                     name=$(printf "%-13.13s" "${STEP_SHORT_NAMES[$idx]}")
 
-                    # Determinar prefijo y estado
+                    # Determine prefix and state
                     local prefix=" "
                     local check=" "
                     [ "$var_value" = "1" ] && check="x"
                     [ $idx -eq $current_index ] && prefix=">"
 
-                    # Construir celda con formato CONSISTENTE (18 chars fijos)
+                    # Build cell with CONSISTENT format (18 fixed chars)
                     if [ $idx -eq $current_index ]; then
-                        # Seleccionado: todo en cyan brillante
+                        # Selected: all in bright cyan
                         line+="${BRIGHT_CYAN}${prefix}[${check}]${BOX_NC} ${BRIGHT_CYAN}${name}${BOX_NC}"
                     elif [ "$var_value" = "1" ]; then
-                        # Activo: [x] en verde
+                        # Active: [x] in green
                         line+=" ${GREEN}[x]${BOX_NC} ${name}"
                     else
-                        # Inactivo: [ ] en dim
+                        # Inactive: [ ] in dim
                         line+=" ${DIM}[ ]${BOX_NC} ${name}"
                     fi
                 else
-                    # Celda vacía: 18 espacios
+                    # Empty cell: 18 spaces
                     line+="                  "
                 fi
             done
@@ -2754,47 +2754,47 @@ show_interactive_menu() {
         print_box_center "${CYAN}[S]${BOX_NC} ${MENU_CTRL_SELECT:-Sel/Desel} ${CYAN}[L]${BOX_NC} ${MENU_CTRL_LANG} ${CYAN}[T]${BOX_NC} ${MENU_CTRL_THEME:-Theme} ${CYAN}[O]${BOX_NC} ${MENU_CTRL_NOTIF:-Notif}"
         print_box_bottom
 
-        # Leer tecla
+        # Read key
         local key=""
         IFS= read -rsn1 key
 
-        # Detectar secuencias de escape (flechas) - navegación 4 columnas × 6 filas
+        # Detect escape sequences (arrows) - navigation 4 columns × 6 rows
         if [[ "$key" == $'\x1b' ]]; then
             read -rsn2 -t 0.1 key
             case "$key" in
-                '[A') # Arriba: misma columna, fila anterior
+                '[A') # Up: same column, previous row
                     if [ $cur_row -gt 0 ]; then
                         ((current_index-=cols))
                     else
-                        # Ir a la última fila de la columna
+                        # Go to last row of column
                         local last_row=$(( (total_items - 1) / cols ))
                         local new_idx=$((last_row * cols + cur_col))
                         [ $new_idx -ge $total_items ] && new_idx=$((new_idx - cols))
                         [ $new_idx -ge 0 ] && current_index=$new_idx
                     fi
                     ;;
-                '[B') # Abajo: misma columna, fila siguiente
+                '[B') # Down: same column, next row
                     local new_idx=$((current_index + cols))
                     if [ $new_idx -lt $total_items ]; then
                         current_index=$new_idx
                     else
-                        # Volver a la primera fila de la columna
+                        # Return to first row of column
                         current_index=$cur_col
                     fi
                     ;;
-                '[C') # Derecha: columna siguiente
+                '[C') # Right: next column
                     if [ $cur_col -lt $((cols - 1)) ] && [ $((current_index + 1)) -lt $total_items ]; then
                         ((current_index++))
                     else
-                        # Ir al inicio de la fila
+                        # Go to start of row
                         current_index=$((cur_row * cols))
                     fi
                     ;;
-                '[D') # Izquierda: columna anterior
+                '[D') # Left: previous column
                     if [ $cur_col -gt 0 ]; then
                         ((current_index--))
                     else
-                        # Ir al final de la fila
+                        # Go to end of row
                         local new_idx=$((cur_row * cols + cols - 1))
                         [ $new_idx -ge $total_items ] && new_idx=$((total_items - 1))
                         current_index=$new_idx
@@ -2810,7 +2810,7 @@ show_interactive_menu() {
         else
             case "$key" in
                 's'|'S')
-                    # Toggle: si hay alguno desactivado, activar todos; si todos activos, desactivar todos
+                    # Toggle: if any is deactivated, activate all; if all active, deactivate all
                     local all_active=1
                     for var_name in "${MENU_STEP_VARS[@]}"; do
                         declare -n ref="$var_name"
@@ -2854,7 +2854,7 @@ check_disk_space() {
         log "WARN" "$(printf "$MSG_LOW_BOOT_SPACE" "$boot_mb")"
     fi
 
-    # Guardar espacio inicial
+    # Save initial space
     SPACE_BEFORE_ROOT=$(df / --output=used | tail -1 | awk '{print $1}')
     SPACE_BEFORE_BOOT=$(df /boot --output=used 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
 
@@ -2862,7 +2862,7 @@ check_disk_space() {
 }
 
 # ============================================================================
-# PASO 1: VERIFICAR CONECTIVIDAD
+# STEP 1: CHECK CONNECTIVITY
 # ============================================================================
 
 step_check_connectivity() {
@@ -2870,7 +2870,7 @@ step_check_connectivity() {
 
     print_step "${MSG_CHECKING_CONNECTIVITY}"
 
-    # Usar el mirror correspondiente a la distribución detectada
+    # Use the mirror corresponding to detected distribution
     local mirror_to_check="${DISTRO_MIRROR:-deb.debian.org}"
 
     echo "→ ${MSG_CHECKING_CONNECTION_TO} $mirror_to_check..."
@@ -2880,7 +2880,7 @@ step_check_connectivity() {
         STAT_CONNECTIVITY="$ICON_OK"
         log "SUCCESS" "${MSG_CONNECTION_OK}"
     else
-        # Intentar con un servidor de respaldo genérico
+        # Try with a generic backup server
         if ping -c 1 -W 3 8.8.8.8 >/dev/null 2>&1; then
             echo -e "${YELLOW}→ ${MSG_CONNECTION_WARN}${NC}"
             STAT_CONNECTIVITY="$ICON_WARN"
@@ -2894,34 +2894,34 @@ step_check_connectivity() {
 }
 
 # ============================================================================
-# PASO 2: VERIFICAR E INSTALAR DEPENDENCIAS
+# STEP 2: CHECK AND INSTALL DEPENDENCIES
 # ============================================================================
 
 step_check_dependencies() {
     [ "$STEP_CHECK_DEPENDENCIES" = 0 ] && return
 
     print_step "${MSG_CHECKING_TOOLS}"
-    
+
     declare -A TOOLS
     declare -A TOOL_STEPS
-    
-    # Definir herramientas y qué paso las requiere
-    TOOLS[timeshift]="Snapshots del sistema (CRÍTICO para seguridad)"
+
+    # Define tools and which step requires them
+    TOOLS[timeshift]="System snapshots (CRITICAL for security)"
     TOOL_STEPS[timeshift]=$STEP_SNAPSHOT_TIMESHIFT
-    
-    TOOLS[needrestart]="Detección inteligente de reinicio"
+
+    TOOLS[needrestart]="Smart reboot detection"
     TOOL_STEPS[needrestart]=$STEP_CHECK_REBOOT
-    
-    TOOLS[fwupdmgr]="Gestión de firmware"
+
+    TOOLS[fwupdmgr]="Firmware management"
     TOOL_STEPS[fwupdmgr]=$STEP_CHECK_FIRMWARE
-    
-    TOOLS[flatpak]="Gestor de aplicaciones Flatpak"
+
+    TOOLS[flatpak]="Flatpak application manager"
     TOOL_STEPS[flatpak]=$STEP_UPDATE_FLATPAK
-    
-    TOOLS[snap]="Gestor de aplicaciones Snap"
+
+    TOOLS[snap]="Snap application manager"
     TOOL_STEPS[snap]=$STEP_UPDATE_SNAP
 
-    TOOLS[smartctl]="Diagnósticos SMART de discos"
+    TOOLS[smartctl]="SMART disk diagnostics"
     TOOL_STEPS[smartctl]=$STEP_CHECK_SMART
 
     local missing=()
@@ -2929,20 +2929,20 @@ step_check_dependencies() {
     local skipped_tools=()
     
     for tool in "${!TOOLS[@]}"; do
-        # Solo verificar si el paso asociado está activo
+        # Only verify if the associated step is active
         if [ "${TOOL_STEPS[$tool]}" = "1" ]; then
             if ! command -v "$tool" &>/dev/null; then
                 missing+=("$tool")
                 missing_names+=("${TOOLS[$tool]}")
             fi
         else
-            # El paso está desactivado, no verificar esta herramienta
+            # Step is disabled, don't verify this tool
             skipped_tools+=("$tool")
             log "INFO" "$(printf "${MSG_SKIPPING_TOOL_CHECK:-Skipping verification of %s (step disabled)}" "$tool")"
         fi
     done
-    
-    # Mostrar herramientas omitidas si hay alguna
+
+    # Show skipped tools if any
     if [ ${#skipped_tools[@]} -gt 0 ] && [ "$QUIET" = false ]; then
         echo -e "${CYAN}→ ${MSG_TOOLS_SKIPPED}: ${skipped_tools[*]}${NC}"
     fi
@@ -2959,8 +2959,8 @@ step_check_dependencies() {
             echo
             if [[ $REPLY =~ $PROMPT_YES_PATTERN ]]; then
                 echo "→ ${MSG_INSTALLING_TOOLS}"
-                
-                # Determinar qué paquetes instalar
+
+                # Determine which packages to install
                 local packages_to_install=""
                 for tool in "${missing[@]}"; do
                     case "$tool" in
@@ -2996,7 +2996,7 @@ step_check_dependencies() {
 }
 
 # ============================================================================
-# PASO 3: VERIFICAR INTEGRIDAD DE REPOSITORIOS APT
+# STEP 3: CHECK APT REPOSITORY INTEGRITY
 # ============================================================================
 
 step_check_repos() {
@@ -3011,7 +3011,7 @@ step_check_repos() {
 
     echo "→ ${MSG_VERIFYING_SOURCES_LIST:-Verifying sources.list files...}"
 
-    # Verificar sintaxis de archivos sources.list
+    # Verify sources.list files syntax
     if [ -f /etc/apt/sources.list ]; then
         if ! apt-cache policy &>/dev/null; then
             has_error=true
@@ -3020,12 +3020,12 @@ step_check_repos() {
         fi
     fi
 
-    # Verificar archivos en sources.list.d/
+    # Verify files in sources.list.d/
     if [ -d /etc/apt/sources.list.d/ ]; then
         shopt -s nullglob
         for repo_file in /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
             [ -f "$repo_file" ] || continue
-            # Verificar que no tenga errores de sintaxis obvios
+            # Verify there are no obvious syntax errors
             if grep -qE '^\s*deb\s+[^[:space:]]+\s*$' "$repo_file" 2>/dev/null; then
                 has_warning=true
                 invalid_repos+=("$repo_file (incomplete entry)")
@@ -3034,7 +3034,7 @@ step_check_repos() {
         shopt -u nullglob
     fi
 
-    # Verificar GPG keys expiradas o faltantes
+    # Verify expired or missing GPG keys
     echo "→ ${MSG_CHECKING_GPG_KEYS:-Checking GPG keys...}"
     local expired_keys=$(apt-key list 2>/dev/null | grep -B1 "expired" | grep -oP '(?<=/)[\w]+(?=\s)' | head -5)
     if [ -n "$expired_keys" ]; then
@@ -3043,14 +3043,14 @@ step_check_repos() {
         echo -e "${YELLOW}→ ${MSG_EXPIRED_KEYS:-Expired GPG keys found}${NC}"
     fi
 
-    # Verificar conectividad a repositorios principales
+    # Verify connectivity to main repositories
     echo "→ ${MSG_TESTING_REPO_CONNECTIVITY:-Testing repository connectivity...}"
     if ! apt-get update -qq --print-uris 2>&1 | head -1 &>/dev/null; then
         has_warning=true
         log "WARN" "Some repositories may be unreachable"
     fi
 
-    # Resultado final
+    # Final result
     if $has_error; then
         STAT_CHECK_REPOS="$ICON_FAIL"
         log "ERROR" "${MSG_REPOS_ERRORS:-Repository configuration errors found}"
@@ -3069,7 +3069,7 @@ step_check_repos() {
 }
 
 # ============================================================================
-# PASO 4: BACKUP DE CONFIGURACIONES (TAR)
+# STEP 4: BACKUP CONFIGURATIONS (TAR)
 # ============================================================================
 
 step_backup_tar() {
@@ -3081,21 +3081,21 @@ step_backup_tar() {
     local backup_date=$(date +%Y%m%d_%H%M%S)
     local backup_file="$BACKUP_DIR/backup_${backup_date}.tar.gz"
     
-    # Crear tarball de configuraciones APT
+    # Create APT configurations tarball
     if tar czf "$backup_file" \
         /etc/apt/sources.list* \
         /etc/apt/sources.list.d/ \
         /etc/apt/trusted.gpg.d/ 2>/dev/null; then
         
-        # Lista de paquetes instalados
+        # List of installed packages
         dpkg --get-selections > "$BACKUP_DIR/packages_${backup_date}.list" 2>/dev/null
         
         echo "→ ${MSG_BACKUP_CREATED}: $backup_file"
         STAT_BACKUP_TAR="$ICON_OK"
         log "SUCCESS" "${MSG_BACKUP_CREATED}"
 
-        # Limpiar backups antiguos (mantener últimas 5 ejecuciones)
-        # Usa find para manejo seguro de nombres de archivo
+        # Clean old backups (keep last 5 runs)
+        # Uses find for safe filename handling
         find "$BACKUP_DIR" -maxdepth 1 -name "backup_*.tar.gz" -type f -printf '%T@ %p\n' 2>/dev/null | \
             sort -rn | tail -n +6 | cut -d' ' -f2- | xargs -r -d'\n' rm -f
         find "$BACKUP_DIR" -maxdepth 1 -name "packages_*.list" -type f -printf '%T@ %p\n' 2>/dev/null | \
@@ -3107,24 +3107,24 @@ step_backup_tar() {
 }
 
 # ============================================================================
-# PASO 4: SNAPSHOT TIMESHIFT
+# STEP 4: SNAPSHOT TIMESHIFT
 # ============================================================================
 
-# Verificar si Timeshift está configurado correctamente
+# Verify if Timeshift is correctly configured
 check_timeshift_configured() {
     local config_file="/etc/timeshift/timeshift.json"
 
-    # Verificar que existe el archivo de configuración
+    # Verify that the configuration file exists
     if [ ! -f "$config_file" ]; then
         return 1
     fi
 
-    # Verificar que tiene un dispositivo configurado (no vacío)
+    # Verify that it has a configured device (not empty)
     if grep -q '"backup_device_uuid" *: *""' "$config_file" 2>/dev/null; then
         return 1
     fi
 
-    # Verificar que el dispositivo no sea "none" o similar
+    # Verify that the device is not "none" or similar
     if grep -q '"backup_device_uuid" *: *"none"' "$config_file" 2>/dev/null; then
         return 1
     fi
@@ -3144,7 +3144,7 @@ step_snapshot_timeshift() {
         return
     fi
 
-    # Verificar si Timeshift está CONFIGURADO
+    # Verify if Timeshift is CONFIGURED
     if ! check_timeshift_configured; then
         echo ""
         print_box_top "$YELLOW"
@@ -3173,7 +3173,7 @@ step_snapshot_timeshift() {
         return
     fi
 
-    # Preguntar si desea omitir (solo en modo interactivo)
+    # Ask if user wants to skip (only in interactive mode)
     if [ "$ASK_TIMESHIFT_RUN" = true ] && [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
         echo -e "${YELLOW}${PROMPT_SKIP_SNAPSHOT}${NC}"
         read -p "${PROMPT_SKIP_INSTRUCTIONS} " -n 1 -r
@@ -3190,7 +3190,7 @@ step_snapshot_timeshift() {
         return
     fi
 
-    # Crear snapshot
+    # Create snapshot
     local ts_comment="Pre-Maintenance $(date +%Y-%m-%d_%H:%M:%S)"
     if timeshift --create --comments "$ts_comment" --tags O >> "$LOG_FILE" 2>&1; then
         echo "→ ${MSG_SNAPSHOT_CREATED}"
@@ -3210,14 +3210,14 @@ step_snapshot_timeshift() {
             fi
             log "WARN" "${MSG_USER_CONTINUED_NO_SNAPSHOT}"
         else
-            # En modo desatendido, abortar por seguridad
+            # In unattended mode, abort for safety
             die "${MSG_ABORTED_NO_SNAPSHOT}"
         fi
     fi
 }
 
 # ============================================================================
-# PASO 5: ACTUALIZAR REPOSITORIOS
+# STEP 5: UPDATE REPOSITORIES
 # ============================================================================
 
 step_update_repos() {
@@ -3225,7 +3225,7 @@ step_update_repos() {
 
     print_step "${MSG_UPDATING_REPOS}"
 
-    # Reparar dpkg antes de actualizar
+    # Repair dpkg before updating
     dpkg --configure -a >> "$LOG_FILE" 2>&1
 
     if safe_run "apt update" "Error"; then
@@ -3238,7 +3238,7 @@ step_update_repos() {
 }
 
 # ============================================================================
-# PASO 6: ACTUALIZAR SISTEMA (APT)
+# STEP 6: UPGRADE SYSTEM (APT)
 # ============================================================================
 
 step_upgrade_system() {
@@ -3246,7 +3246,7 @@ step_upgrade_system() {
 
     print_step "${MSG_ANALYZING_UPDATES}"
 
-    # Contar actualizaciones disponibles
+    # Count available updates
     local updates_output=$(apt list --upgradable 2>/dev/null)
     local updates=$(echo "$updates_output" | grep -c '\[upgradable' || echo 0)
     updates=${updates//[^0-9]/}
@@ -3256,7 +3256,7 @@ step_upgrade_system() {
     if [ "$updates" -gt 0 ]; then
         printf "→ ${MSG_PACKAGES_TO_UPDATE}\n" "$updates"
 
-        # Análisis heurístico de riesgo (borrados masivos)
+        # Heuristic risk analysis (mass deletions)
         log "INFO" "${MSG_SIMULATING_UPGRADE}"
         local simulation=$(apt full-upgrade -s 2>/dev/null)
         local remove_count=$(echo "$simulation" | grep "^Remv" | wc -l)
@@ -3277,7 +3277,7 @@ step_upgrade_system() {
             fi
         fi
 
-        # Ejecutar actualización
+        # Execute upgrade
         if safe_run "apt full-upgrade -y" "Error"; then
             printf "→ ${MSG_PACKAGES_UPDATED}\n" "$updates"
             STAT_UPGRADE="$ICON_OK"
@@ -3295,7 +3295,7 @@ step_upgrade_system() {
 }
 
 # ============================================================================
-# PASO 7: ACTUALIZAR FLATPAK
+# STEP 7: UPDATE FLATPAK
 # ============================================================================
 
 step_update_flatpak() {
@@ -3330,7 +3330,7 @@ step_update_flatpak() {
 }
 
 # ============================================================================
-# PASO 8: ACTUALIZAR SNAP
+# STEP 8: UPDATE SNAP
 # ============================================================================
 
 step_update_snap() {
@@ -3368,7 +3368,7 @@ step_update_snap() {
 }
 
 # ============================================================================
-# PASO 9: VERIFICAR FIRMWARE
+# STEP 9: CHECK FIRMWARE
 # ============================================================================
 
 step_check_firmware() {
@@ -3381,8 +3381,8 @@ step_check_firmware() {
         STAT_FIRMWARE="$ICON_SKIP"
         return
     fi
-    
-    # Verificar si necesita refresh (más de 7 días)
+
+    # Check if refresh is needed (more than 7 days)
     local last_refresh=$(stat -c %Y /var/lib/fwupd/metadata.xml 2>/dev/null || echo 0)
     local current_time=$(date +%s)
     local days_old=$(( (current_time - last_refresh) / 86400 ))
@@ -3394,7 +3394,7 @@ step_check_firmware() {
         printf "→ ${MSG_FIRMWARE_METADATA_DAYS}\n" "$days_old"
     fi
 
-    # Verificar si hay actualizaciones disponibles
+    # Check if updates are available
     if fwupdmgr get-updates >/dev/null 2>&1; then
         echo -e "${YELLOW}→ ${MSG_FIRMWARE_AVAILABLE}${NC}"
         STAT_FIRMWARE="${YELLOW}$ICON_WARN AVAILABLE${NC}"
@@ -3406,7 +3406,7 @@ step_check_firmware() {
 }
 
 # ============================================================================
-# PASO 10: LIMPIEZA APT
+# STEP 10: APT CLEANUP
 # ============================================================================
 
 step_cleanup_apt() {
@@ -3414,7 +3414,7 @@ step_cleanup_apt() {
 
     print_step "${MSG_CLEANING_APT}"
 
-    # Autoremove (paquetes huérfanos)
+    # Autoremove (orphan packages)
     if safe_run "apt autoremove -y" "Error"; then
         echo "→ ${MSG_ORPHANS_REMOVED}"
     else
@@ -3422,7 +3422,7 @@ step_cleanup_apt() {
         return
     fi
 
-    # Purge (paquetes con config residual)
+    # Purge (packages with residual config)
     local pkgs_rc=$(dpkg -l 2>/dev/null | grep "^rc" | awk '{print $2}')
     if [ -n "$pkgs_rc" ]; then
         local rc_count=$(echo "$pkgs_rc" | wc -l)
@@ -3439,7 +3439,7 @@ step_cleanup_apt() {
         echo "→ ${MSG_NO_RESIDUALS}"
     fi
 
-    # Autoclean o clean
+    # Autoclean or clean
     if safe_run "apt $APT_CLEAN_MODE" "Error"; then
         echo "→ ${MSG_APT_CACHE_CLEANED}"
     fi
@@ -3449,7 +3449,7 @@ step_cleanup_apt() {
 }
 
 # ============================================================================
-# PASO 11: LIMPIEZA DE KERNELS ANTIGUOS
+# STEP 11: OLD KERNELS CLEANUP
 # ============================================================================
 
 step_cleanup_kernels() {
@@ -3457,14 +3457,14 @@ step_cleanup_kernels() {
 
     print_step "${MSG_CLEANING_KERNELS}"
 
-    # Obtener kernel actual
+    # Get current kernel
     local current_kernel=$(uname -r)
     local current_kernel_pkg="linux-image-${current_kernel}"
 
     log "INFO" "${MSG_CURRENT_KERNEL}: $current_kernel"
     echo "→ ${MSG_KERNEL_IN_USE}: $current_kernel"
 
-    # Obtener todos los kernels instalados
+    # Get all installed kernels
     local installed_kernels=$(dpkg -l 2>/dev/null | awk '/^ii.*linux-image-[0-9]/ {print $2}' | grep -v "meta")
 
     if [ -z "$installed_kernels" ]; then
@@ -3473,20 +3473,20 @@ step_cleanup_kernels() {
         return
     fi
 
-    # Contar kernels
+    # Count kernels
     local kernel_count=$(echo "$installed_kernels" | wc -l)
     echo "→ ${MSG_INSTALLED_KERNELS}: $kernel_count"
     
-    # Mantener: kernel actual + los N más recientes
+    # Keep: current kernel + the N most recent
     local kernels_to_keep=$(echo "$installed_kernels" | sort -V | tail -n "$KERNELS_TO_KEEP")
-    
-    # Validación crítica: asegurar que el kernel actual esté en la lista
+
+    # Critical validation: ensure current kernel is in the list
     if ! echo "$kernels_to_keep" | grep -q "$current_kernel_pkg"; then
         log "WARN" "${MSG_KERNEL_FORCING_INCLUSION:-Current kernel not in most recent list, forcing inclusion}"
         kernels_to_keep=$(echo -e "${current_kernel_pkg}\n${kernels_to_keep}" | sort -V | tail -n "$KERNELS_TO_KEEP")
     fi
     
-    # Identificar kernels a eliminar
+    # Identify kernels to remove
     local kernels_to_remove=""
     for kernel in $installed_kernels; do
         if ! echo "$kernels_to_keep" | grep -q "$kernel" && [ "$kernel" != "$current_kernel_pkg" ]; then
@@ -3501,7 +3501,7 @@ step_cleanup_kernels() {
         echo "→ ${MSG_KERNELS_TO_REMOVE}"
         echo "$kernels_to_remove" | tr ' ' '\n' | sed 's/^/   [-] /'
 
-        # Confirmación en modo interactivo
+        # Confirmation in interactive mode
         if [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
             read -p "${PROMPT_DELETE_KERNELS} " -n 1 -r
             echo
@@ -3513,14 +3513,14 @@ step_cleanup_kernels() {
             fi
         fi
 
-        # Eliminar kernels
+        # Remove kernels
         # SECURITY: xargs -r prevents running with empty args
         if echo "$kernels_to_remove" | xargs -r apt purge -y >> "$LOG_FILE" 2>&1; then
             echo "→ ${MSG_KERNELS_REMOVED}"
             STAT_CLEAN_KERNEL="$ICON_OK"
             log "SUCCESS" "${MSG_KERNELS_REMOVED}"
 
-            # Regenerar GRUB
+            # Regenerate GRUB
             if command -v update-grub &>/dev/null; then
                 safe_run "update-grub" "Error"
                 echo "→ ${MSG_GRUB_UPDATED}"
@@ -3536,7 +3536,7 @@ step_cleanup_kernels() {
 }
 
 # ============================================================================
-# PASO 12: LIMPIEZA DE DISCO (LOGS Y CACHÉ)
+# STEP 12: DISK CLEANUP (LOGS AND CACHE)
 # ============================================================================
 
 step_cleanup_disk() {
@@ -3551,7 +3551,7 @@ step_cleanup_disk() {
         fi
     fi
 
-    # Archivos temporales antiguos
+    # Old temporary files
     find /var/tmp -type f -atime +30 -delete 2>/dev/null && \
         echo "→ ${MSG_TEMP_FILES_DELETED}" || true
 
@@ -3569,7 +3569,7 @@ step_cleanup_disk() {
 }
 
 # ============================================================================
-# PASO 13: LIMPIEZA DOCKER/PODMAN
+# STEP 13: DOCKER/PODMAN CLEANUP
 # ============================================================================
 
 step_cleanup_docker() {
@@ -3628,7 +3628,7 @@ step_cleanup_docker() {
 }
 
 # ============================================================================
-# PASO 14: VERIFICACION SALUD DE DISCOS (SMART)
+# STEP 14: DISK HEALTH CHECK (SMART)
 # ============================================================================
 
 step_check_smart() {
@@ -3668,12 +3668,12 @@ step_check_smart() {
     local disks=()
     local disk health_status has_warning=false has_error=false
 
-    # Detectar discos SATA/SAS
+    # Detect SATA/SAS disks
     for disk in /dev/sd?; do
         [ -b "$disk" ] && disks+=("$disk")
     done
 
-    # Detectar discos NVMe
+    # Detect NVMe disks
     for disk in /dev/nvme?n1; do
         [ -b "$disk" ] && disks+=("$disk")
     done
@@ -3689,7 +3689,7 @@ step_check_smart() {
         printf "→ ${MSG_SMART_CHECKING_DISK}\n" "$disk"
         log "INFO" "$(printf "${MSG_SMART_CHECKING_DISK}" "$disk")"
 
-        # Obtener estado de salud
+        # Get health status
         health_status=$(smartctl -H "$disk" 2>/dev/null | grep -E "SMART overall-health|SMART Health Status")
 
         if echo "$health_status" | grep -qiE "PASSED|OK"; then
@@ -3699,7 +3699,7 @@ step_check_smart() {
             log "ERROR" "$disk: ${MSG_SMART_DISK_FAILING}"
             has_error=true
         else
-            # Verificar atributos críticos
+            # Verify critical attributes
             local reallocated pending
             reallocated=$(smartctl -A "$disk" 2>/dev/null | grep -i "Reallocated_Sector" | awk '{print $NF}')
             pending=$(smartctl -A "$disk" 2>/dev/null | grep -i "Current_Pending" | awk '{print $NF}')
@@ -3728,7 +3728,7 @@ step_check_smart() {
 }
 
 # ============================================================================
-# PASO 5: VERIFICAR INTEGRIDAD DE PAQUETES (DEBSUMS)
+# STEP 5: VERIFY PACKAGE INTEGRITY (DEBSUMS)
 # ============================================================================
 
 step_check_debsums() {
@@ -3736,7 +3736,7 @@ step_check_debsums() {
 
     print_step "${MSG_CHECKING_DEBSUMS:-Verifying package integrity with debsums...}"
 
-    # Verificar si debsums está instalado
+    # Verify if debsums is installed
     if ! command -v debsums &>/dev/null; then
         echo -e "${YELLOW}→ ${MSG_DEBSUMS_NOT_INSTALLED:-debsums not installed, skipping integrity check}${NC}"
         STAT_CHECK_DEBSUMS="$ICON_SKIP"
@@ -3750,8 +3750,8 @@ step_check_debsums() {
 
     echo "→ ${MSG_VERIFYING_PACKAGES:-Verifying installed packages...}"
 
-    # Ejecutar debsums y capturar archivos modificados
-    # Solo verificar configuración (-c) para ser más rápido
+    # Run debsums and capture modified files
+    # Only verify configuration (-c) to be faster
     local debsums_output
     debsums_output=$(debsums -s 2>/dev/null | head -50)
 
@@ -3764,7 +3764,7 @@ step_check_debsums() {
         log "WARN" "Modified packages detected: ${#modified_files[@]} files"
         echo -e "${YELLOW}→ ${MSG_MODIFIED_PACKAGES:-Modified package files detected}: ${#modified_files[@]}${NC}"
 
-        # Mostrar primeros 5 archivos
+        # Show first 5 files
         if [ ${#modified_files[@]} -gt 0 ] && [ "$QUIET" = false ]; then
             echo "   ${MSG_SAMPLE_FILES:-Sample files}:"
             printf '   • %s\n' "${modified_files[@]:0:5}"
@@ -3772,7 +3772,7 @@ step_check_debsums() {
         fi
     fi
 
-    # Resultado final
+    # Final result
     if $has_error; then
         STAT_CHECK_DEBSUMS="$ICON_FAIL"
         log "ERROR" "${MSG_DEBSUMS_ERRORS:-Package integrity errors found}"
@@ -3787,7 +3787,7 @@ step_check_debsums() {
 }
 
 # ============================================================================
-# PASO 6: VERIFICAR ACTUALIZACIONES DE SEGURIDAD
+# STEP 6: CHECK SECURITY UPDATES
 # ============================================================================
 
 step_check_security() {
@@ -3800,14 +3800,14 @@ step_check_security() {
 
     echo "→ ${MSG_SCANNING_SECURITY:-Scanning for security updates...}"
 
-    # Método 1: Usar apt-get con grep para security
+    # Method 1: Use apt-get with grep for security
     if command -v apt-get &>/dev/null; then
-        # Contar actualizaciones de seguridad pendientes
+        # Count pending security updates
         security_updates=$(apt-get -s upgrade 2>/dev/null | grep -i "^Inst" | grep -ci "security" || echo "0")
         security_updates=${security_updates:-0}
     fi
 
-    # Método 2: Si existe unattended-upgrades, verificar su estado
+    # Method 2: If unattended-upgrades exists, verify its status
     if [ -f /var/log/unattended-upgrades/unattended-upgrades.log ]; then
         local last_update=$(stat -c %Y /var/log/unattended-upgrades/unattended-upgrades.log 2>/dev/null || echo "0")
         local now=$(date +%s)
@@ -3820,13 +3820,13 @@ step_check_security() {
         fi
     fi
 
-    # Verificar si hay actualizaciones de seguridad críticas
+    # Check if there are critical security updates
     if [ "$security_updates" -gt 0 ]; then
         has_warning=true
         echo -e "${YELLOW}→ ${MSG_SECURITY_UPDATES_PENDING:-$security_updates security updates pending}${NC}"
         log "WARN" "$security_updates security updates pending"
 
-        # Ofrecer instalar actualizaciones de seguridad
+        # Offer to install security updates
         if [ "$UNATTENDED" = false ] && [ "$DRY_RUN" = false ]; then
             read -p "${PROMPT_INSTALL_SECURITY:-Install security updates now? [y/N]} " -n 1 -r
             echo
@@ -3840,7 +3840,7 @@ step_check_security() {
         echo "→ ${MSG_NO_SECURITY_UPDATES:-No pending security updates}"
     fi
 
-    # Resultado final
+    # Final result
     if $has_warning; then
         STAT_CHECK_SECURITY="$ICON_WARN"
     else
@@ -3850,7 +3850,7 @@ step_check_security() {
 }
 
 # ============================================================================
-# PASO 7: AUDITAR PERMISOS DE ARCHIVOS CRÍTICOS
+# STEP 7: AUDIT CRITICAL FILE PERMISSIONS
 # ============================================================================
 
 step_check_permissions() {
@@ -3864,23 +3864,23 @@ step_check_permissions() {
 
     echo "→ ${MSG_CHECKING_SUID_SGID:-Checking SUID/SGID files...}"
 
-    # Modo informativo: contar archivos SUID/SGID sin juzgar
+    # Informative mode: count SUID/SGID files without judging
     local suid_count
     suid_count=$(find /usr/bin /usr/sbin /bin /sbin -perm /6000 -type f 2>/dev/null | wc -l)
     suid_count=${suid_count:-0}
 
-    # Informar cantidad (normal: 15-40 en desktop, 10-25 en servidor)
+    # Report count (normal: 15-40 on desktop, 10-25 on server)
     echo "→ ${MSG_SUID_COUNT:-SUID/SGID files found}: $suid_count"
     log "INFO" "SUID/SGID files count: $suid_count"
 
-    # Solo alertar si hay una cantidad inusualmente alta (posible problema)
+    # Only alert if there is an unusually high count (possible problem)
     if [ "$suid_count" -gt 50 ]; then
         has_warning=true
         echo -e "${YELLOW}→ ${MSG_SUID_HIGH_COUNT:-High number of SUID/SGID files, consider reviewing}${NC}"
         echo "   → Run: find /usr -perm /6000 -type f"
     fi
 
-    # Verificar permisos de archivos críticos
+    # Verify critical file permissions
     echo "→ ${MSG_CHECKING_CRITICAL_FILES:-Checking critical file permissions...}"
 
     local critical_files=(
@@ -3910,7 +3910,7 @@ step_check_permissions() {
         printf '   • %s\n' "${issues[@]}"
     fi
 
-    # Resultado final
+    # Final result
     if $has_error; then
         STAT_CHECK_PERMISSIONS="$ICON_FAIL"
         log "ERROR" "${MSG_PERMISSIONS_ERRORS:-Critical permission errors found}"
@@ -3925,7 +3925,7 @@ step_check_permissions() {
 }
 
 # ============================================================================
-# PASO 8: AUDITAR SERVICIOS INNECESARIOS
+# STEP 8: AUDIT UNNECESSARY SERVICES
 # ============================================================================
 
 step_audit_services() {
@@ -3939,7 +3939,7 @@ step_audit_services() {
 
     echo "→ ${MSG_CHECKING_ENABLED_SERVICES:-Checking enabled services...}"
 
-    # Servicios potencialmente innecesarios en servidores
+    # Potentially unnecessary services on servers
     local unnecessary_services=(
         "cups"           # Print server
         "avahi-daemon"   # mDNS/Bonjour
@@ -3962,14 +3962,14 @@ step_audit_services() {
         log "INFO" "Potentially unnecessary services: ${suspicious_services[*]}"
     fi
 
-    # Verificar puertos en escucha
+    # Check listening ports
     echo "→ ${MSG_CHECKING_LISTENING_PORTS:-Checking listening ports...}"
 
     if command -v ss &>/dev/null; then
         local open_ports=$(ss -tlnp 2>/dev/null | grep LISTEN | wc -l)
         echo "→ ${MSG_OPEN_PORTS:-Open listening ports}: $open_ports"
 
-        # Mostrar puertos no estándar (>1024) que no sean localhost
+        # Show non-standard ports (>1024) that are not localhost
         local unusual_ports=$(ss -tlnp 2>/dev/null | grep LISTEN | grep -v "127.0.0.1" | grep -v "::1" | awk '{print $4}' | grep -E ":[0-9]{4,5}$" | head -5)
         if [ -n "$unusual_ports" ]; then
             has_warning=true
@@ -3978,7 +3978,7 @@ step_audit_services() {
         fi
     fi
 
-    # Verificar servicios fallidos
+    # Check failed services
     local failed=$(systemctl --failed --no-legend 2>/dev/null | wc -l)
     failed=${failed//[^0-9]/}
     if [ "${failed:-0}" -gt 0 ]; then
@@ -3986,7 +3986,7 @@ step_audit_services() {
         echo -e "${YELLOW}→ ${MSG_FAILED_SERVICES:-Failed services}: $failed${NC}"
     fi
 
-    # Resultado final
+    # Final result
     if $has_warning; then
         STAT_AUDIT_SERVICES="$ICON_WARN"
         log "WARN" "${MSG_SERVICES_AUDIT_WARNINGS:-Service audit found items to review}"
@@ -3998,7 +3998,7 @@ step_audit_services() {
 }
 
 # ============================================================================
-# PASO 20: LIMPIAR SESIONES ABANDONADAS
+# STEP 20: CLEAN ABANDONED SESSIONS
 # ============================================================================
 
 step_cleanup_sessions() {
@@ -4009,7 +4009,7 @@ step_cleanup_sessions() {
     local cleaned=0
     local has_warning=false
 
-    # Limpiar sesiones tmux huérfanas
+    # Clean orphan tmux sessions
     if command -v tmux &>/dev/null; then
         echo "→ ${MSG_CHECKING_TMUX:-Checking tmux sessions...}"
         local tmux_sessions=$(tmux list-sessions 2>/dev/null | wc -l)
@@ -4017,11 +4017,11 @@ step_cleanup_sessions() {
 
         if [ "$tmux_sessions" -gt 0 ]; then
             echo "   ${MSG_TMUX_SESSIONS:-Active tmux sessions}: $tmux_sessions"
-            # No limpiar automáticamente, solo informar
+            # Don't clean automatically, just report
         fi
     fi
 
-    # Limpiar sesiones screen huérfanas
+    # Clean orphan screen sessions
     if command -v screen &>/dev/null; then
         echo "→ ${MSG_CHECKING_SCREEN:-Checking screen sessions...}"
         local dead_screens=$(screen -ls 2>/dev/null | grep -c "Dead")
@@ -4034,7 +4034,7 @@ step_cleanup_sessions() {
         fi
     fi
 
-    # Limpiar archivos de bloqueo huérfanos en /tmp
+    # Clean orphan lock files in /tmp
     echo "→ ${MSG_CHECKING_LOCK_FILES:-Checking orphan lock files...}"
     local orphan_locks=$(find /tmp -maxdepth 1 -name "*.lock" -mtime +1 2>/dev/null | wc -l)
     orphan_locks=${orphan_locks:-0}
@@ -4045,12 +4045,12 @@ step_cleanup_sessions() {
         log "INFO" "Found $orphan_locks orphan lock files in /tmp"
     fi
 
-    # Limpiar archivos de sesión antiguos
+    # Clean old session files
     echo "→ ${MSG_CLEANING_OLD_SESSIONS:-Cleaning old session files...}"
     local old_sessions=$(find /var/lib/systemd/linger -type f -mtime +30 2>/dev/null | wc -l)
     old_sessions=${old_sessions:-0}
 
-    # Resultado final
+    # Final result
     if [ "$cleaned" -gt 0 ]; then
         STAT_CLEANUP_SESSIONS="$ICON_OK"
         echo "→ ${MSG_SESSIONS_CLEANED:-Cleaned $cleaned abandoned sessions}"
@@ -4066,7 +4066,7 @@ step_cleanup_sessions() {
 }
 
 # ============================================================================
-# PASO 21: VERIFICAR/CONFIGURAR LOGROTATE
+# STEP 21: VERIFY/CONFIGURE LOGROTATE
 # ============================================================================
 
 step_check_logrotate() {
@@ -4078,7 +4078,7 @@ step_check_logrotate() {
     local has_warning=false
     local issues=()
 
-    # Verificar si logrotate está instalado
+    # Check if logrotate is installed
     if ! command -v logrotate &>/dev/null; then
         echo -e "${YELLOW}→ ${MSG_LOGROTATE_NOT_INSTALLED:-logrotate not installed}${NC}"
         STAT_CHECK_LOGROTATE="$ICON_WARN"
@@ -4088,20 +4088,20 @@ step_check_logrotate() {
 
     echo "→ ${MSG_VERIFYING_LOGROTATE_CONFIG:-Verifying logrotate configuration...}"
 
-    # Verificar configuración principal
+    # Check main configuration
     if [ ! -f /etc/logrotate.conf ]; then
         has_error=true
         issues+=("Missing /etc/logrotate.conf")
     fi
 
-    # Verificar sintaxis de configuración
+    # Check configuration syntax
     if ! logrotate -d /etc/logrotate.conf &>/dev/null; then
         has_warning=true
         issues+=("Logrotate configuration has warnings")
         log "WARN" "Logrotate configuration has syntax issues"
     fi
 
-    # Verificar última ejecución
+    # Check last execution
     if [ -f /var/lib/logrotate/status ]; then
         local last_run=$(stat -c %Y /var/lib/logrotate/status 2>/dev/null || echo "0")
         local now=$(date +%s)
@@ -4116,7 +4116,7 @@ step_check_logrotate() {
         fi
     fi
 
-    # Verificar logs grandes que deberían rotarse
+    # Check for large logs that should be rotated
     echo "→ ${MSG_CHECKING_LARGE_LOGS:-Checking for large log files...}"
     local large_logs=$(find /var/log -type f -size +100M 2>/dev/null | head -5)
     if [ -n "$large_logs" ]; then
@@ -4128,7 +4128,7 @@ step_check_logrotate() {
         done
     fi
 
-    # Resultado final
+    # Final result
     if $has_error; then
         STAT_CHECK_LOGROTATE="$ICON_FAIL"
         log "ERROR" "${MSG_LOGROTATE_ERRORS:-Logrotate configuration errors}"
@@ -4144,7 +4144,7 @@ step_check_logrotate() {
 }
 
 # ============================================================================
-# PASO 22: VERIFICAR ESPACIO DE INODOS
+# STEP 22: VERIFY INODE SPACE
 # ============================================================================
 
 step_check_inodes() {
@@ -4159,16 +4159,16 @@ step_check_inodes() {
 
     echo "→ ${MSG_ANALYZING_INODES:-Analyzing inode usage on all partitions...}"
 
-    # Obtener uso de inodos de todas las particiones
+    # Get inode usage from all partitions
     while IFS= read -r line; do
-        # Saltar la línea de encabezado
+        # Skip the header line
         [[ "$line" =~ ^Filesystem ]] && continue
 
         local filesystem=$(echo "$line" | awk '{print $1}')
         local iuse=$(echo "$line" | awk '{print $5}' | tr -d '%')
         local mountpoint=$(echo "$line" | awk '{print $6}')
 
-        # Saltar sistemas de archivos virtuales
+        # Skip virtual filesystems
         [[ "$filesystem" =~ ^(tmpfs|devtmpfs|none|udev) ]] && continue
 
         iuse=${iuse:-0}
@@ -4181,7 +4181,7 @@ step_check_inodes() {
             warning_partitions+=("$mountpoint: ${iuse}%")
         fi
 
-        # Mostrar todas las particiones
+        # Show all partitions
         if [ "$iuse" -ge 80 ]; then
             echo -e "  ${FIXED_YELLOW}[!!]${NC} $mountpoint: ${iuse}% ${MSG_INODES_USED:-inodes used}"
         else
@@ -4189,12 +4189,12 @@ step_check_inodes() {
         fi
     done < <(df -i 2>/dev/null | grep -v "^Filesystem")
 
-    # Si hay particiones críticas, buscar directorios con muchos archivos
+    # If there are critical partitions, search for directories with many files
     if $has_error || $has_warning; then
         echo ""
         echo "→ ${MSG_SEARCHING_INODE_HOGS:-Searching for directories with many files...}"
 
-        # Buscar directorios con muchos archivos pequeños
+        # Search for directories with many small files
         local inode_hogs=$(find /var /tmp /home -xdev -type d 2>/dev/null | while read -r dir; do
             count=$(find "$dir" -maxdepth 1 -type f 2>/dev/null | wc -l)
             if [ "$count" -gt 1000 ]; then
@@ -4210,7 +4210,7 @@ step_check_inodes() {
         fi
     fi
 
-    # Resultado final
+    # Final result
     if $has_error; then
         STAT_CHECK_INODES="$ICON_FAIL"
         log "ERROR" "${MSG_INODES_CRITICAL:-Critical inode usage detected}"
@@ -4226,7 +4226,7 @@ step_check_inodes() {
 }
 
 # ============================================================================
-# PASO 23: VERIFICAR NECESIDAD DE REINICIO
+# STEP 23: VERIFY REBOOT NECESSITY
 # ============================================================================
 
 step_check_reboot() {
@@ -4234,14 +4234,14 @@ step_check_reboot() {
 
     print_step "${MSG_CHECKING_REBOOT}"
 
-    # Verificar archivo de reinicio requerido
+    # Check for reboot-required file
     if [ -f /var/run/reboot-required ]; then
         REBOOT_NEEDED=true
         log "WARN" "${MSG_REBOOT_FILE_DETECTED}"
         echo "→ ${MSG_REBOOT_FILE_DETECTED}"
     fi
 
-    # Verificar servicios fallidos
+    # Check for failed services
     local failed_services=$(systemctl --failed --no-legend 2>/dev/null | wc -l)
     failed_services=${failed_services//[^0-9]/}
     failed_services=${failed_services:-0}
@@ -4255,14 +4255,14 @@ step_check_reboot() {
         fi
     fi
     
-    # Needrestart - Verificación avanzada
+    # Needrestart - Advanced verification
     if command -v needrestart &>/dev/null; then
         echo "→ ${MSG_ANALYZING_NEEDRESTART}"
 
-        # Ejecutar needrestart en modo batch
+        # Run needrestart in batch mode
         local needrestart_output=$(needrestart -b 2>/dev/null)
 
-        # Extraer información del kernel
+        # Extract kernel information
         local running_kernel=$(echo "$needrestart_output" | grep "NEEDRESTART-KCUR:" | awk '{print $2}')
         local expected_kernel=$(echo "$needrestart_output" | grep "NEEDRESTART-KEXP:" | awk '{print $2}')
         local kernel_status=$(echo "$needrestart_output" | grep "NEEDRESTART-KSTA:" | awk '{print $2}')
@@ -4271,7 +4271,7 @@ step_check_reboot() {
         log "INFO" "Expected kernel: $expected_kernel"
         log "INFO" "KSTA status: $kernel_status"
 
-        # VERIFICACIÓN 1: Kernel desactualizado (COMPARACIÓN DIRECTA)
+        # VERIFICATION 1: Outdated kernel (DIRECT COMPARISON)
         if [ -n "$expected_kernel" ] && [ -n "$running_kernel" ]; then
             if [ "$running_kernel" != "$expected_kernel" ]; then
                 REBOOT_NEEDED=true
@@ -4283,7 +4283,7 @@ step_check_reboot() {
             fi
         fi
 
-        # VERIFICACIÓN 2: Servicios que necesitan reinicio
+        # VERIFICATION 2: Services that need restart
         local services_restart=$(echo "$needrestart_output" | grep "NEEDRESTART-SVC:" | wc -l)
         services_restart=${services_restart//[^0-9]/}
         services_restart=${services_restart:-0}
@@ -4294,28 +4294,28 @@ step_check_reboot() {
             printf "→ ${MSG_SERVICES_NEED_RESTART}\n" "$services_restart"
         fi
         
-        # VERIFICACIÓN 3: Librerías críticas (LÓGICA REFINADA)
+        # VERIFICATION 3: Critical libraries (REFINED LOGIC)
         local critical_libs=$(echo "$needrestart_output" | grep "NEEDRESTART-UCSTA:" | awk '{print $2}')
         critical_libs=$(echo "$critical_libs" | tr -d '[:space:]')
         
         log "INFO" "${MSG_UCSTA_STATUS:-UCSTA status (critical libraries)}: '$critical_libs'"
         
-        # LÓGICA CRÍTICA:
-        # UCSTA=1 puede ser persistente desde una actualización anterior
-        # Solo marcamos reinicio si:
-        # 1. UCSTA=1 (hay cambios críticos) Y
-        # 2. Se instalaron paquetes en ESTA sesión Y
-        # 3. Esos paquetes incluyen librerías del sistema
+        # CRITICAL LOGIC:
+        # UCSTA=1 can be persistent from a previous update
+        # We only mark reboot if:
+        # 1. UCSTA=1 (there are critical changes) AND
+        # 2. Packages were installed in THIS session AND
+        # 3. Those packages include system libraries
         
         if [ -n "$critical_libs" ] && [ "$critical_libs" = "1" ]; then
-            # Verificar si hubo actualizaciones DE SISTEMA en esta sesión
-            # Usamos el flag UPGRADE_PERFORMED que se establece en step_upgrade_system()
+            # Check if there were SYSTEM updates in this session
+            # We use the UPGRADE_PERFORMED flag which is set in step_upgrade_system()
             if [ "$UPGRADE_PERFORMED" = true ]; then
                 REBOOT_NEEDED=true
                 log "WARN" "${MSG_CRITICAL_LIBS_UPDATED}"
                 echo -e "${YELLOW}→ ${MSG_CRITICAL_LIBS_UPDATED}${NC}"
             else
-                # UCSTA=1 es de una actualización anterior, no de ahora
+                # UCSTA=1 is from a previous update, not from now
                 log "INFO" "UCSTA=1 persistent from previous update (not this session)"
                 echo "→ ${MSG_CRITICAL_LIBS_STABLE}"
             fi
@@ -4324,7 +4324,7 @@ step_check_reboot() {
             echo "→ ${MSG_NO_CRITICAL_LIBS_CHANGES}"
         fi
         
-        # Intentar reiniciar servicios automáticamente
+        # Try to restart services automatically
         if [ "$DRY_RUN" = false ]; then
             if [ "$services_restart" -gt 0 ]; then
                 echo "→ ${MSG_RESTARTING_SERVICES}"
@@ -4339,7 +4339,7 @@ step_check_reboot() {
         echo "→ ${MSG_NEEDRESTART_NOT_INSTALLED}"
     fi
     
-    # Establecer estado final
+    # Set final state
     if [ "$REBOOT_NEEDED" = true ]; then
         STAT_REBOOT="${RED}$ICON_WARN ${MSG_STAT_REQUIRED}${NC}"
         log "WARN" "${MSG_REBOOT_REQUIRED}"
@@ -4350,20 +4350,20 @@ step_check_reboot() {
 }
 
 # ============================================================================
-# RESUMEN FINAL
+# FINAL SUMMARY
 # ============================================================================
 
 show_final_summary() {
     [ "$QUIET" = true ] && exit 0
 
-    # Calcular tiempo de ejecución
+    # Calculate execution time
     local end_time=$(date +%s)
     local execution_time=$((end_time - START_TIME))
     local minutes=$((execution_time / 60))
     local seconds=$((execution_time % 60))
     local duration_str=$(printf "%02d:%02d" $minutes $seconds)
 
-    # Calcular espacio liberado
+    # Calculate freed space
     local space_after_root=$(df / --output=used | tail -1 | awk '{print $1}')
     local space_after_boot=$(df /boot --output=used 2>/dev/null | tail -1 | awk '{print $1}' || echo 0)
     local space_freed_root=$(( (SPACE_BEFORE_ROOT - space_after_root) / 1024 ))
@@ -4372,12 +4372,12 @@ show_final_summary() {
     [ $space_freed_boot -lt 0 ] && space_freed_boot=0
     local total_freed=$((space_freed_root + space_freed_boot))
 
-    # Mapear STAT_* a STEP_STATUS_ARRAY para resumen (23 pasos, orden lógico por fases)
-    # Fase 1 (1-8): Conectividad, Dependencias, Repos APT, SMART, Debsums, Seguridad, Permisos, Servicios
-    # Fase 2 (9-10): Backup TAR, Timeshift
-    # Fase 3 (11-15): Update Repos, Upgrade, Flatpak, Snap, Firmware
-    # Fase 4 (16-22): APT, Kernels, Disco, Docker, Sesiones, Logrotate, Inodos
-    # Fase 5 (23): Reinicio
+    # Map STAT_* to STEP_STATUS_ARRAY for summary (23 steps, logical order by phases)
+    # Phase 1 (1-8): Connectivity, Dependencies, APT Repos, SMART, Debsums, Security, Permissions, Services
+    # Phase 2 (9-10): TAR Backup, Timeshift
+    # Phase 3 (11-15): Update Repos, Upgrade, Flatpak, Snap, Firmware
+    # Phase 4 (16-22): APT, Kernels, Disk, Docker, Sessions, Logrotate, Inodes
+    # Phase 5 (23): Reboot
     local step_vars=(
         "STEP_CHECK_CONNECTIVITY" "STEP_CHECK_DEPENDENCIES" "STEP_CHECK_REPOS"
         "STEP_CHECK_SMART" "STEP_CHECK_DEBSUMS" "STEP_CHECK_SECURITY"
@@ -4400,7 +4400,7 @@ show_final_summary() {
         "STAT_CHECK_INODES" "STAT_REBOOT"
     )
 
-    # Contar resultados y determinar estados (23 pasos: índices 0-22)
+    # Count results and determine states (23 steps: indexes 0-22)
     local success_count=0 error_count=0 skipped_count=0 warning_count=0
     for i in {0..22}; do
         local step_var="${step_vars[$i]}"
@@ -4429,7 +4429,7 @@ show_final_summary() {
         fi
     done
 
-    # Determinar estado general
+    # Determine overall state
     local overall_status="${MSG_SUMMARY_COMPLETED}"
     local overall_color="${GREEN}"
     local overall_icon="${ICON_SUM_OK}"
@@ -4443,7 +4443,7 @@ show_final_summary() {
         overall_icon="${ICON_SUM_WARN}"
     fi
 
-    # Enviar notificación via sistema de plugins
+    # Send notification via plugins system
     local notification_severity="success"
     [ $error_count -gt 0 ] && notification_severity="error"
     [ "$REBOOT_NEEDED" = true ] && notification_severity="warning"
@@ -4456,7 +4456,7 @@ show_final_summary() {
     log "INFO" "$(printf "${MSG_MAINTENANCE_COMPLETED:-Maintenance completed in %dm %ds}" "$minutes" "$seconds")"
     log "INFO" "=========================================="
 
-    # === RESUMEN ENTERPRISE 3 COLUMNAS (78 chars) ===
+    # === ENTERPRISE SUMMARY 3 COLUMNS (78 chars) ===
     echo ""
     print_box_top
     print_box_center "${BOLD}${MENU_SUMMARY_TITLE}${BOX_NC}"
@@ -4469,8 +4469,8 @@ show_final_summary() {
     print_box_sep
     print_box_line "${BOLD}${MSG_SUMMARY_STEP_DETAIL}${BOX_NC}"
 
-    # Generar líneas de 4 columnas (6 filas x 4 cols = 24 slots, usamos 23)
-    # Formato fijo: icono[4] + espacio[1] + nombre[11] = 16 chars por celda
+    # Generate lines of 4 columns (6 rows x 4 cols = 24 slots, we use 23)
+    # Fixed format: icon[4] + space[1] + name[11] = 16 chars per cell
     local cols=4
     for row in {0..5}; do
         local line=""
@@ -4478,12 +4478,12 @@ show_final_summary() {
             local idx=$((row * cols + col))
             if [ $idx -le 22 ]; then
                 local icon=$(get_step_icon_summary "${STEP_STATUS_ARRAY[$idx]}")
-                # Nombre con ancho fijo de 11 chars
+                # Name with fixed width of 11 chars
                 local name
                 name=$(printf "%-11.11s" "${STEP_SHORT_NAMES[$idx]}")
                 line+="${icon} ${name}"
             else
-                # Celda vacía: 16 espacios
+                # Empty cell: 16 spaces
                 line+="                "
             fi
         done
@@ -4492,7 +4492,7 @@ show_final_summary() {
 
     print_box_sep
 
-    # Estado de reinicio
+    # Reboot state
     if [ "$REBOOT_NEEDED" = true ]; then
         print_box_line "${RED}${ICON_SUM_WARN} ${MSG_REBOOT_REQUIRED}${BOX_NC}"
     else
@@ -4505,7 +4505,7 @@ show_final_summary() {
     print_box_bottom
     echo ""
 
-    # Advertencias fuera del box
+    # Warnings outside the box
     if [[ "$STAT_FIRMWARE" == *"DISPONIBLE"* ]] || [[ "$STAT_FIRMWARE" == *"AVAILABLE"* ]]; then
         echo -e "${YELLOW}[!!] ${MSG_FIRMWARE_AVAILABLE_NOTE}${NC}"
         echo "   → ${MSG_FIRMWARE_INSTALL_HINT}"
@@ -4527,7 +4527,7 @@ show_final_summary() {
 }
 
 # ============================================================================
-# FUNCIONES DE SYSTEMD TIMER
+# SYSTEMD TIMER FUNCTIONS
 # ============================================================================
 
 generate_systemd_timer() {
@@ -4678,54 +4678,54 @@ while [[ $# -gt 0 ]]; do
             ;;
         --help)
             cat << 'EOF'
-Mantenimiento Integral para Distribuciones basadas en Debian/Ubuntu
+Comprehensive Maintenance for Debian/Ubuntu-based Distributions
 
-Distribuciones soportadas:
+Supported distributions:
   • Debian (Stable, Testing, Unstable)
-  • Ubuntu (todas las versiones)
+  • Ubuntu (all versions)
   • Linux Mint
   • Pop!_OS, Elementary OS, Zorin OS, Kali Linux
-  • Cualquier derivada de Debian/Ubuntu
+  • Any Debian/Ubuntu derivative
 
-Uso: sudo ./autoclean.sh [opciones]
+Usage: sudo ./autoclean.sh [options]
 
-Opciones:
-  --dry-run              Simular ejecución sin hacer cambios reales
-  -n, --notify           Enviar notificaciones en modo dry-run
-  -y, --unattended       Modo desatendido sin confirmaciones
-  --no-backup            No crear backup de configuraciones
-  --no-menu              Omitir menú interactivo (usar config por defecto)
-  --quiet                Modo silencioso (solo logs)
-  --lang LANG            Establecer idioma (en, es, pt, fr, de, it)
-  --profile PERFIL       Usar perfil predefinido (ver abajo)
-  --schedule MODE        Crear timer systemd (daily, weekly, monthly)
-  --unschedule           Eliminar timer systemd programado
-  --schedule-status      Mostrar estado del timer programado
-  --help                 Mostrar esta ayuda
+Options:
+  --dry-run              Simulate execution without making real changes
+  -n, --notify           Send notifications in dry-run mode
+  -y, --unattended       Unattended mode without confirmations
+  --no-backup            Do not create configuration backup
+  --no-menu              Skip interactive menu (use default config)
+  --quiet                Quiet mode (only logs)
+  --lang LANG            Set language (en, es, pt, fr, de, it)
+  --profile PROFILE      Use predefined profile (see below)
+  --schedule MODE        Create systemd timer (daily, weekly, monthly)
+  --unschedule           Remove scheduled systemd timer
+  --schedule-status      Show scheduled timer status
+  --help                 Show this help
 
-Perfiles predefinidos (--profile):
-  server      Desatendido, Docker ON, SMART ON, sin Flatpak/Snap
-  desktop     Interactivo, Docker OFF, SMART ON, Flatpak ON, Timeshift ON
-  developer   Interactivo, Docker ON, Snap ON, sin SMART/Firmware
-  minimal     Desatendido, solo apt update/upgrade y limpieza APT
-  custom      Desatendido, lee toda la configuracion desde autoclean.conf
+Predefined profiles (--profile):
+  server      Unattended, Docker ON, SMART ON, no Flatpak/Snap
+  desktop     Interactive, Docker OFF, SMART ON, Flatpak ON, Timeshift ON
+  developer   Interactive, Docker ON, Snap ON, no SMART/Firmware
+  minimal     Unattended, only apt update/upgrade and APT cleanup
+  custom      Unattended, reads all configuration from autoclean.conf
 
-Ejemplos:
-  sudo ./autoclean.sh                    # Ejecución normal (interactivo)
-  sudo ./autoclean.sh --profile server   # Perfil servidor
-  sudo ./autoclean.sh --profile desktop  # Perfil escritorio
-  sudo ./autoclean.sh --profile custom   # Perfil custom (lee autoclean.conf)
-  sudo ./autoclean.sh --dry-run          # Simular cambios
-  sudo ./autoclean.sh --dry-run --notify # Simular y enviar notificaciones
-  sudo ./autoclean.sh -y                 # Modo desatendido
-  sudo ./autoclean.sh --schedule weekly  # Programar semanal
+Examples:
+  sudo ./autoclean.sh                    # Normal execution (interactive)
+  sudo ./autoclean.sh --profile server   # Server profile
+  sudo ./autoclean.sh --profile desktop  # Desktop profile
+  sudo ./autoclean.sh --profile custom   # Custom profile (reads autoclean.conf)
+  sudo ./autoclean.sh --dry-run          # Simulate changes
+  sudo ./autoclean.sh --dry-run --notify # Simulate and send notifications
+  sudo ./autoclean.sh -y                 # Unattended mode
+  sudo ./autoclean.sh --schedule weekly  # Schedule weekly
 
-Configuración:
-  - Edita autoclean.conf para configurar idioma, tema y pasos
-  - Si el archivo no existe, se genera automaticamente con valores por defecto
-  - Usa --profile custom para ejecutar con la configuracion guardada
+Configuration:
+  - Edit autoclean.conf to configure language, theme and steps
+  - If file doesn't exist, it's auto-generated with default values
+  - Use --profile custom to run with saved configuration
 
-Más información en los comentarios del script.
+More information in the script comments.
 EOF
             exit 0
             ;;
@@ -4738,14 +4738,14 @@ EOF
 done
 
 # ============================================================================
-# EJECUCIÓN MAESTRA
+# MASTER EXECUTION
 # ============================================================================
 
-# Detectar notificadores disponibles (antes de load_config para apply_notifier_config)
+# Detect available notifiers (before load_config for apply_notifier_config)
 detect_notifiers
 
-# Cargar configuración guardada si existe (para obtener SAVED_LANG antes de cargar idioma)
-# Si no existe, generar archivo con valores predeterminados
+# Load saved configuration if exists (to get SAVED_LANG before loading language)
+# If it doesn't exist, generate file with default values
 if config_exists; then
     load_config
 else
@@ -4753,16 +4753,16 @@ else
     load_config
 fi
 
-# Cargar idioma (usa SAVED_LANG si existe, o detecta del sistema)
+# Load language (uses SAVED_LANG if exists, or detects from system)
 load_language
 
-# Cargar tema (usa SAVED_THEME si existe, o usa default)
+# Load theme (uses SAVED_THEME if exists, or uses default)
 load_theme
 
-# Cargar notificadores habilitados
+# Load enabled notifiers
 load_all_enabled_notifiers
 
-# Manejar operaciones de schedule (antes de ejecución principal)
+# Handle schedule operations (before main execution)
 if [ "$SCHEDULE_STATUS" = true ]; then
     show_schedule_status
     exit 0
@@ -4780,84 +4780,84 @@ if [ -n "$SCHEDULE_MODE" ]; then
     exit 0
 fi
 
-# Verificar permisos de root ANTES de cualquier operación
+# Verify root permissions BEFORE any operation
 check_root
 
-# Inicialización
+# Initialization
 init_log
 log "INFO" "=========================================="
 log "INFO" "${MSG_STARTING_MAINTENANCE:-Starting Maintenance} v${SCRIPT_VERSION}"
 log "INFO" "=========================================="
 
-# Aplicar perfil si se especificó via CLI (--profile)
-# Debe ejecutarse después de init_log para que log() funcione correctamente
+# Apply profile if specified via CLI (--profile)
+# Must be executed after init_log so that log() works correctly
 if [ -n "$PROFILE" ]; then
     apply_profile "$PROFILE"
 fi
 
-# Chequeos previos obligatorios
+# Mandatory pre-checks
 check_lock
 
-# Detectar distribución (debe ejecutarse antes de print_header)
+# Detect distribution (must be executed before print_header)
 detect_distro
 
-# Contar pasos iniciales
+# Count initial steps
 count_active_steps
 
-# Mostrar configuración según modo de ejecución
+# Show configuration according to execution mode
 if [ "$UNATTENDED" = false ] && [ "$QUIET" = false ] && [ "$NO_MENU" = false ]; then
-    # Modo interactivo: mostrar menú de configuración
+    # Interactive mode: show configuration menu
     show_interactive_menu
 else
-    # Modo no interactivo: mostrar resumen y confirmar
+    # Non-interactive mode: show summary and confirm
     print_header
     show_step_summary
 fi
 
-# Validar dependencias después de la configuración
+# Validate dependencies after configuration
 validate_step_dependencies
 
-# Mostrar header antes de ejecutar (si usamos menú interactivo ya se limpió)
+# Show header before executing (if we used interactive menu it was already cleared)
 [ "$QUIET" = false ] && print_header
 
 check_disk_space
 
-# Ejecutar pasos configurados (23 pasos totales)
+# Execute configured steps (23 total steps)
 
-# FASE 1: Verificaciones previas y diagnósticos (pasos 1-8)
-step_check_connectivity      # 1. Conectividad
-step_check_dependencies      # 2. Dependencias
-step_check_repos             # 3. Integridad repos APT
-step_check_smart             # 4. SMART discos
-step_check_debsums           # 5. Integridad paquetes
-step_check_security          # 6. Actualizaciones seguridad
-step_check_permissions       # 7. Permisos críticos
-step_audit_services          # 8. Servicios innecesarios
+# PHASE 1: Pre-checks and diagnostics (steps 1-8)
+step_check_connectivity      # 1. Connectivity
+step_check_dependencies      # 2. Dependencies
+step_check_repos             # 3. APT repos integrity
+step_check_smart             # 4. SMART disks
+step_check_debsums           # 5. Package integrity
+step_check_security          # 6. Security updates
+step_check_permissions       # 7. Critical permissions
+step_audit_services          # 8. Unnecessary services
 
-# FASE 2: Backups (pasos 9-10)
-step_backup_tar              # 9. Backup TAR
-step_snapshot_timeshift      # 10. Snapshot Timeshift
+# PHASE 2: Backups (steps 9-10)
+step_backup_tar              # 9. TAR Backup
+step_snapshot_timeshift      # 10. Timeshift Snapshot
 
-# FASE 3: Actualizaciones (pasos 11-15)
-step_update_repos            # 11. Actualizar repos
-step_upgrade_system          # 12. Actualizar sistema
+# PHASE 3: Updates (steps 11-15)
+step_update_repos            # 11. Update repos
+step_upgrade_system          # 12. Upgrade system
 step_update_flatpak          # 13. Flatpak
 step_update_snap             # 14. Snap
 step_check_firmware          # 15. Firmware
 
-# FASE 4: Limpieza (pasos 16-22)
-step_cleanup_apt             # 16. Limpieza APT
-step_cleanup_kernels         # 17. Kernels antiguos
-step_cleanup_disk            # 18. Limpieza disco
+# PHASE 4: Cleanup (steps 16-22)
+step_cleanup_apt             # 16. APT Cleanup
+step_cleanup_kernels         # 17. Old kernels
+step_cleanup_disk            # 18. Disk cleanup
 step_cleanup_docker          # 19. Docker
-step_cleanup_sessions        # 20. Sesiones abandonadas
+step_cleanup_sessions        # 20. Abandoned sessions
 step_check_logrotate         # 21. Logrotate
-step_check_inodes            # 22. Inodos
+step_check_inodes            # 22. Inodes
 
-# FASE 5: Verificación final (paso 23)
-step_check_reboot            # 23. Necesidad reinicio
+# PHASE 5: Final verification (step 23)
+step_check_reboot            # 23. Reboot check
 
-# Mostrar resumen final
+# Show final summary
 show_final_summary
 
 exit 0
