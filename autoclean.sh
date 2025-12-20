@@ -1,139 +1,139 @@
 #!/bin/bash
 # ============================================================================
-# Script de Mantenimiento Integral para Distribuciones basadas en Debian
+# Comprehensive Maintenance Script for Debian-based Distributions
 # ============================================================================
-# Versión: 2025.11
-# Última revisión: Diciembre 2025
-# Autor: Homero Thompson del Lago del Terror
-# Contribuciones UI/UX: Dreadblitz (github.com/Dreadblitz)
+# Version: 2025.11
+# Last revision: December 2025
+# Author: Homero Thompson del Lago del Terror
+# UI/UX Contributions: Dreadblitz (github.com/Dreadblitz)
 #
-# ====================== DISTRIBUCIONES SOPORTADAS ======================
-# Este script detecta y soporta automáticamente las siguientes distribuciones:
-#   • Debian (todas las versiones: Stable, Testing, Unstable)
-#   • Ubuntu (todas las versiones LTS y regulares)
-#   • Linux Mint (todas las versiones)
+# ====================== SUPPORTED DISTRIBUTIONS ======================
+# This script automatically detects and supports the following distributions:
+#   • Debian (all versions: Stable, Testing, Unstable)
+#   • Ubuntu (all LTS and regular versions)
+#   • Linux Mint (all versions)
 #   • Pop!_OS
 #   • Elementary OS
 #   • Zorin OS
 #   • Kali Linux
-#   • Cualquier distribución basada en Debian/Ubuntu (detección automática)
+#   • Any Debian/Ubuntu based distribution (automatic detection)
 #
-# ====================== FILOSOFÍA DE EJECUCIÓN ======================
-# Este script implementa un sistema de mantenimiento diseñado
-# para distribuciones basadas en Debian/Ubuntu, con énfasis en:
-#   1. Seguridad ante todo: Snapshot antes de cambios críticos
-#   2. Control granular: Cada paso puede activarse/desactivarse
-#   3. Análisis de riesgos: Detecta operaciones peligrosas antes de ejecutar
-#   4. Punto de retorno: Timeshift snapshot para rollback completo
-#   5. Validación inteligente: Verifica dependencias y estado del sistema
-#   6. Detección avanzada de reinicio: Kernel + librerías críticas
-#   7. Detección automática de distribución: Adapta servidores y comportamiento
+# ====================== EXECUTION PHILOSOPHY ======================
+# This script implements a maintenance system designed
+# for Debian/Ubuntu based distributions, with emphasis on:
+#   1. Security first: Snapshot before critical changes
+#   2. Granular control: Each step can be enabled/disabled
+#   3. Risk analysis: Detects dangerous operations before executing
+#   4. Return point: Timeshift snapshot for complete rollback
+#   5. Intelligent validation: Verifies dependencies and system state
+#   6. Advanced reboot detection: Kernel + critical libraries
+#   7. Automatic distribution detection: Adapts servers and behavior
 #
-# ====================== REQUISITOS DEL SISTEMA ======================
-# OBLIGATORIO:
-#   • Distribución basada en Debian o Ubuntu
-#   • Permisos de root (sudo)
-#   • Conexión a internet
+# ====================== SYSTEM REQUIREMENTS ======================
+# MANDATORY:
+#   • Debian or Ubuntu based distribution
+#   • Root permissions (sudo)
+#   • Internet connection
 #
-# RECOMENDADO (el script puede instalarlas automáticamente):
-#   • timeshift      - Snapshots del sistema (CRÍTICO para seguridad)
-#   • needrestart    - Detección inteligente de servicios a reiniciar
-#   • fwupd          - Gestión de actualizaciones de firmware
-#   • flatpak        - Si usas aplicaciones Flatpak
-#   • snapd          - Si usas aplicaciones Snap
+# RECOMMENDED (script can install them automatically):
+#   • timeshift      - System snapshots (CRITICAL for safety)
+#   • needrestart    - Intelligent detection of services to restart
+#   • fwupd          - Firmware update management
+#   • flatpak        - If you use Flatpak applications
+#   • snapd          - If you use Snap applications
 #
-# Instalación manual de herramientas recomendadas:
+# Manual installation of recommended tools:
 #   sudo apt install timeshift needrestart fwupd flatpak
 #
-# ====================== CONFIGURACIÓN DE PASOS ======================
-# Cada paso puede activarse (1) o desactivarse (0) según tus necesidades.
-# El script validará dependencias automáticamente.
+# ====================== STEP CONFIGURATION ======================
+# Each step can be enabled (1) or disabled (0) according to your needs.
+# The script will validate dependencies automatically.
 #
-# PASOS DISPONIBLES:
-#   STEP_CHECK_CONNECTIVITY    - Verificar conexión a internet
-#   STEP_CHECK_DEPENDENCIES    - Verificar e instalar herramientas
-#   STEP_BACKUP_TAR           - Backup de configuraciones APT
-#   STEP_SNAPSHOT_TIMESHIFT   - Crear snapshot Timeshift (RECOMENDADO)
-#   STEP_UPDATE_REPOS         - Actualizar repositorios (apt update)
-#   STEP_UPGRADE_SYSTEM       - Actualizar paquetes (apt full-upgrade)
-#   STEP_UPDATE_FLATPAK       - Actualizar aplicaciones Flatpak
-#   STEP_UPDATE_SNAP          - Actualizar aplicaciones Snap
-#   STEP_CHECK_FIRMWARE       - Verificar actualizaciones de firmware
-#   STEP_CLEANUP_APT          - Limpieza de paquetes huérfanos
-#   STEP_CLEANUP_KERNELS      - Eliminar kernels antiguos
-#   STEP_CLEANUP_DISK         - Limpiar logs y caché
-#   STEP_CHECK_REBOOT         - Verificar necesidad de reinicio
+# AVAILABLE STEPS:
+#   STEP_CHECK_CONNECTIVITY    - Verify internet connection
+#   STEP_CHECK_DEPENDENCIES    - Verify and install tools
+#   STEP_BACKUP_TAR           - Backup APT configurations
+#   STEP_SNAPSHOT_TIMESHIFT   - Create Timeshift snapshot (RECOMMENDED)
+#   STEP_UPDATE_REPOS         - Update repositories (apt update)
+#   STEP_UPGRADE_SYSTEM       - Update packages (apt full-upgrade)
+#   STEP_UPDATE_FLATPAK       - Update Flatpak applications
+#   STEP_UPDATE_SNAP          - Update Snap applications
+#   STEP_CHECK_FIRMWARE       - Check firmware updates
+#   STEP_CLEANUP_APT          - Orphan package cleanup
+#   STEP_CLEANUP_KERNELS      - Remove old kernels
+#   STEP_CLEANUP_DISK         - Clean logs and cache
+#   STEP_CHECK_REBOOT         - Check reboot necessity
 #
-# ====================== EJEMPLOS DE USO ======================
-# 1. Ejecución completa interactiva (RECOMENDADO):
+# ====================== USAGE EXAMPLES ======================
+# 1. Full interactive execution (RECOMMENDED):
 #    sudo ./cleannew.sh
 #
-# 2. Modo simulación (prueba sin cambios reales):
+# 2. Simulation mode (test without real changes):
 #    sudo ./cleannew.sh --dry-run
 #
-# 3. Modo desatendido para automatización:
+# 3. Unattended mode for automation:
 #    sudo ./cleannew.sh -y
 #
-# 4. Solo actualizar sistema sin limpieza:
-#    Edita el script y configura:
+# 4. Only update system without cleanup:
+#    Edit the script and configure:
 #    STEP_CLEANUP_APT=0
 #    STEP_CLEANUP_KERNELS=0
 #    STEP_CLEANUP_DISK=0
 #
-# 5. Solo limpieza sin actualizar:
+# 5. Only cleanup without updating:
 #    STEP_UPDATE_REPOS=0
 #    STEP_UPGRADE_SYSTEM=0
 #    STEP_UPDATE_FLATPAK=0
 #    STEP_UPDATE_SNAP=0
 #
-# ====================== ARCHIVOS Y DIRECTORIOS ======================
+# ====================== FILES AND DIRECTORIES ======================
 # Logs:     /var/log/debian-maintenance/sys-update-YYYYMMDD_HHMMSS.log
 # Backups:  /var/backups/debian-maintenance/backup_YYYYMMDD_HHMMSS.tar.gz
 # Lock:     /var/run/debian-maintenance.lock
 #
-# ====================== CARACTERÍSTICAS DE SEGURIDAD ======================
-# • Validación de espacio en disco antes de actualizar
-# • Detección de operaciones masivas de eliminación de paquetes
-# • Snapshot automático con Timeshift (si está configurado)
-# • Backup de configuraciones APT antes de cambios
-# • Lock file para evitar ejecuciones simultáneas
-# • Reparación automática de base de datos dpkg
-# • Detección inteligente de necesidad de reinicio:
-#   - Comparación de kernel actual vs esperado
-#   - Detección de librerías críticas actualizadas (glibc, systemd)
-#   - Conteo de servicios que requieren reinicio
-# • Modo dry-run para simular sin hacer cambios
+# ====================== SECURITY FEATURES ======================
+# • Disk space validation before updating
+# • Detection of mass package removal operations
+# • Automatic Timeshift snapshot (if configured)
+# • APT configuration backup before changes
+# • Lock file to prevent simultaneous executions
+# • Automatic dpkg database repair
+# • Intelligent reboot detection:
+#   - Current vs expected kernel comparison
+#   - Detection of updated critical libraries (glibc, systemd)
+#   - Count of services requiring restart
+# • Dry-run mode to simulate without making changes
 #
-# ====================== NOTAS IMPORTANTES ======================
-# • Testing puede tener cambios disruptivos: SIEMPRE revisa los logs
-# • El snapshot de Timeshift es tu seguro de vida: no lo omitas
-# • MAX_REMOVALS_ALLOWED=0 evita eliminaciones automáticas masivas
-# • En modo desatendido (-y), el script ABORTA si detecta riesgo
-# • El script usa LC_ALL=C para parsing predecible de comandos
-# • Los kernels se mantienen según KERNELS_TO_KEEP (default: 3)
-# • Los logs se conservan según DIAS_LOGS (default: 7 días)
+# ====================== IMPORTANT NOTES ======================
+# • Testing may have disruptive changes: ALWAYS review logs
+# • Timeshift snapshot is your safety net: don't skip it
+# • MAX_REMOVALS_ALLOWED=0 prevents automatic mass deletions
+# • In unattended mode (-y), script ABORTS if risk detected
+# • Script uses LC_ALL=C for predictable command parsing
+# • Kernels are maintained according to KERNELS_TO_KEEP (default: 3)
+# • Logs are kept according to DIAS_LOGS (default: 7 days)
 #
-# ====================== SOLUCIÓN DE PROBLEMAS ======================
-# Si el script falla:
-#   1. Revisa el log en /var/log/debian-maintenance/
-#   2. Ejecuta en modo --dry-run para diagnosticar
-#   3. Verifica espacio en disco con: df -h
-#   4. Repara dpkg manualmente: sudo dpkg --configure -a
-#   5. Si hay problemas de Timeshift, restaura el snapshot
+# ====================== TROUBLESHOOTING ======================
+# If the script fails:
+#   1. Check log in /var/log/debian-maintenance/
+#   2. Run in --dry-run mode to diagnose
+#   3. Verify disk space with: df -h
+#   4. Repair dpkg manually: sudo dpkg --configure -a
+#   5. If Timeshift issues, restore the snapshot
 #
-# Para reportar bugs o sugerencias:
-#   Revisa el log completo y anota el paso donde falló
+# To report bugs or suggestions:
+#   Review the complete log and note the step where it failed
 #
 # ============================================================================
 
-# Forzar idioma estándar para parsing predecible
+# Force standard locale for predictable parsing
 export LC_ALL=C
 
 # ============================================================================
-# CONFIGURACIÓN GENERAL
+# GENERAL CONFIGURATION
 # ============================================================================
 
-# Archivos y directorios
+# Files and directories
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/autoclean.conf"
 BACKUP_DIR="/var/backups/debian-maintenance"
@@ -141,101 +141,101 @@ LOCK_FILE="/var/run/debian-maintenance.lock"
 LOG_DIR="/var/log/debian-maintenance"
 SCRIPT_VERSION="2025.12"
 
-# Configuración de idioma
+# Language configuration
 LANG_DIR="${SCRIPT_DIR}/plugins/lang"
 DEFAULT_LANG="en"
 CURRENT_LANG=""
-AVAILABLE_LANGS=()    # Se llena dinámicamente con detect_languages()
-LANG_NAMES=()         # Nombres para mostrar (de LANG_NAME en cada archivo)
+AVAILABLE_LANGS=()    # Filled dynamically with detect_languages()
+LANG_NAMES=()         # Display names (from LANG_NAME in each file)
 
-# Configuración de tema
+# Theme configuration
 THEME_DIR="${SCRIPT_DIR}/plugins/themes"
 DEFAULT_THEME="default"
 CURRENT_THEME=""
-AVAILABLE_THEMES=()   # Se llena dinámicamente con detect_themes()
-THEME_NAMES=()        # Nombres para mostrar (de THEME_NAME en cada archivo)
+AVAILABLE_THEMES=()   # Filled dynamically with detect_themes()
+THEME_NAMES=()        # Display names (from THEME_NAME in each file)
 
-# Configuración de notificadores
+# Notifier configuration
 NOTIFIER_DIR="${SCRIPT_DIR}/plugins/notifiers"
-AVAILABLE_NOTIFIERS=()    # Se llena dinámicamente con detect_notifiers()
-NOTIFIER_NAMES=()         # Nombres para mostrar (de NOTIFIER_NAME en cada archivo)
-NOTIFIER_DESCRIPTIONS=()  # Descripciones de cada notificador
-declare -A NOTIFIER_ENABLED   # Estado habilitado/deshabilitado por código
-declare -A NOTIFIER_LOADED    # Notificadores cargados exitosamente
+AVAILABLE_NOTIFIERS=()    # Filled dynamically with detect_notifiers()
+NOTIFIER_NAMES=()         # Display names (from NOTIFIER_NAME in each file)
+NOTIFIER_DESCRIPTIONS=()  # Descriptions for each notifier
+declare -A NOTIFIER_ENABLED   # Enabled/disabled state by code
+declare -A NOTIFIER_LOADED    # Successfully loaded notifiers
 
-# Parámetros de sistema
+# System parameters
 DIAS_LOGS=7
 KERNELS_TO_KEEP=3
 MIN_FREE_SPACE_GB=5
 MIN_FREE_SPACE_BOOT_MB=200
 APT_CLEAN_MODE="autoclean"
 
-# Seguridad paranoica
+# Paranoid security
 MAX_REMOVALS_ALLOWED=0
 ASK_TIMESHIFT_RUN=true
 
 # ============================================================================
-# CONFIGURACIÓN DE PASOS A EJECUTAR
+# STEP EXECUTION CONFIGURATION
 # ============================================================================
-# Cambia a 0 para desactivar un paso, 1 para activarlo
-# El script validará dependencias automáticamente
+# Change to 0 to disable a step, 1 to enable it
+# The script will validate dependencies automatically
 
-STEP_CHECK_CONNECTIVITY=1     # Verificar conexión a internet
-STEP_CHECK_DEPENDENCIES=1     # Verificar e instalar herramientas
-STEP_BACKUP_TAR=1            # Backup de configuraciones APT
-STEP_SNAPSHOT_TIMESHIFT=1    # Crear snapshot Timeshift (RECOMENDADO)
-STEP_UPDATE_REPOS=1          # Actualizar repositorios (apt update)
-STEP_UPGRADE_SYSTEM=1        # Actualizar paquetes (apt full-upgrade)
-STEP_UPDATE_FLATPAK=1        # Actualizar aplicaciones Flatpak
-STEP_UPDATE_SNAP=0           # Actualizar aplicaciones Snap
-STEP_CHECK_FIRMWARE=1        # Verificar actualizaciones de firmware
-STEP_CLEANUP_APT=1           # Limpieza de paquetes huérfanos
-STEP_CLEANUP_KERNELS=1       # Eliminar kernels antiguos
-STEP_CLEANUP_DISK=1          # Limpiar logs y caché
-STEP_CLEANUP_DOCKER=0        # Limpiar Docker/Podman (deshabilitado por defecto)
-STEP_CHECK_SMART=1           # Verificar salud de discos (SMART)
-STEP_CHECK_REBOOT=1          # Verificar necesidad de reinicio
-
-# ============================================================================
-# NUEVOS PASOS DE SEGURIDAD Y MANTENIMIENTO (v2025.12)
-# ============================================================================
-STEP_CHECK_REPOS=1           # Verificar integridad de repositorios APT
-STEP_CHECK_DEBSUMS=0         # Verificar integridad de paquetes (debsums)
-STEP_CHECK_SECURITY=1        # Verificar actualizaciones de seguridad pendientes
-STEP_CHECK_PERMISSIONS=0     # Verificar permisos de archivos críticos
-STEP_AUDIT_SERVICES=0        # Auditar servicios innecesarios
-STEP_CLEANUP_SESSIONS=0      # Limpiar sesiones abandonadas
-STEP_CHECK_LOGROTATE=0       # Verificar/configurar logrotate
-STEP_CHECK_INODES=0          # Verificar espacio en inodes
-
-# Variables para programación Systemd Timer
-SCHEDULE_MODE=""             # Modo: daily, weekly, monthly
-UNSCHEDULE=false             # Flag para eliminar timer
-SCHEDULE_STATUS=false        # Flag para mostrar estado del timer
-
-# Variables para Perfiles Predefinidos
-PROFILE=""                   # Perfil: server, desktop, developer, minimal
+STEP_CHECK_CONNECTIVITY=1     # Verify internet connection
+STEP_CHECK_DEPENDENCIES=1     # Verify and install tools
+STEP_BACKUP_TAR=1            # Backup APT configurations
+STEP_SNAPSHOT_TIMESHIFT=1    # Create Timeshift snapshot (RECOMMENDED)
+STEP_UPDATE_REPOS=1          # Update repositories (apt update)
+STEP_UPGRADE_SYSTEM=1        # Update packages (apt full-upgrade)
+STEP_UPDATE_FLATPAK=1        # Update Flatpak applications
+STEP_UPDATE_SNAP=0           # Update Snap applications
+STEP_CHECK_FIRMWARE=1        # Check firmware updates
+STEP_CLEANUP_APT=1           # Orphan package cleanup
+STEP_CLEANUP_KERNELS=1       # Remove old kernels
+STEP_CLEANUP_DISK=1          # Clean logs and cache
+STEP_CLEANUP_DOCKER=0        # Clean Docker/Podman (disabled by default)
+STEP_CHECK_SMART=1           # Check disk health (SMART)
+STEP_CHECK_REBOOT=1          # Check reboot necessity
 
 # ============================================================================
-# VARIABLES DE DISTRIBUCIÓN
+# NEW SECURITY AND MAINTENANCE STEPS (v2025.12)
+# ============================================================================
+STEP_CHECK_REPOS=1           # Verify APT repository integrity
+STEP_CHECK_DEBSUMS=0         # Verify package integrity (debsums)
+STEP_CHECK_SECURITY=1        # Check pending security updates
+STEP_CHECK_PERMISSIONS=0     # Verify critical file permissions
+STEP_AUDIT_SERVICES=0        # Audit unnecessary services
+STEP_CLEANUP_SESSIONS=0      # Clean abandoned sessions
+STEP_CHECK_LOGROTATE=0       # Verify/configure logrotate
+STEP_CHECK_INODES=0          # Check inode space
+
+# Systemd Timer scheduling variables
+SCHEDULE_MODE=""             # Mode: daily, weekly, monthly
+UNSCHEDULE=false             # Flag to remove timer
+SCHEDULE_STATUS=false        # Flag to show timer status
+
+# Predefined Profiles variables
+PROFILE=""                   # Profile: server, desktop, developer, minimal
+
+# ============================================================================
+# DISTRIBUTION VARIABLES
 # ============================================================================
 
-# Estas variables se llenan automáticamente al detectar la distribución
+# These variables are filled automatically when detecting the distribution
 DISTRO_ID=""
 DISTRO_NAME=""
 DISTRO_VERSION=""
 DISTRO_CODENAME=""
 DISTRO_FAMILY=""  # debian, ubuntu, mint
-DISTRO_MIRROR=""  # Servidor para verificar conectividad
+DISTRO_MIRROR=""  # Server for connectivity verification
 
-# Distribuciones soportadas
+# Supported distributions
 SUPPORTED_DISTROS="debian ubuntu linuxmint pop elementary zorin kali"
 
 # ============================================================================
-# VARIABLES DE ESTADO Y CONTROL
+# STATE AND CONTROL VARIABLES
 # ============================================================================
 
-# Estados visuales de cada paso
+# Visual states for each step
 STAT_CONNECTIVITY="[..]"
 STAT_DEPENDENCIES="[..]"
 STAT_BACKUP_TAR="[..]"
@@ -252,7 +252,7 @@ STAT_DOCKER="[..]"
 STAT_SMART="[..]"
 STAT_REBOOT="[..]"
 
-# Nuevos estados (v2025.12)
+# New states (v2025.12)
 STAT_CHECK_REPOS="[..]"
 STAT_DEBSUMS="[..]"
 STAT_SECURITY="[..]"
@@ -262,14 +262,14 @@ STAT_SESSIONS="[..]"
 STAT_LOGROTATE="[..]"
 STAT_INODES="[..]"
 
-# Contadores y tiempo
+# Counters and time
 SPACE_BEFORE_ROOT=0
 SPACE_BEFORE_BOOT=0
 START_TIME=$(date +%s)
 CURRENT_STEP=0
 TOTAL_STEPS=0
 
-# Flags de control
+# Control flags
 DRY_RUN=false
 NOTIFY_ON_DRY_RUN=false
 UNATTENDED=false
@@ -279,52 +279,52 @@ NO_MENU=false
 UPGRADE_PERFORMED=false
 
 # ============================================================================
-# CONFIGURACIÓN DEL MENÚ INTERACTIVO
+# INTERACTIVE MENU CONFIGURATION
 # ============================================================================
 
-# Arrays para el menú interactivo (se llenan desde archivo de idioma)
+# Arrays for interactive menu (filled from language file)
 declare -a MENU_STEP_NAMES
 declare -a MENU_STEP_DESCRIPTIONS
 declare -a STEP_SHORT_NAMES
 
 MENU_STEP_VARS=(
-    # FASE 1: Verificaciones previas (4 pasos)
-    "STEP_CHECK_CONNECTIVITY"    # 1  - Verificar conectividad
-    "STEP_CHECK_DEPENDENCIES"    # 2  - Verificar dependencias
-    "STEP_CHECK_REPOS"           # 3  - Verificar repos APT/GPG (NUEVO)
-    "STEP_CHECK_SMART"           # 4  - SMART (salud de discos)
+    # PHASE 1: Pre-checks (4 steps)
+    "STEP_CHECK_CONNECTIVITY"    # 1  - Check connectivity
+    "STEP_CHECK_DEPENDENCIES"    # 2  - Check dependencies
+    "STEP_CHECK_REPOS"           # 3  - Check APT/GPG repos (NEW)
+    "STEP_CHECK_SMART"           # 4  - SMART (disk health)
 
-    # FASE 2: Auditoría de seguridad (4 pasos - NUEVOS)
-    "STEP_CHECK_DEBSUMS"         # 5  - Integridad paquetes (NUEVO)
-    "STEP_CHECK_SECURITY"        # 6  - Updates seguridad (NUEVO)
-    "STEP_CHECK_PERMISSIONS"     # 7  - Permisos críticos (NUEVO)
-    "STEP_AUDIT_SERVICES"        # 8  - Auditar servicios (NUEVO)
+    # PHASE 2: Security audit (4 steps - NEW)
+    "STEP_CHECK_DEBSUMS"         # 5  - Package integrity (NEW)
+    "STEP_CHECK_SECURITY"        # 6  - Security updates (NEW)
+    "STEP_CHECK_PERMISSIONS"     # 7  - Critical permissions (NEW)
+    "STEP_AUDIT_SERVICES"        # 8  - Audit services (NEW)
 
-    # FASE 3: Backups (2 pasos)
-    "STEP_BACKUP_TAR"            # 9  - Backup TAR
-    "STEP_SNAPSHOT_TIMESHIFT"    # 10 - Snapshot Timeshift
+    # PHASE 3: Backups (2 steps)
+    "STEP_BACKUP_TAR"            # 9  - TAR Backup
+    "STEP_SNAPSHOT_TIMESHIFT"    # 10 - Timeshift Snapshot
 
-    # FASE 4: Actualizaciones (5 pasos)
-    "STEP_UPDATE_REPOS"          # 11 - Actualizar repos
-    "STEP_UPGRADE_SYSTEM"        # 12 - Actualizar sistema
+    # PHASE 4: Updates (5 steps)
+    "STEP_UPDATE_REPOS"          # 11 - Update repos
+    "STEP_UPGRADE_SYSTEM"        # 12 - Update system
     "STEP_UPDATE_FLATPAK"        # 13 - Flatpak
     "STEP_UPDATE_SNAP"           # 14 - Snap
     "STEP_CHECK_FIRMWARE"        # 15 - Firmware
 
-    # FASE 5: Limpieza (7 pasos)
-    "STEP_CLEANUP_APT"           # 16 - Limpieza APT
-    "STEP_CLEANUP_KERNELS"       # 17 - Limpieza Kernels
-    "STEP_CLEANUP_DISK"          # 18 - Limpieza Disco
-    "STEP_CLEANUP_DOCKER"        # 19 - Limpieza Docker
-    "STEP_CLEANUP_SESSIONS"      # 20 - Limpiar sesiones (NUEVO)
-    "STEP_CHECK_LOGROTATE"       # 21 - Logrotate (NUEVO)
-    "STEP_CHECK_INODES"          # 22 - Inodes (NUEVO)
+    # PHASE 5: Cleanup (7 steps)
+    "STEP_CLEANUP_APT"           # 16 - APT Cleanup
+    "STEP_CLEANUP_KERNELS"       # 17 - Kernel Cleanup
+    "STEP_CLEANUP_DISK"          # 18 - Disk Cleanup
+    "STEP_CLEANUP_DOCKER"        # 19 - Docker Cleanup
+    "STEP_CLEANUP_SESSIONS"      # 20 - Clean sessions (NEW)
+    "STEP_CHECK_LOGROTATE"       # 21 - Logrotate (NEW)
+    "STEP_CHECK_INODES"          # 22 - Inodes (NEW)
 
-    # FASE 6: Verificación final (1 paso)
-    "STEP_CHECK_REBOOT"          # 23 - Verificar reinicio
+    # PHASE 6: Final check (1 step)
+    "STEP_CHECK_REBOOT"          # 23 - Check reboot
 )
 
-# Función para actualizar arrays desde variables de idioma
+# Function to update arrays from language variables
 update_language_arrays() {
     MENU_STEP_NAMES=(
         "$STEP_NAME_1"   # Conectividad
@@ -406,7 +406,7 @@ update_language_arrays() {
 }
 
 # ============================================================================
-# FUNCIONES DE CONFIGURACIÓN PERSISTENTE
+# PERSISTENT CONFIGURATION FUNCTIONS
 # ============================================================================
 
 save_config() {

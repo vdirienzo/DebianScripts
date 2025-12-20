@@ -1,252 +1,252 @@
 # Debian Scripts Collection
 
-Coleccion de scripts de mantenimiento y actualizacion para distribuciones basadas en Debian/Ubuntu.
+Collection of maintenance and update scripts for Debian/Ubuntu based distributions.
 
-## Indices
+## Table of Contents
 
-- [Scripts Disponibles](#scripts-disponibles)
-- [autoclean.sh - Script Principal](#autocleansh---script-principal)
-  - [Distribuciones Soportadas](#distribuciones-soportadas)
-  - [Caracteristicas Principales](#caracteristicas-principales)
-  - [Requisitos del Sistema](#requisitos-del-sistema)
-  - [Instalacion y Uso](#instalacion-y-uso)
-  - [Configuracion Avanzada](#configuracion-avanzada)
-  - [Perfiles Predefinidos](#perfiles-predefinidos)
+- [Available Scripts](#available-scripts)
+- [autoclean.sh - Main Script](#autocleansh---main-script)
+  - [Supported Distributions](#supported-distributions)
+  - [Key Features](#key-features)
+  - [System Requirements](#system-requirements)
+  - [Installation and Usage](#installation-and-usage)
+  - [Advanced Configuration](#advanced-configuration)
+  - [Predefined Profiles](#predefined-profiles)
   - [Screenshots](#screenshots)
-  - [Menu Interactivo](#menu-interactivo)
-  - [Ejemplos de Uso](#ejemplos-de-uso)
-- [Solucion de Problemas](#solucion-de-problemas)
-- [Contribuir](#contribuir)
+  - [Interactive Menu](#interactive-menu)
+  - [Usage Examples](#usage-examples)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
 
 ---
 
-## Scripts Disponibles
+## Available Scripts
 
-### autoclean.sh - Script Principal 
+### autoclean.sh - Main Script
 
 **Version:** 2025.12
-**Ultima revision:** Diciembre 2025
-**Autor:** Homero Thompson del Lago del Terror
-**Contribuciones UI/UX:** Dreadblitz
+**Last Revision:** December 2025
+**Author:** Homero Thompson del Lago del Terror
+**UI/UX Contributions:** Dreadblitz
 
-Script de mantenimiento integral para distribuciones basadas en Debian/Ubuntu con enfasis en seguridad, control granular, **deteccion automatica de distribucion** y **menu interactivo de configuracion con interfaz enterprise**.
+Comprehensive maintenance script for Debian/Ubuntu based distributions with emphasis on security, granular control, **automatic distribution detection**, and **enterprise-grade interactive configuration menu**.
 
 ---
 
-## Distribuciones Soportadas
+## Supported Distributions
 
-El script detecta y soporta automaticamente las siguientes distribuciones:
+The script automatically detects and supports the following distributions:
 
-| Distribucion | Familia | Mirror de Verificacion |
-|--------------|---------|------------------------|
+| Distribution | Family | Verification Mirror |
+|--------------|--------|---------------------|
 | **Debian** (Stable, Testing, Unstable) | debian | deb.debian.org |
-| **Ubuntu** (todas las versiones LTS y regulares) | ubuntu | archive.ubuntu.com |
-| **Linux Mint** (todas las versiones) | mint | packages.linuxmint.com |
+| **Ubuntu** (all LTS and regular versions) | ubuntu | archive.ubuntu.com |
+| **Linux Mint** (all versions) | mint | packages.linuxmint.com |
 | **Pop!_OS** | ubuntu | apt.pop-os.org |
 | **Elementary OS** | ubuntu | packages.elementary.io |
 | **Zorin OS** | ubuntu | packages.zorinos.com |
 | **Kali Linux** | debian | http.kali.org |
-| **Otras derivadas** | auto-detectado | segun ID_LIKE |
+| **Other derivatives** | auto-detected | based on ID_LIKE |
 
-La deteccion se realiza automaticamente usando `/etc/os-release` y el script adapta:
-- El servidor de verificacion de conectividad
-- El comportamiento segun la familia de la distribucion
-- Los mensajes mostrados al usuario
+Detection is performed automatically using `/etc/os-release` and the script adapts:
+- Connectivity verification server
+- Behavior based on distribution family
+- Messages displayed to the user
 
 ---
 
-## Caracteristicas Principales
+## Key Features
 
-### Interfaz de Usuario
+### User Interface
 
-- **Interfaz Enterprise 100% ASCII**: UI sin emojis para compatibilidad total con cualquier terminal
-- **Menu interactivo en 4 columnas**: Grid 4x6 con los 23 pasos, navegacion con flechas ←/→/↑/↓
-- **Resumen de ejecucion en 3 columnas**: Reporte final compacto con estado de cada paso
-- **Alineacion robusta con cursor absoluto**: Usa secuencias ANSI `\033[78G` para bordes perfectos
-- **Iconos ASCII puros**: `[OK]`, `[XX]`, `[--]`, `[!!]`, `[..]` para alineacion perfecta
-- **Configuracion persistente**: Guarda tu configuracion preferida en `autoclean.conf`
-- **Descripcion en tiempo real**: Ayuda contextual de cada paso mientras navegas
+- **100% ASCII Enterprise Interface**: Emoji-free UI for full compatibility with any terminal
+- **4-column interactive menu**: 4x6 grid with all 23 steps, navigation with arrow keys ←/→/↑/↓
+- **3-column execution summary**: Compact final report with status of each step
+- **Robust alignment with absolute cursor**: Uses ANSI sequences `\033[78G` for perfect borders
+- **Pure ASCII icons**: `[OK]`, `[XX]`, `[--]`, `[!!]`, `[..]` for perfect alignment
+- **Persistent configuration**: Saves your preferred configuration in `autoclean.conf`
+- **Real-time description**: Contextual help for each step while navigating
 
-### Multi-Idioma (i18n)
+### Multi-Language (i18n)
 
-- **6 idiomas soportados**: Ingles (en), Espanol (es), Portugues (pt), Frances (fr), Aleman (de), Italiano (it)
-- **Deteccion dinamica de idiomas**: Los idiomas se detectan automaticamente desde la carpeta `plugins/lang/`
-- **Selector en grid 4 columnas**: Tecla `[L]` en el menu, navegacion con flechas ←/→/↑/↓
-- **Crea tu propio idioma**: Tutorial incluido en `plugins/lang/TUTORIAL.md`
-- **Deteccion automatica del sistema**: Detecta el idioma del sistema y lo aplica automaticamente
-- **Patrones de confirmacion localizados**: S/N, Y/N, O/N, J/N segun el idioma
-- **Parametro --lang**: Fuerza un idioma especifico desde linea de comandos
-- **Configuracion persistente**: El idioma seleccionado se guarda en `autoclean.conf`
+- **6 languages supported**: English (en), Spanish (es), Portuguese (pt), French (fr), German (de), Italian (it)
+- **Dynamic language detection**: Languages are automatically detected from the `plugins/lang/` folder
+- **4-column grid selector**: Press `[L]` in menu, navigate with arrow keys ←/→/↑/↓
+- **Create your own language**: Tutorial included in `plugins/lang/TUTORIAL.md`
+- **Automatic system detection**: Detects system language and applies it automatically
+- **Localized confirmation patterns**: S/N, Y/N, O/N, J/N depending on language
+- **--lang parameter**: Force a specific language from command line
+- **Persistent configuration**: Selected language is saved in `autoclean.conf`
 
-### Temas de Colores
+### Color Themes
 
-- **9 temas incluidos**: Gran variedad de estilos visuales
-- **Deteccion dinamica**: Los temas se detectan automaticamente desde la carpeta `plugins/themes/`
-- **Selector en grid 4 columnas**: Tecla `[T]` en el menu, navegacion con flechas
-- **Crea tu propio tema**: Tutorial incluido en `plugins/themes/TUTORIAL.md`
-- **Configuracion persistente**: El tema seleccionado se guarda en `autoclean.conf`
+- **9 themes included**: Wide variety of visual styles
+- **Dynamic detection**: Themes are automatically detected from the `plugins/themes/` folder
+- **4-column grid selector**: Press `[T]` in menu, navigate with arrow keys
+- **Create your own theme**: Tutorial included in `plugins/themes/TUTORIAL.md`
+- **Persistent configuration**: Selected theme is saved in `autoclean.conf`
 
-### Sistema de Notificaciones Multi-canal
+### Multi-channel Notification System
 
-- **Arquitectura de plugins**: Los notificadores se cargan dinamicamente desde `plugins/notifiers/`
-- **Notificadores incluidos**: Desktop (notify-send), Telegram Bot API, ntfy.sh, Webhook (Slack/Discord/Teams), Email SMTP
-- **Menu dedicado**: Tecla `[O]` en el menu principal para gestionar notificaciones
-- **Configuracion por servicio**: Cada notificador tiene su propia pantalla de configuracion
-- **Ayuda integrada**: Instrucciones de setup para cada servicio (como crear bot de Telegram, etc.)
-- **Notificaciones automaticas**: Se envian al finalizar la ejecucion y en errores criticos
-- **Crea tu propio notificador**: Tutorial incluido en `plugins/notifiers/TUTORIAL.md`
+- **Plugin architecture**: Notifiers are dynamically loaded from `plugins/notifiers/`
+- **Included notifiers**: Desktop (notify-send), Telegram Bot API, ntfy.sh, Webhook (Slack/Discord/Teams), Email SMTP
+- **Dedicated menu**: Press `[O]` in main menu to manage notifications
+- **Per-service configuration**: Each notifier has its own configuration screen
+- **Integrated help**: Setup instructions for each service (how to create Telegram bot, etc.)
+- **Automatic notifications**: Sent upon completion and on critical errors
+- **Create your own notifier**: Tutorial included in `plugins/notifiers/TUTORIAL.md`
 
-| Notificador | Descripcion | Configuracion |
-|-------------|-------------|---------------|
-| Desktop | Notificaciones de escritorio via notify-send | Ninguna (auto-detecta sesion) |
-| Telegram | Mensajes via Telegram Bot API | Bot Token + Chat ID |
-| ntfy.sh | Push notifications via ntfy.sh | Topic (+ Server/Token opcional) |
+| Notifier | Description | Configuration |
+|----------|-------------|---------------|
+| Desktop | Desktop notifications via notify-send | None (auto-detects session) |
+| Telegram | Messages via Telegram Bot API | Bot Token + Chat ID |
+| ntfy.sh | Push notifications via ntfy.sh | Topic (+ Server/Token optional) |
 | Webhook | HTTP webhooks (Slack, Discord, Teams, custom) | URL + Preset |
 | Email | Email via SMTP (Gmail, Outlook, custom) | SMTP Server + Credentials |
 
-| Tema | Descripcion | Fondo |
-|------|-------------|-------|
-| Default | Azul/Cyan/Verde - tema original | - |
-| Norton Commander | Cyan/Amarillo - estilo clasico NC | Azul |
-| Bloody Red | Tonos rojos intensos | - |
-| Green Terminal | Monocromo verde retro | - |
-| Amber Terminal | Monocromo ambar vintage | - |
-| Dracula | Purpura/Rosa/Cyan - tema popular | - |
-| Matrix | Verde neon brillante estilo pelicula | Negro |
-| Synthwave | Rosa/Cyan neon retro 80s | Purpura |
-| Monokai | Naranja/Verde lima - clasico Sublime | - |
+| Theme | Description | Background |
+|-------|-------------|------------|
+| Default | Blue/Cyan/Green - original theme | - |
+| Norton Commander | Cyan/Yellow - classic NC style | Blue |
+| Bloody Red | Intense red tones | - |
+| Green Terminal | Retro monochrome green | - |
+| Amber Terminal | Vintage amber monochrome | - |
+| Dracula | Purple/Pink/Cyan - popular theme | - |
+| Matrix | Bright neon green movie style | Black |
+| Synthwave | Neon pink/cyan retro 80s | Purple |
+| Monokai | Orange/Lime green - Sublime classic | - |
 
-### Deteccion y Compatibilidad
-- **Deteccion automatica de distribucion**: Identifica Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
-- **Adaptacion dinamica**: El script adapta su comportamiento segun la distribucion detectada
-- **Mirror inteligente**: Verifica conectividad usando el servidor correspondiente a cada distribucion
+### Detection and Compatibility
+- **Automatic distribution detection**: Identifies Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali and derivatives
+- **Dynamic adaptation**: The script adapts its behavior based on detected distribution
+- **Intelligent mirror**: Verifies connectivity using the server corresponding to each distribution
 
-### Seguridad
+### Security
 
-- **Snapshot automatico con Timeshift**: Crea punto de restauracion antes de operaciones criticas
-- **Verificacion inteligente de Timeshift**: Detecta si esta instalado pero no configurado
-- **Deteccion de riesgos**: Alerta si APT propone eliminar muchos paquetes
-- **Validacion de espacio en disco**: Verifica espacio libre antes de actualizar
-- **Lock file**: Evita ejecuciones simultaneas
-- **Reparacion automatica**: Ejecuta `dpkg --configure -a` antes de actualizar
-- **Validacion de archivos de configuracion**: Los archivos `.conf`, `.lang` y `.theme` se validan antes de cargar para prevenir inyeccion de codigo
-- **Manejo seguro de archivos**: Usa `find` con delimitadores seguros para limpieza de logs y backups
-- **Variables seguras**: Usa `declare -n` (nameref) en lugar de `eval` para manipulacion de variables en el menu
-- **Proteccion de credenciales**: El archivo `autoclean.conf` se guarda con permisos `600` (solo lectura/escritura para el propietario)
-- **Advertencia HTTP**: Muestra alerta al configurar URLs HTTP en webhooks (recomendando HTTPS)
+- **Automatic Timeshift snapshot**: Creates restore point before critical operations
+- **Intelligent Timeshift verification**: Detects if installed but not configured
+- **Risk detection**: Alerts if APT proposes removing many packages
+- **Disk space validation**: Verifies free space before updating
+- **Lock file**: Prevents simultaneous executions
+- **Automatic repair**: Runs `dpkg --configure -a` before updating
+- **Configuration file validation**: `.conf`, `.lang`, and `.theme` files are validated before loading to prevent code injection
+- **Safe file handling**: Uses `find` with safe delimiters for log and backup cleanup
+- **Safe variables**: Uses `declare -n` (nameref) instead of `eval` for variable manipulation in the menu
+- **Credential protection**: The `autoclean.conf` file is saved with `600` permissions (owner read/write only)
+- **HTTP warning**: Shows alert when configuring HTTP URLs in webhooks (recommending HTTPS)
 
-### Control y Modularidad
+### Control and Modularity
 
-- **23 pasos independientes**: Cada uno puede activarse/desactivarse individualmente
-- **Rotacion automatica de logs**: Mantiene solo las ultimas 5 ejecuciones
-- **Rotacion automatica de backups**: Mantiene solo los ultimos 5 backups
-- **Modo Dry-Run**: Simula cambios sin ejecutarlos realmente
-- **Modo Desatendido**: Perfecto para automatizacion con cron
+- **23 independent steps**: Each can be enabled/disabled individually
+- **Automatic log rotation**: Keeps only the last 5 executions
+- **Automatic backup rotation**: Keeps only the last 5 backups
+- **Dry-Run mode**: Simulates changes without actually executing them
+- **Unattended mode**: Perfect for automation with cron
 
-### Monitoreo y Reportes
+### Monitoring and Reports
 
-- **Resumen detallado**: Estadisticas de espacio liberado y tiempo de ejecucion
-- **Verificacion de reinicio avanzada**: Detecta kernel obsoleto y librerias criticas actualizadas
-- **Logging completo**: Registro detallado de todas las operaciones en `/var/log/debian-maintenance/`
+- **Detailed summary**: Statistics of freed space and execution time
+- **Advanced reboot verification**: Detects outdated kernel and updated critical libraries
+- **Complete logging**: Detailed record of all operations in `/var/log/debian-maintenance/`
 
 ---
 
-## Requisitos del Sistema
+## System Requirements
 
-**OBLIGATORIO:**
-- Distribucion basada en Debian o Ubuntu (ver lista de soportadas)
-- Permisos de root (sudo)
-- Conexion a internet
+**MANDATORY:**
+- Debian or Ubuntu based distribution (see supported list)
+- Root permissions (sudo)
+- Internet connection
 
-**RECOMENDADO (instalacion automatica disponible):**
-- `timeshift` - Snapshots del sistema (CRITICO para seguridad)
-- `needrestart` - Deteccion inteligente de servicios a reiniciar
-- `fwupd` - Gestion de actualizaciones de firmware
-- `flatpak` - Si usas aplicaciones Flatpak
-- `snapd` - Si usas aplicaciones Snap
-- `smartmontools` - Diagnosticos SMART de discos duros
+**RECOMMENDED (automatic installation available):**
+- `timeshift` - System snapshots (CRITICAL for safety)
+- `needrestart` - Intelligent detection of services to restart
+- `fwupd` - Firmware update management
+- `flatpak` - If you use Flatpak applications
+- `snapd` - If you use Snap applications
+- `smartmontools` - SMART disk diagnostics
 
-Instalacion manual de herramientas recomendadas:
+Manual installation of recommended tools:
 ```bash
 sudo apt install timeshift needrestart fwupd flatpak smartmontools
 ```
 
 ---
 
-## Instalacion y Uso
+## Installation and Usage
 
-**1. Clonar el repositorio:**
+**1. Clone the repository:**
 ```bash
 git clone https://github.com/vdirienzo/DebianScripts.git
 cd DebianScripts
 chmod +x autoclean.sh
 ```
 
-**2. Ejecucion basica (RECOMENDADA):**
+**2. Basic execution (RECOMMENDED):**
 ```bash
 sudo ./autoclean.sh
 ```
 
-**3. Modo simulacion (para probar sin hacer cambios):**
+**3. Simulation mode (to test without making changes):**
 ```bash
 sudo ./autoclean.sh --dry-run
 ```
 
-**4. Modo desatendido (para automatizacion):**
+**4. Unattended mode (for automation):**
 ```bash
 sudo ./autoclean.sh -y
 ```
 
-**5. Ver ayuda completa:**
+**5. View full help:**
 ```bash
 ./autoclean.sh --help
 ```
 
 ---
 
-## Configuracion Avanzada
+## Advanced Configuration
 
-El script incluye 15 pasos modulares que puedes activar/desactivar editando las variables `STEP_*` al inicio del script:
+The script includes 15 modular steps that you can enable/disable by editing the `STEP_*` variables at the beginning of the script:
 
-| Variable | Descripcion | Default |
+| Variable | Description | Default |
 |----------|-------------|---------|
-| `STEP_CHECK_CONNECTIVITY` | Verificar conexion a internet | ON |
-| `STEP_CHECK_DEPENDENCIES` | Verificar e instalar herramientas necesarias | ON |
-| `STEP_BACKUP_TAR` | Backup de configuraciones APT | ON |
-| `STEP_SNAPSHOT_TIMESHIFT` | Crear snapshot Timeshift (CRITICO) | ON |
-| `STEP_UPDATE_REPOS` | Actualizar repositorios (apt update) | ON |
-| `STEP_UPGRADE_SYSTEM` | Actualizar paquetes (apt full-upgrade) | ON |
-| `STEP_UPDATE_FLATPAK` | Actualizar aplicaciones Flatpak | ON |
-| `STEP_UPDATE_SNAP` | Actualizar aplicaciones Snap | OFF |
-| `STEP_CHECK_FIRMWARE` | Verificar actualizaciones de firmware | ON |
-| `STEP_CLEANUP_APT` | Limpieza de paquetes huerfanos | ON |
-| `STEP_CLEANUP_KERNELS` | Eliminar kernels antiguos | ON |
-| `STEP_CLEANUP_DISK` | Limpiar logs y cache | ON |
-| `STEP_CLEANUP_DOCKER` | Limpiar Docker/Podman (images, containers, volumes) | OFF |
-| `STEP_CHECK_SMART` | Verificar salud de discos (SMART) | ON |
-| `STEP_CHECK_REBOOT` | Verificar necesidad de reinicio | ON |
-| `STEP_CHECK_REPOS` | Verificar repositorios APT (sources.list) | ON |
-| `STEP_CHECK_DEBSUMS` | Verificar integridad de paquetes (debsums) | ON |
-| `STEP_CHECK_SECURITY` | Auditoria de seguridad del sistema | ON |
-| `STEP_CHECK_PERMISSIONS` | Auditar permisos de archivos criticos | ON |
-| `STEP_AUDIT_SERVICES` | Auditar servicios activos del sistema | ON |
-| `STEP_CLEANUP_SESSIONS` | Limpiar sesiones y archivos temporales | ON |
-| `STEP_CHECK_LOGROTATE` | Verificar configuracion de logrotate | ON |
-| `STEP_CHECK_INODES` | Verificar uso de inodos del sistema | ON |
+| `STEP_CHECK_CONNECTIVITY` | Verify internet connection | ON |
+| `STEP_CHECK_DEPENDENCIES` | Verify and install necessary tools | ON |
+| `STEP_BACKUP_TAR` | Backup APT configurations | ON |
+| `STEP_SNAPSHOT_TIMESHIFT` | Create Timeshift snapshot (CRITICAL) | ON |
+| `STEP_UPDATE_REPOS` | Update repositories (apt update) | ON |
+| `STEP_UPGRADE_SYSTEM` | Update packages (apt full-upgrade) | ON |
+| `STEP_UPDATE_FLATPAK` | Update Flatpak applications | ON |
+| `STEP_UPDATE_SNAP` | Update Snap applications | OFF |
+| `STEP_CHECK_FIRMWARE` | Check firmware updates | ON |
+| `STEP_CLEANUP_APT` | Orphan package cleanup | ON |
+| `STEP_CLEANUP_KERNELS` | Remove old kernels | ON |
+| `STEP_CLEANUP_DISK` | Clean logs and cache | ON |
+| `STEP_CLEANUP_DOCKER` | Clean Docker/Podman (images, containers, volumes) | OFF |
+| `STEP_CHECK_SMART` | Check disk health (SMART) | ON |
+| `STEP_CHECK_REBOOT` | Check reboot necessity | ON |
+| `STEP_CHECK_REPOS` | Verify APT repositories (sources.list) | ON |
+| `STEP_CHECK_DEBSUMS` | Verify package integrity (debsums) | ON |
+| `STEP_CHECK_SECURITY` | System security audit | ON |
+| `STEP_CHECK_PERMISSIONS` | Audit critical file permissions | ON |
+| `STEP_AUDIT_SERVICES` | Audit active system services | ON |
+| `STEP_CLEANUP_SESSIONS` | Clean sessions and temporary files | ON |
+| `STEP_CHECK_LOGROTATE` | Verify logrotate configuration | ON |
+| `STEP_CHECK_INODES` | Verify system inode usage | ON |
 
-**Ejemplo de configuracion personalizada:**
+**Custom configuration example:**
 
-Para solo actualizar el sistema sin limpiar:
+To only update the system without cleaning:
 ```bash
-# Editar autoclean.sh
+# Edit autoclean.sh
 STEP_CLEANUP_APT=0
 STEP_CLEANUP_KERNELS=0
 STEP_CLEANUP_DISK=0
 ```
 
-Para solo limpiar sin actualizar:
+To only clean without updating:
 ```bash
-# Editar autoclean.sh
+# Edit autoclean.sh
 STEP_UPDATE_REPOS=0
 STEP_UPGRADE_SYSTEM=0
 STEP_UPDATE_FLATPAK=0
@@ -255,197 +255,197 @@ STEP_UPDATE_SNAP=0
 
 ---
 
-## Perfiles Predefinidos
+## Predefined Profiles
 
-El script incluye 5 perfiles predefinidos que configuran automaticamente los pasos segun el tipo de sistema:
+The script includes 5 predefined profiles that automatically configure steps based on system type:
 
 ```bash
-sudo ./autoclean.sh --profile PERFIL
+sudo ./autoclean.sh --profile PROFILE
 ```
 
-| Perfil | Descripcion | Pasos Activos |
-|--------|-------------|---------------|
-| `server` | Servidores (desatendido) | Docker ON, SMART ON, sin Flatpak/Snap/Timeshift, **automatico** |
-| `desktop` | Estaciones de trabajo (interactivo) | Flatpak ON, Timeshift ON, SMART ON, sin Docker |
-| `developer` | Entornos de desarrollo (interactivo) | Docker ON, Snap ON, Flatpak ON, sin SMART/Firmware |
-| `minimal` | Actualizacion minima (desatendido) | Solo apt update/upgrade y limpieza APT, **automatico** |
-| `custom` | Configuracion personalizada (desatendido) | Lee toda la configuracion desde `autoclean.conf`, **automatico** |
+| Profile | Description | Active Steps |
+|---------|-------------|--------------|
+| `server` | Servers (unattended) | Docker ON, SMART ON, no Flatpak/Snap/Timeshift, **automatic** |
+| `desktop` | Workstations (interactive) | Flatpak ON, Timeshift ON, SMART ON, no Docker |
+| `developer` | Development environments (interactive) | Docker ON, Snap ON, Flatpak ON, no SMART/Firmware |
+| `minimal` | Minimal update (unattended) | Only apt update/upgrade and APT cleanup, **automatic** |
+| `custom` | Custom configuration (unattended) | Reads all configuration from `autoclean.conf`, **automatic** |
 
-### Uso de Perfiles
+### Profile Usage
 
 ```bash
-# Mantenimiento de servidor (automatico, sin interaccion)
+# Server maintenance (automatic, no interaction)
 sudo ./autoclean.sh --profile server
 
-# Mantenimiento de escritorio (con menu interactivo)
+# Desktop maintenance (with interactive menu)
 sudo ./autoclean.sh --profile desktop
 
-# Mantenimiento rapido para desarrollador
+# Quick maintenance for developer
 sudo ./autoclean.sh --profile developer
 
-# Actualizacion minima sin limpieza agresiva
+# Minimal update without aggressive cleanup
 sudo ./autoclean.sh --profile minimal
 
-# Ejecutar con configuracion personalizada desde autoclean.conf
+# Execute with custom configuration from autoclean.conf
 sudo ./autoclean.sh --profile custom
 ```
 
-### Detalle de Cada Perfil
+### Profile Details
 
-**server** - Optimizado para servidores:
-- Modo desatendido (UNATTENDED=true) - acepta todo automaticamente
-- Sin interfaz grafica (NO_MENU=true)
-- Docker/Podman habilitado
-- SMART habilitado (salud de discos)
-- Sin Flatpak/Snap (no hay apps de escritorio)
-- Sin Timeshift (servidores usan otros metodos de backup)
+**server** - Optimized for servers:
+- Unattended mode (UNATTENDED=true) - accepts everything automatically
+- No graphical interface (NO_MENU=true)
+- Docker/Podman enabled
+- SMART enabled (disk health)
+- No Flatpak/Snap (no desktop apps)
+- No Timeshift (servers use other backup methods)
 
-**desktop** - Optimizado para escritorio:
-- Menu interactivo habilitado
-- Flatpak habilitado (apps de escritorio)
-- Timeshift habilitado (snapshots recomendados)
-- SMART habilitado
-- Sin Docker (no es comun en escritorios)
+**desktop** - Optimized for desktop:
+- Interactive menu enabled
+- Flatpak enabled (desktop apps)
+- Timeshift enabled (snapshots recommended)
+- SMART enabled
+- No Docker (not common on desktops)
 
-**developer** - Optimizado para desarrollo:
-- Menu interactivo habilitado
-- Docker habilitado (contenedores de desarrollo)
-- Snap habilitado (herramientas de desarrollo)
-- Flatpak habilitado
-- Sin SMART/Firmware (evita interrupciones)
+**developer** - Optimized for development:
+- Interactive menu enabled
+- Docker enabled (development containers)
+- Snap enabled (development tools)
+- Flatpak enabled
+- No SMART/Firmware (avoids interruptions)
 
-**minimal** - Actualizacion esencial:
-- Modo desatendido (UNATTENDED=true) - acepta todo automaticamente
-- Sin interfaz grafica (NO_MENU=true)
-- Solo: conectividad, repos, upgrade, limpieza APT, reinicio
-- Sin backups, sin snapshots, sin Docker, sin SMART
+**minimal** - Essential update:
+- Unattended mode (UNATTENDED=true) - accepts everything automatically
+- No graphical interface (NO_MENU=true)
+- Only: connectivity, repos, upgrade, APT cleanup, reboot
+- No backups, no snapshots, no Docker, no SMART
 
-**custom** - Configuracion personalizada:
-- Modo desatendido (UNATTENDED=true) - acepta todo automaticamente
-- Sin interfaz grafica (NO_MENU=true)
-- Lee TODA la configuracion desde `autoclean.conf`
-- Permite personalizar idioma, tema y todos los pasos individualmente
-- Si el archivo no existe, se genera automaticamente con valores por defecto
+**custom** - Custom configuration:
+- Unattended mode (UNATTENDED=true) - accepts everything automatically
+- No graphical interface (NO_MENU=true)
+- Reads ALL configuration from `autoclean.conf`
+- Allows customizing language, theme, and all steps individually
+- If file doesn't exist, it's automatically generated with default values
 
 ---
 
 ## Screenshots
 
-### Resumen de Ejecucion
+### Execution Summary
 
-El script muestra un resumen detallado al finalizar con el estado de cada paso:
+The script shows a detailed summary upon completion with the status of each step:
 
-![Resumen de Ejecucion 1](screenshots/resumen-ejecucion-1.png)
+![Execution Summary 1](screenshots/resumen-ejecucion-1.png)
 
-![Resumen de Ejecucion 2](screenshots/resumen-ejecucion-2.png)
+![Execution Summary 2](screenshots/resumen-ejecucion-2.png)
 
-![Resumen de Ejecucion 3](screenshots/resumen-ejecucion-3.png)
+![Execution Summary 3](screenshots/resumen-ejecucion-3.png)
 
-![Resumen de Ejecucion 4](screenshots/resumen-ejecucion-5.png)
+![Execution Summary 4](screenshots/resumen-ejecucion-5.png)
 
-![Resumen de Ejecucion 5](screenshots/resumen-ejecucion-4.png)
+![Execution Summary 5](screenshots/resumen-ejecucion-4.png)
 
 ---
 
-## Menu Interactivo
+## Interactive Menu
 
-Al ejecutar el script sin argumentos, se muestra un menu interactivo en formato grid 4x6 que permite seleccionar que pasos ejecutar:
+When running the script without arguments, a 4x6 grid interactive menu is displayed allowing you to select which steps to execute:
 
 ```
 ╔════════════════════════════════════════════════════════════════════════════╗
-║                    CONFIGURACION DE MANTENIMIENTO                          ║
+║                      MAINTENANCE CONFIGURATION                             ║
 ╠════════════════════════════════════════════════════════════════════════════╣
 ║                   Debian GNU/Linux | debian (forky)                        ║
 ╠════════════════════════════════════════════════════════════════════════════╣
-║ PASOS (←/→ columnas, ↑/↓ filas, ESPACIO toggle, ENTER ejecutar)            ║
-║  [x]Conectivida  [x]Dependencia  [x]Backup       [x]Snapshot               ║
-║  [x]Repos       >[x]Upgrade      [x]Flatpak      [ ]Snap                   ║
-║  [x]Firmware     [x]APT Clean    [x]Kernels      [x]Disco                  ║
-║  [ ]Docker       [x]SMART        [x]Reinicio     [x]Check Repos            ║
-║  [x]Debsums      [x]Security     [x]Permisos     [x]Servicios              ║
-║  [x]Sesiones     [x]Logrotate    [x]Inodes                                 ║
+║ STEPS (←/→ columns, ↑/↓ rows, SPACE toggle, ENTER execute)                 ║
+║  [x]Connectivity [x]Dependencies [x]Backup      [x]Snapshot                ║
+║  [x]Repos       >[x]Upgrade      [x]Flatpak     [ ]Snap                    ║
+║  [x]Firmware    [x]APT Clean     [x]Kernels     [x]Disk                    ║
+║  [ ]Docker      [x]SMART         [x]Reboot      [x]Check Repos             ║
+║  [x]Debsums     [x]Security      [x]Permissions [x]Services                ║
+║  [x]Sessions    [x]Logrotate     [x]Inodes                                 ║
 ╠════════════════════════════════════════════════════════════════════════════╣
-║ > Ejecuta apt full-upgrade para actualizar paquetes                        ║
+║ > Runs apt full-upgrade to update packages                                 ║
 ╠════════════════════════════════════════════════════════════════════════════╣
-║ Seleccionados: 21/23    Perfil: Guardado                                   ║
+║ Selected: 21/23    Profile: Saved                                          ║
 ╠════════════════════════════════════════════════════════════════════════════╣
-║          [ENTER] Ejecutar [G] Guardar [L] Idioma [T] Tema [O] Notif [Q] Salir      ║
+║       [ENTER] Execute [G] Save [L] Language [T] Theme [O] Notif [Q] Quit   ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 ```
 
-### Controles del Menu
+### Menu Controls
 
-| Tecla | Accion |
-|-------|--------|
-| ← / → | Navegar entre columnas |
-| ↑ / ↓ | Navegar dentro de la columna |
-| ESPACIO | Activar/desactivar paso seleccionado |
-| ENTER | Ejecutar con la configuracion actual |
-| G | Guardar configuracion actual |
-| D | Borrar configuracion guardada |
-| L | Selector de idioma |
-| T | Selector de tema |
-| O | Menu de notificaciones |
-| Q | Salir sin ejecutar |
+| Key | Action |
+|-----|--------|
+| ← / → | Navigate between columns |
+| ↑ / ↓ | Navigate within column |
+| SPACE | Enable/disable selected step |
+| ENTER | Execute with current configuration |
+| G | Save current configuration |
+| D | Delete saved configuration |
+| L | Language selector |
+| T | Theme selector |
+| O | Notifications menu |
+| Q | Exit without executing |
 
-**Atajos ocultos** (no se muestran en la interfaz):
-| Tecla | Accion |
-|-------|--------|
-| A | Activar todos los pasos |
-| N | Desactivar todos los pasos |
+**Hidden shortcuts** (not shown in interface):
+| Key | Action |
+|-----|--------|
+| A | Enable all steps |
+| N | Disable all steps |
 
-### Configuracion Persistente
+### Persistent Configuration
 
-La configuracion se guarda en `autoclean.conf` en el mismo directorio del script:
-- Al presionar **G**, se guarda el estado actual de todos los pasos
-- Al iniciar el script, se carga automaticamente la configuracion guardada
-- Al presionar **D**, se elimina el archivo de configuracion (vuelve a valores por defecto)
-- **Si el archivo no existe, se genera automaticamente con valores por defecto**
+Configuration is saved in `autoclean.conf` in the same directory as the script:
+- Pressing **G** saves the current state of all steps
+- On startup, saved configuration is automatically loaded
+- Pressing **D** deletes the configuration file (returns to defaults)
+- **If the file doesn't exist, it's automatically generated with default values**
 
-El archivo `autoclean.conf` tiene el siguiente formato:
+The `autoclean.conf` file has the following format:
 ```bash
-# Perfil guardado (server, desktop, developer, minimal, custom)
+# Saved profile (server, desktop, developer, minimal, custom)
 SAVED_PROFILE=custom
 
-# Idioma (en, es, pt, fr, de, it)
+# Language (en, es, pt, fr, de, it)
 SAVED_LANG=es
 
-# Tema (default, norton, turbo, green, amber, dracula, matrix, synthwave, monokai)
+# Theme (default, norton, turbo, green, amber, dracula, matrix, synthwave, monokai)
 SAVED_THEME=default
 
-# Pasos (1=activo, 0=inactivo) - Solo aplica cuando SAVED_PROFILE=custom
+# Steps (1=active, 0=inactive) - Only applies when SAVED_PROFILE=custom
 STEP_CHECK_CONNECTIVITY=1
 STEP_CHECK_DEPENDENCIES=1
 STEP_BACKUP_TAR=1
-# ... (23 pasos configurables)
+# ... (23 configurable steps)
 ```
 
-Para ejecutar el script usando esta configuracion personalizada:
+To execute the script using this custom configuration:
 ```bash
 sudo ./autoclean.sh --profile custom
 ```
 
 ---
 
-## Ejemplos de Uso
+## Usage Examples
 
-**Escenario 1: Mantenimiento completo semanal**
+**Scenario 1: Complete weekly maintenance**
 ```bash
 sudo ./autoclean.sh
 ```
 
-**Escenario 2: Mantenimiento rapido sin snapshot**
+**Scenario 2: Quick maintenance without snapshot**
 ```bash
-# Editar autoclean.sh y configurar:
+# Edit autoclean.sh and configure:
 STEP_SNAPSHOT_TIMESHIFT=0
 STEP_BACKUP_TAR=0
 
 sudo ./autoclean.sh -y
 ```
 
-**Escenario 3: Solo limpieza de espacio en disco**
+**Scenario 3: Only disk space cleanup**
 ```bash
-# Editar autoclean.sh y configurar:
+# Edit autoclean.sh and configure:
 STEP_UPDATE_REPOS=0
 STEP_UPGRADE_SYSTEM=0
 STEP_UPDATE_FLATPAK=0
@@ -456,238 +456,238 @@ STEP_SNAPSHOT_TIMESHIFT=0
 sudo ./autoclean.sh
 ```
 
-**Escenario 4: Automatizacion con cron (diario a las 2 AM)**
+**Scenario 4: Automation with cron (daily at 2 AM)**
 ```bash
 sudo crontab -e
 
-# Anadir:
-0 2 * * * /ruta/a/autoclean.sh -y --quiet >> /var/log/maintenance-cron.log 2>&1
+# Add:
+0 2 * * * /path/to/autoclean.sh -y --quiet >> /var/log/maintenance-cron.log 2>&1
 ```
 
-**Escenario 5: Probar antes de ejecutar**
+**Scenario 5: Test before executing**
 ```bash
 sudo ./autoclean.sh --dry-run
 ```
 
 ---
 
-## Archivos Generados
+## Generated Files
 
 ```
 /var/log/debian-maintenance/
-  sys-update-YYYYMMDD_HHMMSS.log    # Logs de cada ejecucion (ultimas 5)
+  sys-update-YYYYMMDD_HHMMSS.log    # Logs from each execution (last 5)
 
 /var/backups/debian-maintenance/
-  backup_YYYYMMDD_HHMMSS.tar.gz     # Backup configuraciones APT (ultimos 5)
-  packages_YYYYMMDD_HHMMSS.list     # Lista de paquetes instalados (ultimos 5)
+  backup_YYYYMMDD_HHMMSS.tar.gz     # APT configuration backup (last 5)
+  packages_YYYYMMDD_HHMMSS.list     # Installed packages list (last 5)
 
 /var/run/
-  debian-maintenance.lock            # Lock file para evitar ejecuciones simultaneas
+  debian-maintenance.lock            # Lock file to prevent simultaneous executions
 ```
 
 ---
 
-## Caracteristicas de Seguridad
+## Security Features
 
-1. **Validacion de Espacio**: Verifica espacio libre antes de actualizar
-2. **Deteccion de Riesgos**: Alerta si APT propone eliminar muchos paquetes (`MAX_REMOVALS_ALLOWED=0`)
-3. **Snapshot Automatico**: Crea punto de restauracion con Timeshift
-4. **Backup de Configuraciones**: Guarda configuracion APT antes de cambios
-5. **Lock File**: Evita ejecuciones simultaneas
-6. **Reparacion Automatica**: Ejecuta `dpkg --configure -a` antes de actualizar
-7. **Modo Dry-Run**: Prueba sin hacer cambios reales
-8. **Deteccion de Reinicio**:
-   - Comparacion de kernel actual vs esperado
-   - Deteccion de librerias criticas actualizadas (glibc, systemd)
-   - Reinicio automatico de servicios con needrestart
+1. **Space Validation**: Verifies free space before updating
+2. **Risk Detection**: Alerts if APT proposes removing many packages (`MAX_REMOVALS_ALLOWED=0`)
+3. **Automatic Snapshot**: Creates restore point with Timeshift
+4. **Configuration Backup**: Saves APT configuration before changes
+5. **Lock File**: Prevents simultaneous executions
+6. **Automatic Repair**: Runs `dpkg --configure -a` before updating
+7. **Dry-Run Mode**: Test without making real changes
+8. **Reboot Detection**:
+   - Comparison of current vs expected kernel
+   - Detection of updated critical libraries (glibc, systemd)
+   - Automatic service restart with needrestart
 
 ---
 
-## Opciones de Linea de Comandos
+## Command Line Options
 
 ```
-sudo ./autoclean.sh [opciones]
+sudo ./autoclean.sh [options]
 
-Opciones:
-  --dry-run            Simular ejecucion sin hacer cambios reales
-  -y, --unattended     Modo desatendido sin confirmaciones
-  --no-backup          No crear backup de configuraciones
-  --no-menu            Omitir menu interactivo (usar config guardada o por defecto)
-  --quiet              Modo silencioso (solo logs)
-  --lang CODIGO        Forzar idioma (en, es, pt, fr, de, it)
-  --profile PERFIL     Usar perfil predefinido (server, desktop, developer, minimal, custom)
-  --schedule MODO      Crear timer systemd (daily, weekly, monthly)
-  --unschedule         Eliminar timer systemd programado
-  --schedule-status    Mostrar estado del timer programado
-  --help               Mostrar ayuda completa
+Options:
+  --dry-run            Simulate execution without making real changes
+  -y, --unattended     Unattended mode without confirmations
+  --no-backup          Do not create configuration backup
+  --no-menu            Skip interactive menu (use saved or default config)
+  --quiet              Quiet mode (logs only)
+  --lang CODE          Force language (en, es, pt, fr, de, it)
+  --profile PROFILE    Use predefined profile (server, desktop, developer, minimal, custom)
+  --schedule MODE      Create systemd timer (daily, weekly, monthly)
+  --unschedule         Remove scheduled systemd timer
+  --schedule-status    Show scheduled timer status
+  --help               Show full help
 ```
 
-### Programacion Automatica con Systemd Timer
+### Automatic Scheduling with Systemd Timer
 
-El script puede programarse automaticamente usando systemd timers:
+The script can be automatically scheduled using systemd timers:
 
 ```bash
-# Programar ejecucion diaria a las 2:00 AM
+# Schedule daily execution at 2:00 AM
 sudo ./autoclean.sh --schedule daily
 
-# Programar ejecucion semanal (domingos a las 2:00 AM)
+# Schedule weekly execution (Sundays at 2:00 AM)
 sudo ./autoclean.sh --schedule weekly
 
-# Programar ejecucion mensual (dia 1 a las 2:00 AM)
+# Schedule monthly execution (1st day at 2:00 AM)
 sudo ./autoclean.sh --schedule monthly
 
-# Ver estado del timer programado
+# View scheduled timer status
 sudo ./autoclean.sh --schedule-status
 
-# Eliminar timer programado
+# Remove scheduled timer
 sudo ./autoclean.sh --unschedule
 ```
 
 ---
 
-## Variables de Configuracion
+## Configuration Variables
 
 ```bash
-# Archivos y directorios
+# Files and directories
 BACKUP_DIR="/var/backups/debian-maintenance"
 LOG_DIR="/var/log/debian-maintenance"
 
-# Parametros de sistema
-DIAS_LOGS=7                    # Dias de logs a conservar
-KERNELS_TO_KEEP=3              # Numero de kernels a mantener
-MIN_FREE_SPACE_GB=5            # Espacio minimo requerido en /
-MIN_FREE_SPACE_BOOT_MB=200     # Espacio minimo requerido en /boot
-APT_CLEAN_MODE="autoclean"     # Modo de limpieza APT (autoclean/clean)
+# System parameters
+DIAS_LOGS=7                    # Days of logs to keep
+KERNELS_TO_KEEP=3              # Number of kernels to maintain
+MIN_FREE_SPACE_GB=5            # Minimum required space in /
+MIN_FREE_SPACE_BOOT_MB=200     # Minimum required space in /boot
+APT_CLEAN_MODE="autoclean"     # APT cleanup mode (autoclean/clean)
 
-# Seguridad paranoica
-MAX_REMOVALS_ALLOWED=0         # Maximo de paquetes a eliminar sin confirmacion
-ASK_TIMESHIFT_RUN=true         # Preguntar antes de crear snapshot
+# Paranoid security
+MAX_REMOVALS_ALLOWED=0         # Maximum packages to remove without confirmation
+ASK_TIMESHIFT_RUN=true         # Ask before creating snapshot
 ```
 
 ---
 
-## Solucion de Problemas
+## Troubleshooting
 
-### El script se detiene con error de lock
+### The script stops with lock error
 
-**Solucion:**
+**Solution:**
 ```bash
 sudo rm /var/run/debian-maintenance.lock
 ```
 
-### APT esta ocupado
+### APT is busy
 
-**Causa:** Otro gestor de paquetes esta en ejecucion (Synaptic, Discover, Software Center)
-**Solucion:** Cierra todos los gestores de paquetes y vuelve a intentar
+**Cause:** Another package manager is running (Synaptic, Discover, Software Center)
+**Solution:** Close all package managers and try again
 
-### Timeshift no esta configurado
+### Timeshift is not configured
 
-El script detecta automaticamente si Timeshift esta instalado pero no configurado y muestra:
+The script automatically detects if Timeshift is installed but not configured and shows:
 
 ```
 ╔═══════════════════════════════════════════════════════════════╗
-║  ⚠️  TIMESHIFT NO ESTÁ CONFIGURADO                            ║
+║  ⚠️  TIMESHIFT IS NOT CONFIGURED                               ║
 ╚═══════════════════════════════════════════════════════════════╝
 
-  Para configurarlo, ejecuta:
-    sudo timeshift-gtk  (interfaz gráfica)
+  To configure it, run:
+    sudo timeshift-gtk  (graphical interface)
     sudo timeshift --wizard  (terminal)
 ```
 
-**Solucion:** Configura Timeshift antes de ejecutar el script:
+**Solution:** Configure Timeshift before running the script:
 ```bash
-# Interfaz grafica (recomendado)
+# Graphical interface (recommended)
 sudo timeshift-gtk
 
-# O por terminal
+# Or via terminal
 sudo timeshift --wizard
 ```
 
-El script continuara sin snapshot si presionas cualquier tecla.
+The script will continue without snapshot if you press any key.
 
-### Error al crear snapshot de Timeshift
+### Error creating Timeshift snapshot
 
-Si Timeshift esta configurado pero falla al crear el snapshot:
+If Timeshift is configured but fails to create snapshot:
 
-- **Modo interactivo**: El script pregunta si deseas continuar sin snapshot (debes escribir "SI")
-- **Modo desatendido (-y)**: El script aborta por seguridad
+- **Interactive mode**: The script asks if you want to continue without snapshot (you must type "YES")
+- **Unattended mode (-y)**: The script aborts for safety
 
-**Solucion alternativa:** Omite el paso de Timeshift:
+**Alternative solution:** Skip the Timeshift step:
 ```bash
-# Editar autoclean.sh
+# Edit autoclean.sh
 STEP_SNAPSHOT_TIMESHIFT=0
 ```
 
-### Espacio insuficiente en disco
+### Insufficient disk space
 
-**Solucion:** Libera espacio manualmente:
+**Solution:** Free space manually:
 ```bash
-# Limpiar paquetes descargados
+# Clean downloaded packages
 sudo apt clean
 
-# Limpiar logs antiguos
+# Clean old logs
 sudo journalctl --vacuum-time=3d
 
-# Eliminar kernels antiguos manualmente
+# Remove old kernels manually
 sudo apt autoremove --purge
 ```
 
-### No se detecta necesidad de reinicio correctamente
+### Reboot necessity not detected correctly
 
-**Solucion:** Instala needrestart:
+**Solution:** Install needrestart:
 ```bash
 sudo apt install needrestart
 ```
 
-### Revisar logs de una ejecucion
+### Review execution logs
 
 ```bash
-# Ver ultimo log
+# View last log
 ls -lt /var/log/debian-maintenance/ | head -2
 
-# Leer log
+# Read log
 less /var/log/debian-maintenance/sys-update-YYYYMMDD_HHMMSS.log
 ```
 
-### Restaurar sistema desde snapshot
+### Restore system from snapshot
 
-Si algo salio mal despues de ejecutar el script:
+If something went wrong after running the script:
 ```bash
-# Listar snapshots disponibles
+# List available snapshots
 sudo timeshift --list
 
-# Restaurar snapshot especifico
+# Restore specific snapshot
 sudo timeshift --restore --snapshot 'YYYY-MM-DD_HH-MM-SS'
 ```
 
 ---
 
-## Contribuir
+## Contributing
 
-Las contribuciones son bienvenidas. Por favor:
+Contributions are welcome. Please:
 
-1. Fork el repositorio
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
----
-
-## Notas Importantes
-
-**ADVERTENCIAS PARA TESTING/UNSTABLE:**
-
-- Testing/Unstable pueden tener cambios disruptivos: **SIEMPRE revisa los logs**
-- El snapshot de Timeshift es tu seguro de vida: **no lo omitas**
-- `MAX_REMOVALS_ALLOWED=0` evita eliminaciones automaticas masivas
-- En modo desatendido (`-y`), el script **ABORTA** si detecta riesgo
-- Los kernels se mantienen segun `KERNELS_TO_KEEP` (default: 3)
-- Los logs se conservan segun `DIAS_LOGS` (default: 7 dias)
+1. Fork the repository
+2. Create a branch for your feature (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ---
 
-## Enlaces Utiles
+## Important Notes
+
+**WARNINGS FOR TESTING/UNSTABLE:**
+
+- Testing/Unstable may have disruptive changes: **ALWAYS review the logs**
+- The Timeshift snapshot is your safety net: **don't skip it**
+- `MAX_REMOVALS_ALLOWED=0` prevents automatic mass deletions
+- In unattended mode (`-y`), the script **ABORTS** if it detects risk
+- Kernels are maintained according to `KERNELS_TO_KEEP` (default: 3)
+- Logs are kept according to `DIAS_LOGS` (default: 7 days)
+
+---
+
+## Useful Links
 
 - [Debian Testing FAQ](https://wiki.debian.org/DebianTesting)
 - [Ubuntu Documentation](https://help.ubuntu.com/)
@@ -697,103 +697,103 @@ Las contribuciones son bienvenidas. Por favor:
 
 ---
 
-## Licencia
+## License
 
-Este proyecto esta bajo licencia libre. Sientete libre de usar, modificar y distribuir segun tus necesidades.
+This project is under free license. Feel free to use, modify, and distribute according to your needs.
 
 ---
 
-## Autor
+## Author
 
 **Homero Thompson del Lago del Terror**
 
 ---
 
-## Estadisticas del Proyecto
+## Project Statistics
 
-- **Scripts totales:** 1
-- **Script principal:** autoclean.sh
-- **Version actual:** 2025.12
-- **Lineas de codigo:** ~4600+
-- **Pasos modulares:** 23
-- **Idiomas soportados:** 6 (en, es, pt, fr, de, it) - deteccion dinamica
-- **Temas de colores:** 9 (Default, Norton, Turbo, Green, Amber, Dracula, Matrix, Synthwave, Monokai) - deteccion dinamica
-- **Notificadores:** 5 (Desktop, Telegram, ntfy.sh, Webhook, Email) - arquitectura de plugins extensible
-- **Distribuciones soportadas:** 7+ (auto-deteccion)
-- **Compatible con:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali y derivadas
-- **Interfaz:** Enterprise UI con grid 4x6, navegacion bidimensional, selector de idioma, temas y notificaciones
+- **Total scripts:** 1
+- **Main script:** autoclean.sh
+- **Current version:** 2025.12
+- **Lines of code:** ~4600+
+- **Modular steps:** 23
+- **Languages supported:** 6 (en, es, pt, fr, de, it) - dynamic detection
+- **Color themes:** 9 (Default, Norton, Turbo, Green, Amber, Dracula, Matrix, Synthwave, Monokai) - dynamic detection
+- **Notifiers:** 5 (Desktop, Telegram, ntfy.sh, Webhook, Email) - extensible plugin architecture
+- **Supported distributions:** 7+ (auto-detection)
+- **Compatible with:** Debian, Ubuntu, Mint, Pop!_OS, Elementary, Zorin, Kali and derivatives
+- **Interface:** Enterprise UI with 4x6 grid, bidirectional navigation, language, theme, and notification selectors
 
 ---
 
 ## Changelog v2025.12
 
-### Nuevas Funcionalidades (Diciembre 2025 - Update)
-- **8 nuevos pasos de seguridad y mantenimiento** - Expansion de 15 a 23 pasos modulares
-- **Verificacion de repositorios APT** (`STEP_CHECK_REPOS`) - Analiza sources.list para detectar repos problematicos
-- **Verificacion de integridad debsums** (`STEP_CHECK_DEBSUMS`) - Verifica integridad de paquetes instalados
-- **Auditoria de seguridad** (`STEP_CHECK_SECURITY`) - Verifica UFW, SSH, unattended-upgrades, fail2ban
-- **Auditoria de permisos** (`STEP_CHECK_PERMISSIONS`) - Verifica permisos de archivos criticos y SUID/SGID
-- **Auditoria de servicios** (`STEP_AUDIT_SERVICES`) - Analiza servicios activos y detecta failed units
-- **Limpieza de sesiones** (`STEP_CLEANUP_SESSIONS`) - Limpia sesiones expiradas y archivos temporales
-- **Verificacion logrotate** (`STEP_CHECK_LOGROTATE`) - Valida configuracion de rotacion de logs
-- **Verificacion de inodos** (`STEP_CHECK_INODES`) - Monitorea uso de inodos para prevenir agotamiento
-- **Menu expandido a grid 4x6** - Interfaz actualizada para mostrar los 23 pasos
+### New Features (December 2025 - Update)
+- **8 new security and maintenance steps** - Expansion from 15 to 23 modular steps
+- **APT repository verification** (`STEP_CHECK_REPOS`) - Analyzes sources.list to detect problematic repos
+- **Debsums integrity verification** (`STEP_CHECK_DEBSUMS`) - Verifies integrity of installed packages
+- **Security audit** (`STEP_CHECK_SECURITY`) - Checks UFW, SSH, unattended-upgrades, fail2ban
+- **Permissions audit** (`STEP_CHECK_PERMISSIONS`) - Verifies critical file permissions and SUID/SGID
+- **Services audit** (`STEP_AUDIT_SERVICES`) - Analyzes active services and detects failed units
+- **Session cleanup** (`STEP_CLEANUP_SESSIONS`) - Cleans expired sessions and temporary files
+- **Logrotate verification** (`STEP_CHECK_LOGROTATE`) - Validates log rotation configuration
+- **Inode verification** (`STEP_CHECK_INODES`) - Monitors inode usage to prevent exhaustion
+- **Menu expanded to 4x6 grid** - Updated interface to show all 23 steps
 
-### Nuevas Funcionalidades (Anteriores)
-- **Sistema de Notificaciones Multi-canal** - Arquitectura de plugins para notificaciones con menu dedicado `[O]`
-- **Notificador Desktop** - Notificaciones de escritorio via notify-send (funciona con sudo)
-- **Notificador Telegram** - Notificaciones via Telegram Bot API con configuracion guiada
-- **Notificador ntfy.sh** - Push notifications via ntfy.sh con soporte para servidores self-hosted
-- **Notificador Webhook** - HTTP webhooks con presets para Slack, Discord, Microsoft Teams y APIs custom
-- **Notificador Email** - Email via SMTP con curl (Gmail, Outlook, Yahoo, custom) sin dependencias extra
-- **Tutorial de notificadores** - Documentacion en `plugins/notifiers/TUTORIAL.md` para crear notificadores custom
-- **Perfiles Predefinidos** - Nuevo argumento `--profile` con 5 perfiles: server, desktop, developer, minimal, **custom**
-- **Perfil Custom** - Nuevo perfil que lee toda la configuracion desde `autoclean.conf` (idioma, tema y pasos)
-- **Auto-generacion de configuracion** - Si `autoclean.conf` no existe, se genera automaticamente con valores por defecto
-- **Deteccion automatica del idioma** - El archivo de configuracion se genera con el idioma del sistema
-- **Limpieza Docker/Podman** - Nuevo paso para limpiar imagenes, contenedores y volumenes sin usar
-- **Verificacion SMART** - Diagnostico de salud de discos duros antes de realizar cambios
-- **Programacion Systemd Timer** - Opciones `--schedule`, `--unschedule`, `--schedule-status` para automatizar ejecucion
-- **Deteccion dinamica de idiomas** - Los idiomas se detectan automaticamente desde `plugins/lang/`, selector en grid 4 columnas
-- **Tutorial de idiomas** - Documentacion en `plugins/lang/TUTORIAL.md` para crear idiomas personalizados
-- **Deteccion dinamica de temas** - Los temas se detectan automaticamente desde `plugins/themes/`
-- **4 nuevos temas** - Dracula, Matrix (fondo negro), Synthwave (fondo purpura), Monokai
-- **Tutorial de temas** - Documentacion en `plugins/themes/TUTORIAL.md` para crear temas personalizados
-- **Estructura simplificada** - Carpetas lang/ y themes/ movidas dentro de plugins/ para centralizar recursos
+### New Features (Previous)
+- **Multi-channel Notification System** - Plugin architecture for notifications with dedicated menu `[O]`
+- **Desktop Notifier** - Desktop notifications via notify-send (works with sudo)
+- **Telegram Notifier** - Notifications via Telegram Bot API with guided configuration
+- **ntfy.sh Notifier** - Push notifications via ntfy.sh with self-hosted server support
+- **Webhook Notifier** - HTTP webhooks with presets for Slack, Discord, Microsoft Teams, and custom APIs
+- **Email Notifier** - Email via SMTP with curl (Gmail, Outlook, Yahoo, custom) no extra dependencies
+- **Notifier tutorial** - Documentation in `plugins/notifiers/TUTORIAL.md` for creating custom notifiers
+- **Predefined Profiles** - New `--profile` argument with 5 profiles: server, desktop, developer, minimal, **custom**
+- **Custom Profile** - New profile that reads all configuration from `autoclean.conf` (language, theme, and steps)
+- **Auto-generation of configuration** - If `autoclean.conf` doesn't exist, it's automatically generated with default values
+- **Automatic language detection** - Configuration file is generated with system language
+- **Docker/Podman cleanup** - New step to clean unused images, containers, and volumes
+- **SMART verification** - Hard drive health diagnostics before making changes
+- **Systemd Timer scheduling** - Options `--schedule`, `--unschedule`, `--schedule-status` for automated execution
+- **Dynamic language detection** - Languages are automatically detected from `plugins/lang/`, 4-column grid selector
+- **Language tutorial** - Documentation in `plugins/lang/TUTORIAL.md` for creating custom languages
+- **Dynamic theme detection** - Themes are automatically detected from `plugins/themes/`
+- **4 new themes** - Dracula, Matrix (black background), Synthwave (purple background), Monokai
+- **Theme tutorial** - Documentation in `plugins/themes/TUTORIAL.md` for creating custom themes
+- **Simplified structure** - lang/ and themes/ folders moved inside plugins/ to centralize resources
 
-### Mejoras
-- **UI de configuracion de notificadores** - Interfaz clara con campos numerados, indicadores de estado y guardado directo
-- **Descripciones de notificadores traducidas** - Las descripciones se adaptan al idioma seleccionado
-- **Archivo de configuracion mejorado** - Ahora incluye SAVED_PROFILE, idioma, tema, notificadores y todos los pasos
-- **Comentarios de configuracion en ingles** - El archivo autoclean.conf se genera con comentarios en ingles
-- **Orden logico de pasos** - Reorganizado en 5 fases: Verificaciones, Backups, Actualizaciones, Limpieza, Final
-- **SMART en posicion temprana** - Verifica salud de discos ANTES de hacer cambios al sistema
-- **Instalacion interactiva de herramientas** - Ofrece instalar smartmontools si no esta disponible
-- **EXECUTION SUMMARY completo** - Ahora muestra los 15 pasos correctamente
-- **Selectores en grid 4 columnas** - Tanto idiomas como temas usan navegacion con flechas
-- **Validacion de archivos de configuracion** - Los archivos `.conf`, `.lang` y `.theme` se validan antes de cargar
-- **Regionalizacion completa** - Todos los mensajes del script usan variables MSG_* para soportar multiples idiomas
+### Improvements
+- **Notifier configuration UI** - Clear interface with numbered fields, status indicators, and direct save
+- **Translated notifier descriptions** - Descriptions adapt to selected language
+- **Improved configuration file** - Now includes SAVED_PROFILE, language, theme, notifiers, and all steps
+- **English configuration comments** - autoclean.conf file is generated with English comments
+- **Logical step order** - Reorganized in 5 phases: Checks, Backups, Updates, Cleanup, Final
+- **SMART in early position** - Checks disk health BEFORE making system changes
+- **Interactive tool installation** - Offers to install smartmontools if not available
+- **Complete EXECUTION SUMMARY** - Now correctly shows all 15 steps
+- **4-column grid selectors** - Both languages and themes use arrow key navigation
+- **Configuration file validation** - `.conf`, `.lang`, and `.theme` files are validated before loading
+- **Complete regionalization** - All script messages use MSG_* variables to support multiple languages
 
-### Seguridad
-- **Funcion validate_source_file()** - Valida archivos antes de `source` para prevenir inyeccion de codigo
-- **Funcion validate_notifier_file()** - Validacion especifica para plugins que permite comandos pero bloquea patrones peligrosos
-- **Variables seguras con declare -n** - Usa nameref en lugar de eval para manipulacion de variables en el menu
-- **Limpieza segura con find** - Usa find con delimitadores seguros en lugar de ls | xargs rm
-- **Reemplazo de eval por bash -c** - safe_run() ahora usa bash -c en lugar de eval para evitar command injection
-- **Validacion de /etc/os-release** - Se valida el archivo antes de hacer source para prevenir code execution
-- **Proteccion anti-symlink** - validate_source_file() y validate_notifier_file() verifican que los archivos no sean symlinks maliciosos
-- **Flock atomico** - check_lock() usa flock para evitar race conditions TOCTOU
-- **Validacion de webhook** - El notificador webhook valida formato de URL, metodo HTTP y headers de autenticacion
-- **Umask seguro** - Los archivos de configuracion se crean con umask 077 para evitar exposicion temporal de credenciales
-- **Regex de validacion mejorado** - Permite codigos ANSI en temas pero bloquea ejecucion de comandos
+### Security
+- **validate_source_file() function** - Validates files before `source` to prevent code injection
+- **validate_notifier_file() function** - Specific validation for plugins that allows commands but blocks dangerous patterns
+- **Safe variables with declare -n** - Uses nameref instead of eval for variable manipulation in the menu
+- **Safe cleanup with find** - Uses find with safe delimiters instead of ls | xargs rm
+- **Replacement of eval with bash -c** - safe_run() now uses bash -c instead of eval to avoid command injection
+- **/etc/os-release validation** - File is validated before sourcing to prevent code execution
+- **Anti-symlink protection** - validate_source_file() and validate_notifier_file() verify files are not malicious symlinks
+- **Atomic flock** - check_lock() uses flock to avoid TOCTOU race conditions
+- **Webhook validation** - Webhook notifier validates URL format, HTTP method, and authentication headers
+- **Safe umask** - Configuration files are created with umask 077 to avoid temporary credential exposure
+- **Improved validation regex** - Allows ANSI codes in themes but blocks command execution
 
-### Correcciones
-- **Fix Norton Commander theme** - Corregido overflow de fondo azul fuera de los margenes
-- **Fix resumen de ejecucion** - Arreglado para mostrar 15/15 pasos en lugar de 13/13
-- **Fix validacion de temas** - Regex corregido para permitir codigos ANSI como `\033[0;31m`
-- **Fix log() sin init** - La funcion log() ya no falla si se llama antes de init_log()
-- **Fix cleanup() innecesario** - Ya no muestra "Lock file removed" cuando no hay lock
+### Fixes
+- **Fix Norton Commander theme** - Fixed blue background overflow outside margins
+- **Fix execution summary** - Fixed to show 15/15 steps instead of 13/13
+- **Fix theme validation** - Regex fixed to allow ANSI codes like `\033[0;31m`
+- **Fix log() without init** - log() function no longer fails if called before init_log()
+- **Fix unnecessary cleanup()** - No longer shows "Lock file removed" when there's no lock
 
 ---
 
-**Ultima actualizacion del README:** Diciembre 2025
+**Last README update:** December 2025
