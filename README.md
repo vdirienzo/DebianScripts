@@ -730,7 +730,19 @@ Contributions are welcome. Please:
 
 ## License
 
-This project is under free license. Feel free to use, modify, and distribute according to your needs.
+This project is licensed under the **GNU General Public License v3.0 (GPL-3.0)**.
+
+You are free to:
+- Use, copy, and distribute the software
+- Modify the source code
+- Distribute modified versions
+
+Under the following conditions:
+- Source code must remain open
+- Modifications must be licensed under GPL-3.0
+- Include copyright notice and license
+
+See the [LICENSE](LICENSE) file or visit [GNU GPL v3](https://www.gnu.org/licenses/gpl-3.0.html) for details.
 
 ---
 
