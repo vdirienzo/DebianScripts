@@ -110,6 +110,14 @@ MENU_CTRL_HELP="Ayuda"
 MENU_CTRL_ALL="Todo/Nada"
 MENU_CTRL_SELECT="Sel/Desel"
 
+# === LEYENDA DE PASOS ===
+MENU_LEGEND_ON="Activo"
+MENU_LEGEND_OFF="Inactivo"
+MENU_LEGEND_LOCKED="Bloqueado"
+
+# === BLOQUEO DE PASOS ===
+MSG_STEP_LOCKED="Paso bloqueado - edita autoclean.conf para cambiar"
+
 # === SISTEMA DE AYUDA ===
 MENU_HELP_TITLE="AYUDA"
 MENU_HELP_SCROLL_HINT="Usa ↑↓ para scroll"

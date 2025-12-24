@@ -111,6 +111,14 @@ MENU_CTRL_HELP="Help"
 MENU_CTRL_ALL="All/None"
 MENU_CTRL_SELECT="Sel/Desel"
 
+# === STEP LEGEND ===
+MENU_LEGEND_ON="On"
+MENU_LEGEND_OFF="Off"
+MENU_LEGEND_LOCKED="Locked"
+
+# === STEP LOCKING ===
+MSG_STEP_LOCKED="Step locked - edit autoclean.conf to change"
+
 # === HELP SYSTEM ===
 MENU_HELP_TITLE="HELP"
 MENU_HELP_SCROLL_HINT="Use ↑↓ to scroll"

@@ -81,6 +81,14 @@ MENU_CTRL_HELP="Hilfe"
 MENU_CTRL_ALL="Alle/Keine"
 MENU_CTRL_SELECT="Sel/Desel"
 
+# === SCHRITTLEGENDE ===
+MENU_LEGEND_ON="Aktiv"
+MENU_LEGEND_OFF="Inaktiv"
+MENU_LEGEND_LOCKED="Gesperrt"
+
+# === SCHRITTSPERRE ===
+MSG_STEP_LOCKED="Schritt gesperrt - autoclean.conf bearbeiten zum Aendern"
+
 # === HILFESYSTEM ===
 MENU_HELP_TITLE="HILFE"
 MENU_HELP_SCROLL_HINT="Verwenden Sie ↑↓ zum Scrollen"

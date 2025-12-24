@@ -212,6 +212,38 @@ STEP_CLEANUP_SESSIONS=0      # Clean abandoned sessions
 STEP_CHECK_LOGROTATE=0       # Verify/configure logrotate
 STEP_CHECK_INODES=0          # Check inode space
 
+# ============================================================================
+# STEP LOCKS - Prevent steps from being changed via menu
+# ============================================================================
+# Set to 1 in autoclean.conf to lock a step (cannot be toggled in menu)
+# When locked, the step keeps the state defined in STEPS CONFIGURATION above
+# Example: STEP_CLEANUP_DOCKER=0 + LOCK_STEP_CLEANUP_DOCKER=1 = Docker cleanup
+#          is OFF and cannot be enabled from the menu
+# Useful for production servers or shared systems to prevent accidents
+LOCK_STEP_CHECK_CONNECTIVITY=0
+LOCK_STEP_CHECK_DEPENDENCIES=0
+LOCK_STEP_CHECK_REPOS=0
+LOCK_STEP_CHECK_SMART=0
+LOCK_STEP_CHECK_DEBSUMS=0
+LOCK_STEP_CHECK_SECURITY=0
+LOCK_STEP_CHECK_PERMISSIONS=0
+LOCK_STEP_AUDIT_SERVICES=0
+LOCK_STEP_BACKUP_TAR=0
+LOCK_STEP_SNAPSHOT_TIMESHIFT=0
+LOCK_STEP_UPDATE_REPOS=0
+LOCK_STEP_UPGRADE_SYSTEM=0
+LOCK_STEP_UPDATE_FLATPAK=0
+LOCK_STEP_UPDATE_SNAP=0
+LOCK_STEP_CHECK_FIRMWARE=0
+LOCK_STEP_CLEANUP_APT=0
+LOCK_STEP_CLEANUP_KERNELS=0
+LOCK_STEP_CLEANUP_DISK=0
+LOCK_STEP_CLEANUP_DOCKER=0
+LOCK_STEP_CLEANUP_SESSIONS=0
+LOCK_STEP_CHECK_LOGROTATE=0
+LOCK_STEP_CHECK_INODES=0
+LOCK_STEP_CHECK_REBOOT=0
+
 # Systemd Timer scheduling variables
 SCHEDULE_MODE=""             # Mode: daily, weekly, monthly
 UNSCHEDULE=false             # Flag to remove timer
@@ -413,6 +445,15 @@ update_language_arrays() {
 # PERSISTENT CONFIGURATION FUNCTIONS
 # ============================================================================
 
+# Check if a step is locked in configuration
+# Usage: is_step_locked "STEP_CHECK_DOCKER"
+# Returns: 0 if locked, 1 if not locked
+is_step_locked() {
+    local step_var="$1"
+    local lock_var="LOCK_${step_var}"
+    [ "${!lock_var}" = "1" ]
+}
+
 save_config() {
     # Save current step states and preferences to configuration file
     # SECURITY: Create file with restrictive permissions from the start (avoid race condition)
@@ -444,6 +485,12 @@ SAVED_THEME=$CURRENT_THEME
 # (Only applies when SAVED_PROFILE=custom)
 STEP_CHECK_CONNECTIVITY=$STEP_CHECK_CONNECTIVITY
 STEP_CHECK_DEPENDENCIES=$STEP_CHECK_DEPENDENCIES
+STEP_CHECK_REPOS=$STEP_CHECK_REPOS
+STEP_CHECK_SMART=$STEP_CHECK_SMART
+STEP_CHECK_DEBSUMS=$STEP_CHECK_DEBSUMS
+STEP_CHECK_SECURITY=$STEP_CHECK_SECURITY
+STEP_CHECK_PERMISSIONS=$STEP_CHECK_PERMISSIONS
+STEP_AUDIT_SERVICES=$STEP_AUDIT_SERVICES
 STEP_BACKUP_TAR=$STEP_BACKUP_TAR
 STEP_SNAPSHOT_TIMESHIFT=$STEP_SNAPSHOT_TIMESHIFT
 STEP_UPDATE_REPOS=$STEP_UPDATE_REPOS
@@ -455,8 +502,42 @@ STEP_CLEANUP_APT=$STEP_CLEANUP_APT
 STEP_CLEANUP_KERNELS=$STEP_CLEANUP_KERNELS
 STEP_CLEANUP_DISK=$STEP_CLEANUP_DISK
 STEP_CLEANUP_DOCKER=$STEP_CLEANUP_DOCKER
-STEP_CHECK_SMART=$STEP_CHECK_SMART
+STEP_CLEANUP_SESSIONS=$STEP_CLEANUP_SESSIONS
+STEP_CHECK_LOGROTATE=$STEP_CHECK_LOGROTATE
+STEP_CHECK_INODES=$STEP_CHECK_INODES
 STEP_CHECK_REBOOT=$STEP_CHECK_REBOOT
+
+# ============================================================================
+# STEP LOCKS
+# ============================================================================
+# Set to 1 to LOCK a step (cannot be toggled in menu)
+# When locked, the step keeps the state defined in STEPS CONFIGURATION above
+# Example: STEP_CLEANUP_DOCKER=0 + LOCK_STEP_CLEANUP_DOCKER=1 = Docker cleanup
+#          is permanently OFF and cannot be enabled from the menu
+# Useful for production servers or shared systems to prevent accidents
+LOCK_STEP_CHECK_CONNECTIVITY=$LOCK_STEP_CHECK_CONNECTIVITY
+LOCK_STEP_CHECK_DEPENDENCIES=$LOCK_STEP_CHECK_DEPENDENCIES
+LOCK_STEP_CHECK_REPOS=$LOCK_STEP_CHECK_REPOS
+LOCK_STEP_CHECK_SMART=$LOCK_STEP_CHECK_SMART
+LOCK_STEP_CHECK_DEBSUMS=$LOCK_STEP_CHECK_DEBSUMS
+LOCK_STEP_CHECK_SECURITY=$LOCK_STEP_CHECK_SECURITY
+LOCK_STEP_CHECK_PERMISSIONS=$LOCK_STEP_CHECK_PERMISSIONS
+LOCK_STEP_AUDIT_SERVICES=$LOCK_STEP_AUDIT_SERVICES
+LOCK_STEP_BACKUP_TAR=$LOCK_STEP_BACKUP_TAR
+LOCK_STEP_SNAPSHOT_TIMESHIFT=$LOCK_STEP_SNAPSHOT_TIMESHIFT
+LOCK_STEP_UPDATE_REPOS=$LOCK_STEP_UPDATE_REPOS
+LOCK_STEP_UPGRADE_SYSTEM=$LOCK_STEP_UPGRADE_SYSTEM
+LOCK_STEP_UPDATE_FLATPAK=$LOCK_STEP_UPDATE_FLATPAK
+LOCK_STEP_UPDATE_SNAP=$LOCK_STEP_UPDATE_SNAP
+LOCK_STEP_CHECK_FIRMWARE=$LOCK_STEP_CHECK_FIRMWARE
+LOCK_STEP_CLEANUP_APT=$LOCK_STEP_CLEANUP_APT
+LOCK_STEP_CLEANUP_KERNELS=$LOCK_STEP_CLEANUP_KERNELS
+LOCK_STEP_CLEANUP_DISK=$LOCK_STEP_CLEANUP_DISK
+LOCK_STEP_CLEANUP_DOCKER=$LOCK_STEP_CLEANUP_DOCKER
+LOCK_STEP_CLEANUP_SESSIONS=$LOCK_STEP_CLEANUP_SESSIONS
+LOCK_STEP_CHECK_LOGROTATE=$LOCK_STEP_CHECK_LOGROTATE
+LOCK_STEP_CHECK_INODES=$LOCK_STEP_CHECK_INODES
+LOCK_STEP_CHECK_REBOOT=$LOCK_STEP_CHECK_REBOOT
 EOF
 
     # Add notifiers section
@@ -710,6 +791,39 @@ STEP_CHECK_INODES=0
 
 # Final
 STEP_CHECK_REBOOT=1
+
+# ============================================================================
+# STEP LOCKS
+# ============================================================================
+# Set to 1 to LOCK a step (cannot be toggled in menu)
+# When locked, the step keeps the state defined in STEPS CONFIGURATION above
+# Example: STEP_CLEANUP_DOCKER=0 + LOCK_STEP_CLEANUP_DOCKER=1 = Docker cleanup
+#          is permanently OFF and cannot be enabled from the menu
+# Locked steps appear as [#] in the menu
+# Useful for production servers or shared systems to prevent accidents
+LOCK_STEP_CHECK_CONNECTIVITY=0
+LOCK_STEP_CHECK_DEPENDENCIES=0
+LOCK_STEP_CHECK_REPOS=0
+LOCK_STEP_CHECK_SMART=0
+LOCK_STEP_CHECK_DEBSUMS=0
+LOCK_STEP_CHECK_SECURITY=0
+LOCK_STEP_CHECK_PERMISSIONS=0
+LOCK_STEP_AUDIT_SERVICES=0
+LOCK_STEP_BACKUP_TAR=0
+LOCK_STEP_SNAPSHOT_TIMESHIFT=0
+LOCK_STEP_UPDATE_REPOS=0
+LOCK_STEP_UPGRADE_SYSTEM=0
+LOCK_STEP_UPDATE_FLATPAK=0
+LOCK_STEP_UPDATE_SNAP=0
+LOCK_STEP_CHECK_FIRMWARE=0
+LOCK_STEP_CLEANUP_APT=0
+LOCK_STEP_CLEANUP_KERNELS=0
+LOCK_STEP_CLEANUP_DISK=0
+LOCK_STEP_CLEANUP_DOCKER=0
+LOCK_STEP_CLEANUP_SESSIONS=0
+LOCK_STEP_CHECK_LOGROTATE=0
+LOCK_STEP_CHECK_INODES=0
+LOCK_STEP_CHECK_REBOOT=0
 EOF
 
     local result=$?
@@ -2723,11 +2837,20 @@ show_interactive_menu() {
                     # Determine prefix and state
                     local prefix=" "
                     local check=" "
+                    local is_locked=0
                     [ "$var_value" = "1" ] && check="x"
                     [ $idx -eq $current_index ] && prefix=">"
+                    is_step_locked "$var_name" && is_locked=1
 
                     # Build cell with CONSISTENT format (18 fixed chars)
-                    if [ $idx -eq $current_index ]; then
+                    if [ $is_locked -eq 1 ]; then
+                        # LOCKED: [#] in red, name dimmed
+                        if [ $idx -eq $current_index ]; then
+                            line+="${RED}${prefix}[#]${BOX_NC} ${DIM}${name}${BOX_NC}"
+                        else
+                            line+=" ${RED}[#]${BOX_NC} ${DIM}${name}${BOX_NC}"
+                        fi
+                    elif [ $idx -eq $current_index ]; then
                         # Selected: all in bright cyan
                         line+="${BRIGHT_CYAN}${prefix}[${check}]${BOX_NC} ${BRIGHT_CYAN}${name}${BOX_NC}"
                     elif [ "$var_value" = "1" ]; then
@@ -2749,6 +2872,8 @@ show_interactive_menu() {
         print_box_line "${CYAN}>${BOX_NC} ${MENU_STEP_DESCRIPTIONS[$current_index]:0:68}"
         print_box_sep
         print_box_line "${MENU_SELECTED}: ${GREEN}${active_count}${BOX_NC}/${total_items}    ${MENU_PROFILE}: $(config_exists && echo "${GREEN}${MENU_PROFILE_SAVED}${BOX_NC}" || echo "${DIM}${MENU_PROFILE_UNSAVED}${BOX_NC}")"
+        print_box_sep
+        print_box_center "${GREEN}[x]${BOX_NC}=${MENU_LEGEND_ON:-On} ${DIM}[ ]${BOX_NC}=${MENU_LEGEND_OFF:-Off} ${RED}[#]${BOX_NC}=${MENU_LEGEND_LOCKED:-Locked}"
         print_box_sep
         print_box_center "${CYAN}[ENTER]${BOX_NC} ${MENU_CTRL_ENTER} ${CYAN}[H]${BOX_NC} ${MENU_CTRL_HELP:-Help} ${CYAN}[G]${BOX_NC} ${MENU_CTRL_SAVE} ${CYAN}[Q]${BOX_NC} ${MENU_CTRL_QUIT}"
         print_box_center "${CYAN}[S]${BOX_NC} ${MENU_CTRL_SELECT:-Sel/Desel} ${CYAN}[L]${BOX_NC} ${MENU_CTRL_LANG} ${CYAN}[T]${BOX_NC} ${MENU_CTRL_THEME:-Theme} ${CYAN}[O]${BOX_NC} ${MENU_CTRL_NOTIF:-Notif}"
@@ -2803,23 +2928,37 @@ show_interactive_menu() {
             esac
         elif [[ "$key" == " " ]]; then
             local var_name="${MENU_STEP_VARS[$current_index]}"
-            declare -n ref="$var_name"
-            [ "$ref" = "1" ] && ref=0 || ref=1
+            if is_step_locked "$var_name"; then
+                # Show locked message with hint
+                tput cup $(($(tput lines) - 2)) 0 2>/dev/null
+                printf "${RED}${MSG_STEP_LOCKED:-Step locked - edit autoclean.conf to change}${NC}"
+                sleep 1.5
+            else
+                declare -n ref="$var_name"
+                [ "$ref" = "1" ] && ref=0 || ref=1
+            fi
         elif [[ "$key" == "" ]]; then
             menu_running=false
         else
             case "$key" in
                 's'|'S')
-                    # Toggle: if any is deactivated, activate all; if all active, deactivate all
+                    # Toggle: if any unlocked is deactivated, activate all unlocked; if all unlocked active, deactivate all unlocked
                     local all_active=1
                     for var_name in "${MENU_STEP_VARS[@]}"; do
+                        is_step_locked "$var_name" && continue  # Skip locked steps
                         declare -n ref="$var_name"
                         [ "$ref" != "1" ] && all_active=0 && break
                     done
                     if [ "$all_active" = "1" ]; then
-                        for var_name in "${MENU_STEP_VARS[@]}"; do declare -n ref="$var_name"; ref=0; done
+                        for var_name in "${MENU_STEP_VARS[@]}"; do
+                            is_step_locked "$var_name" && continue
+                            declare -n ref="$var_name"; ref=0
+                        done
                     else
-                        for var_name in "${MENU_STEP_VARS[@]}"; do declare -n ref="$var_name"; ref=1; done
+                        for var_name in "${MENU_STEP_VARS[@]}"; do
+                            is_step_locked "$var_name" && continue
+                            declare -n ref="$var_name"; ref=1
+                        done
                     fi
                     ;;
                 'g'|'G') save_config ;;

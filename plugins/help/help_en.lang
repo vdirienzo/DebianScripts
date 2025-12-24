@@ -332,3 +332,33 @@ WHY IT MATTERS:
 Some updates require reboot to take full effect.
 
 RECOMMENDED: Always enable to stay informed."
+
+# ============================================================================
+# STEP LOCKING HELP
+# ============================================================================
+
+HELP_LOCKED_STEPS="LOCKED STEPS
+
+WHAT IT IS:
+Steps can be locked in the configuration file to prevent accidental activation.
+
+HOW TO LOCK A STEP:
+Edit autoclean.conf and set:
+  LOCK_STEP_CLEANUP_DOCKER=1
+
+Visual indicator:
+  [#] = Locked step (shown in red)
+
+BEHAVIOR:
+- Locked steps appear with [#] in the menu
+- Cannot be toggled with SPACE
+- Select All ignores locked steps
+- Locks are saved with configuration
+
+HOW TO UNLOCK:
+Set the lock variable to 0 or remove it from config file.
+
+USE CASES:
+- Production servers: lock STEP_CLEANUP_DOCKER to protect containers
+- Shared systems: lock STEP_CLEANUP_SESSIONS to protect other users
+- Safety: lock steps you never want to run accidentally"

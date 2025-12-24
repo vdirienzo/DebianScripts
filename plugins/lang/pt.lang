@@ -81,6 +81,14 @@ MENU_CTRL_HELP="Ajuda"
 MENU_CTRL_ALL="Todos/Nenhum"
 MENU_CTRL_SELECT="Sel/Desel"
 
+# === LEGENDA DE PASSOS ===
+MENU_LEGEND_ON="Ativo"
+MENU_LEGEND_OFF="Inativo"
+MENU_LEGEND_LOCKED="Bloqueado"
+
+# === BLOQUEIO DE PASSOS ===
+MSG_STEP_LOCKED="Passo bloqueado - edite autoclean.conf para alterar"
+
 # === SISTEMA DE AJUDA ===
 MENU_HELP_TITLE="AJUDA"
 MENU_HELP_SCROLL_HINT="Use ↑↓ para rolar"

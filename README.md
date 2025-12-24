@@ -18,6 +18,7 @@ Collection of maintenance and update scripts for Debian/Ubuntu based distributio
   - [System Requirements](#system-requirements)
   - [Installation and Usage](#installation-and-usage)
   - [Advanced Configuration](#advanced-configuration)
+  - [Step Locking](#step-locking)
   - [Predefined Profiles](#predefined-profiles)
   - [Screenshots](#screenshots)
   - [Interactive Menu](#interactive-menu)
@@ -220,7 +221,7 @@ sudo ./autoclean.sh -y
 
 ## Advanced Configuration
 
-The script includes 15 modular steps that you can enable/disable by editing the `STEP_*` variables at the beginning of the script:
+The script includes 23 modular steps that you can enable/disable by editing the `STEP_*` variables in `autoclean.conf` or via the interactive menu:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -266,6 +267,92 @@ STEP_UPGRADE_SYSTEM=0
 STEP_UPDATE_FLATPAK=0
 STEP_UPDATE_SNAP=0
 ```
+
+---
+
+## Step Locking
+
+Steps can be **locked** via the configuration file to prevent accidental changes from the interactive menu. This is useful for production servers or shared systems where certain operations should never be enabled by mistake.
+
+### How It Works
+
+- Locked steps appear as `[#]` in red in the menu
+- They cannot be toggled with SPACE
+- Select All (`[S]`) ignores locked steps
+- The step maintains the state defined in the STEPS CONFIGURATION section
+
+### How to Lock a Step
+
+Edit `autoclean.conf` and set the corresponding `LOCK_STEP_*` variable to `1`:
+
+```bash
+# STEP LOCKS
+# Set to 1 to prevent step from being changed via menu
+# When locked, the step keeps the state defined in STEPS CONFIGURATION above
+
+LOCK_STEP_CLEANUP_DOCKER=1    # Docker cleanup is locked
+LOCK_STEP_CLEANUP_SESSIONS=1  # Session cleanup is locked
+```
+
+### Example: Production Server
+
+For a production server where Docker cleanup should never run accidentally:
+
+```bash
+# In autoclean.conf
+
+# STEPS CONFIGURATION
+STEP_CLEANUP_DOCKER=0         # Docker cleanup is OFF
+
+# STEP LOCKS
+LOCK_STEP_CLEANUP_DOCKER=1    # Cannot be enabled from menu
+```
+
+### Visual Indicators
+
+| Symbol | Color | Meaning |
+|--------|-------|---------|
+| `[x]` | Green | Step enabled |
+| `[ ]` | Gray | Step disabled |
+| `[#]` | Red | Step locked (cannot be changed) |
+
+### How to Unlock
+
+Set the lock variable to `0` or remove it from the configuration file:
+
+```bash
+LOCK_STEP_CLEANUP_DOCKER=0    # Unlocked
+```
+
+### Available Lock Variables
+
+All 23 steps can be locked:
+
+| Variable | Description |
+|----------|-------------|
+| `LOCK_STEP_CHECK_CONNECTIVITY` | Lock connectivity check |
+| `LOCK_STEP_CHECK_DEPENDENCIES` | Lock dependencies check |
+| `LOCK_STEP_CHECK_REPOS` | Lock repository verification |
+| `LOCK_STEP_CHECK_SMART` | Lock SMART disk check |
+| `LOCK_STEP_CHECK_DEBSUMS` | Lock debsums verification |
+| `LOCK_STEP_CHECK_SECURITY` | Lock security audit |
+| `LOCK_STEP_CHECK_PERMISSIONS` | Lock permissions audit |
+| `LOCK_STEP_AUDIT_SERVICES` | Lock services audit |
+| `LOCK_STEP_BACKUP_TAR` | Lock backup creation |
+| `LOCK_STEP_SNAPSHOT_TIMESHIFT` | Lock Timeshift snapshot |
+| `LOCK_STEP_UPDATE_REPOS` | Lock apt update |
+| `LOCK_STEP_UPGRADE_SYSTEM` | Lock system upgrade |
+| `LOCK_STEP_UPDATE_FLATPAK` | Lock Flatpak update |
+| `LOCK_STEP_UPDATE_SNAP` | Lock Snap update |
+| `LOCK_STEP_CHECK_FIRMWARE` | Lock firmware check |
+| `LOCK_STEP_CLEANUP_APT` | Lock APT cleanup |
+| `LOCK_STEP_CLEANUP_KERNELS` | Lock kernel cleanup |
+| `LOCK_STEP_CLEANUP_DISK` | Lock disk cleanup |
+| `LOCK_STEP_CLEANUP_DOCKER` | Lock Docker cleanup |
+| `LOCK_STEP_CLEANUP_SESSIONS` | Lock session cleanup |
+| `LOCK_STEP_CHECK_LOGROTATE` | Lock logrotate check |
+| `LOCK_STEP_CHECK_INODES` | Lock inode check |
+| `LOCK_STEP_CHECK_REBOOT` | Lock reboot check |
 
 ---
 
@@ -790,6 +877,11 @@ See the [LICENSE](LICENSE) file for details.
 ## Changelog v2025.12
 
 ### New Features (December 2025 - Latest)
+- **Step Locking System** - Lock individual steps via `autoclean.conf` to prevent accidental changes from menu
+- **LOCK_STEP_* variables** - 23 lock variables to control which steps can be modified
+- **Visual lock indicator** - Locked steps show as `[#]` in red, disabled steps show as `[ ]` in gray
+- **Select All respects locks** - `[S]` key ignores locked steps when toggling
+- **Lock help documentation** - New help section in all 6 languages explaining step locking
 - **Toggle select/deselect all** (`[S]`) - Press S to toggle all steps on/off (replaces A/N)
 - **Multi-language notifier help** - Help for notifiers now supports all 6 languages with English fallback
 - **Help files for notifiers** - New `plugins/help/help_notif_*.lang` files for each language

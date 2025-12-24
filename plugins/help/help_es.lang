@@ -332,3 +332,33 @@ POR QUE IMPORTA:
 Algunas actualizaciones requieren reinicio para efecto completo.
 
 RECOMENDADO: Siempre habilitar para mantenerse informado."
+
+# ============================================================================
+# AYUDA DE BLOQUEO DE PASOS
+# ============================================================================
+
+HELP_LOCKED_STEPS="PASOS BLOQUEADOS
+
+QUE ES:
+Los pasos pueden bloquearse en el archivo de configuracion para prevenir activacion accidental.
+
+COMO BLOQUEAR UN PASO:
+Edita autoclean.conf y configura:
+  LOCK_STEP_CLEANUP_DOCKER=1
+
+Indicador visual:
+  [#] = Paso bloqueado (mostrado en rojo)
+
+COMPORTAMIENTO:
+- Los pasos bloqueados aparecen con [#] en el menu
+- No se pueden cambiar con ESPACIO
+- Seleccionar Todo ignora pasos bloqueados
+- Los bloqueos se guardan con la configuracion
+
+COMO DESBLOQUEAR:
+Configura la variable de bloqueo a 0 o eliminala del archivo de config.
+
+CASOS DE USO:
+- Servidores produccion: bloquear STEP_CLEANUP_DOCKER para proteger contenedores
+- Sistemas compartidos: bloquear STEP_CLEANUP_SESSIONS para proteger otros usuarios
+- Seguridad: bloquear pasos que nunca quieres ejecutar accidentalmente"

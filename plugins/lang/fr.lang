@@ -81,6 +81,14 @@ MENU_CTRL_HELP="Aide"
 MENU_CTRL_ALL="Tous/Aucun"
 MENU_CTRL_SELECT="Sel/Desel"
 
+# === LEGENDE DES ETAPES ===
+MENU_LEGEND_ON="Actif"
+MENU_LEGEND_OFF="Inactif"
+MENU_LEGEND_LOCKED="Verrouille"
+
+# === VERROUILLAGE DES ETAPES ===
+MSG_STEP_LOCKED="Etape verrouillee - modifiez autoclean.conf pour changer"
+
 # === SYSTEME D'AIDE ===
 MENU_HELP_TITLE="AIDE"
 MENU_HELP_SCROLL_HINT="Utilisez ↑↓ pour defiler"

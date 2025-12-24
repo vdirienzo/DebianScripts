@@ -319,3 +319,33 @@ WARUM ES WICHTIG IST:
 Manche Updates erfordern Neustart fuer volle Wirkung.
 
 EMPFOHLEN: Immer aktivieren um informiert zu bleiben."
+
+# ============================================================================
+# HILFE ZUR SCHRITTSPERRE
+# ============================================================================
+
+HELP_LOCKED_STEPS="GESPERRTE SCHRITTE
+
+WAS ES IST:
+Schritte koennen in der Konfigurationsdatei gesperrt werden, um versehentliche Aktivierung zu verhindern.
+
+WIE MAN EINEN SCHRITT SPERRT:
+Bearbeiten Sie autoclean.conf und setzen Sie:
+  LOCK_STEP_CLEANUP_DOCKER=1
+
+Visueller Indikator:
+  [#] = Gesperrter Schritt (in rot angezeigt)
+
+VERHALTEN:
+- Gesperrte Schritte erscheinen mit [#] im Menu
+- Koennen nicht mit LEERTASTE umgeschaltet werden
+- Alle Auswaehlen ignoriert gesperrte Schritte
+- Sperren werden mit der Konfiguration gespeichert
+
+WIE MAN ENTSPERRT:
+Setzen Sie die Sperrvariable auf 0 oder entfernen Sie sie aus der Config-Datei.
+
+ANWENDUNGSFAELLE:
+- Produktionsserver: STEP_CLEANUP_DOCKER sperren um Container zu schuetzen
+- Gemeinsame Systeme: STEP_CLEANUP_SESSIONS sperren um andere Benutzer zu schuetzen
+- Sicherheit: Schritte sperren, die Sie niemals versehentlich ausfuehren moechten"

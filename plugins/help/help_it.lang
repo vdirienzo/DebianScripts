@@ -319,3 +319,33 @@ PERCHE E IMPORTANTE:
 Alcuni aggiornamenti richiedono riavvio per effetto completo.
 
 RACCOMANDATO: Sempre attivare per rimanere informati."
+
+# ============================================================================
+# AIUTO SUL BLOCCO DEI PASSAGGI
+# ============================================================================
+
+HELP_LOCKED_STEPS="PASSAGGI BLOCCATI
+
+COS'E:
+I passaggi possono essere bloccati nel file di configurazione per prevenire l'attivazione accidentale.
+
+COME BLOCCARE UN PASSAGGIO:
+Modifica autoclean.conf e imposta:
+  LOCK_STEP_CLEANUP_DOCKER=1
+
+Indicatore visivo:
+  [#] = Passaggio bloccato (mostrato in rosso)
+
+COMPORTAMENTO:
+- I passaggi bloccati appaiono con [#] nel menu
+- Non possono essere modificati con SPAZIO
+- Seleziona Tutti ignora i passaggi bloccati
+- I blocchi vengono salvati con la configurazione
+
+COME SBLOCCARE:
+Imposta la variabile di blocco a 0 o rimuovila dal file di config.
+
+CASI D'USO:
+- Server produzione: bloccare STEP_CLEANUP_DOCKER per proteggere i container
+- Sistemi condivisi: bloccare STEP_CLEANUP_SESSIONS per proteggere altri utenti
+- Sicurezza: bloccare passaggi che non vuoi mai eseguire accidentalmente"

@@ -319,3 +319,33 @@ POURQUOI C'EST IMPORTANT:
 Certaines mises a jour necessitent un redemarrage pour effet complet.
 
 RECOMMANDE: Toujours activer pour rester informe."
+
+# ============================================================================
+# AIDE AU VERROUILLAGE DES ETAPES
+# ============================================================================
+
+HELP_LOCKED_STEPS="ETAPES VERROUILLEES
+
+QU'EST-CE QUE C'EST:
+Les etapes peuvent etre verrouillees dans le fichier de configuration pour empecher l'activation accidentelle.
+
+COMMENT VERROUILLER UNE ETAPE:
+Modifiez autoclean.conf et configurez:
+  LOCK_STEP_CLEANUP_DOCKER=1
+
+Indicateur visuel:
+  [#] = Etape verrouillee (affichee en rouge)
+
+COMPORTEMENT:
+- Les etapes verrouillees apparaissent avec [#] dans le menu
+- Ne peuvent pas etre modifiees avec ESPACE
+- Selectionner Tout ignore les etapes verrouillees
+- Les verrous sont sauvegardes avec la configuration
+
+COMMENT DEVERROUILLER:
+Configurez la variable de verrouillage a 0 ou supprimez-la du fichier de config.
+
+CAS D'UTILISATION:
+- Serveurs production: verrouiller STEP_CLEANUP_DOCKER pour proteger les conteneurs
+- Systemes partages: verrouiller STEP_CLEANUP_SESSIONS pour proteger les autres utilisateurs
+- Securite: verrouiller les etapes que vous ne voulez jamais executer accidentellement"
