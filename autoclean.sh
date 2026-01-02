@@ -3901,9 +3901,9 @@ step_check_smart() {
         health_status=$(smartctl -H "$disk" 2>/dev/null | grep -E "SMART overall-health|SMART Health Status")
 
         if echo "$health_status" | grep -qiE "PASSED|OK"; then
-            echo "  ${FIXED_GREEN}[OK]${NC} $disk"
+            echo -e "  ${FIXED_GREEN}[OK]${NC} $disk"
         elif echo "$health_status" | grep -qi "FAILED"; then
-            echo "  ${FIXED_RED}[FAIL]${NC} $disk - ${MSG_SMART_DISK_FAILING}"
+            echo -e "  ${FIXED_RED}[FAIL]${NC} $disk - ${MSG_SMART_DISK_FAILING}"
             log "ERROR" "$disk: ${MSG_SMART_DISK_FAILING}"
             has_error=true
         else
@@ -3913,11 +3913,11 @@ step_check_smart() {
             pending=$(smartctl -A "$disk" 2>/dev/null | grep -i "Current_Pending" | awk '{print $NF}')
 
             if [ "${reallocated:-0}" -gt 0 ] || [ "${pending:-0}" -gt 0 ]; then
-                echo "  ${FIXED_YELLOW}[!!]${NC} $disk - ${MSG_SMART_DISK_WARNING}"
+                echo -e "  ${FIXED_YELLOW}[!!]${NC} $disk - ${MSG_SMART_DISK_WARNING}"
                 log "WARN" "$disk: ${MSG_SMART_DISK_WARNING} (Reallocated: ${reallocated:-0}, Pending: ${pending:-0})"
                 has_warning=true
             else
-                echo "  ${FIXED_GREEN}[OK]${NC} $disk"
+                echo -e "  ${FIXED_GREEN}[OK]${NC} $disk"
             fi
         fi
     done
@@ -4011,7 +4011,7 @@ step_check_security() {
     # Method 1: Use apt-get with grep for security
     if command -v apt-get &>/dev/null; then
         # Count pending security updates
-        security_updates=$(apt-get -s upgrade 2>/dev/null | grep -i "^Inst" | grep -ci "security" || echo "0")
+        security_updates=$(apt-get -s upgrade 2>/dev/null | grep -i "^Inst" | grep -ci "security" 2>/dev/null) || security_updates=0
         security_updates=${security_updates:-0}
     fi
 

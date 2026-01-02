@@ -979,6 +979,8 @@ See the [LICENSE](LICENSE) file for details.
 - **Improved validation regex** - Allows ANSI codes in themes but blocks command execution
 
 ### Fixes
+- **Fix security updates check** - Fixed "integer expected" error when counting security updates (grep -c returns exit code 1 on no match, causing double output)
+- **Fix SMART status colors** - Fixed ANSI color codes showing literally instead of rendering (missing `echo -e` flag)
 - **Fix Norton Commander theme** - Fixed blue background overflow outside margins
 - **Fix execution summary** - Fixed to show 15/15 steps instead of 13/13
 - **Fix theme validation** - Regex fixed to allow ANSI codes like `\033[0;31m`
@@ -987,4 +989,4 @@ See the [LICENSE](LICENSE) file for details.
 
 ---
 
-**Last README update:** December 2025
+**Last README update:** January 2026
