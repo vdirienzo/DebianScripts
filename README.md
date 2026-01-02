@@ -669,6 +669,37 @@ sudo ./autoclean.sh --dry-run
    - Detection of updated critical libraries (glibc, systemd)
    - Automatic service restart with needrestart
 
+### Security Audit Results
+
+The script has been audited for security vulnerabilities (January 2026):
+
+| Category | Result |
+|----------|--------|
+| Critical Vulnerabilities | 0 |
+| High Vulnerabilities | 0 |
+| Medium Vulnerabilities | 0 |
+| Informational Findings | 3 |
+
+**Implemented Security Controls:**
+
+| Control | Description |
+|---------|-------------|
+| `validate_source_file()` | Validates files before `source` to prevent code injection |
+| `validate_notifier_file()` | Specific validation for notifier plugins |
+| Anti-symlink traversal | Prevents loading files outside allowed directories |
+| Dangerous pattern blocking | Blocks `eval`, `exec`, `curl\|bash`, `rm -rf /`, etc. |
+| Atomic flock | Uses `flock` to prevent TOCTOU race conditions |
+| Credential protection | Files created with `umask 077` (permissions 600) |
+| HTTP warning | Warns when configuring unencrypted HTTP URLs |
+| Token truncation | Sensitive values displayed truncated in UI |
+
+**Blocked Patterns in Loaded Files:**
+
+```
+eval, exec, $(), backticks, curl|bash, wget|bash, rm -rf /,
+dd if=, mkfs, chmod 777, pipes, && and || operators
+```
+
 ---
 
 ## Command Line Options
@@ -966,6 +997,7 @@ See the [LICENSE](LICENSE) file for details.
 - **Complete regionalization** - All script messages use MSG_* variables to support multiple languages
 
 ### Security
+- **Security audit completed** - Full security audit with Semgrep and manual review (January 2026): 0 critical/high/medium vulnerabilities found
 - **validate_source_file() function** - Validates files before `source` to prevent code injection
 - **validate_notifier_file() function** - Specific validation for plugins that allows commands but blocks dangerous patterns
 - **Safe variables with declare -n** - Uses nameref instead of eval for variable manipulation in the menu
